@@ -1,8 +1,7 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.MovimientoInventarioDto>
 @using AROCONSTRUCCIONES.Dtos
-
+@* ADD COMENCT *@
 @{
-    // 1. Recuperamos el DTO del Saldo que pasamos desde el controlador
     var saldo = ViewData["Saldo"] as InventarioDto;
     ViewData["Title"] = $"Kárdex - {saldo?.MaterialNombre}";
 }
