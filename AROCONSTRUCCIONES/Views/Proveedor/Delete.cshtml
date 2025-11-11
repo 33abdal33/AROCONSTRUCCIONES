@@ -1,0 +1,44 @@
+﻿@model AROCONSTRUCCIONES.Dtos.ProveedorDto
+
+@{
+    ViewData["Title"] = "Eliminar Proveedor";
+}
+
+<h2>Eliminar Proveedor</h2>
+
+<h3 class="text-danger">¿Está seguro que desea eliminar este proveedor? Esta acción es irreversible.</h3>
+<hr />
+
+<div>
+    <h4>Proveedor: @Model.RazonSocial</h4>
+    <dl class="row">
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.RUC)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.RUC)
+        </dd>
+
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Direccion)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Direccion)
+        </dd>
+
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Estado)
+        </dt>
+        <dd class="col-sm-9">
+            @(Model.Estado ? "Activo" : "Inactivo")
+        </dd>
+    </dl>
+
+    <form asp-action="Delete">
+        @* Se necesita el ID para la acción POST de confirmación *@
+        <input type="hidden" asp-for="Id" />
+
+        <input type="submit" value="Confirmar Eliminación" class="btn btn-danger" /> |
+        <a asp-action="Index" class="btn btn-secondary">Cancelar y Volver</a>
+    </form>
+</div>

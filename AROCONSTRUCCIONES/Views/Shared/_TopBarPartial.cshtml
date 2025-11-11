@@ -1,0 +1,51 @@
+﻿@*
+    Esta es la nueva barra de navegación superior que se muestra en tu diseño.
+*@
+
+<header class="flex justify-between items-center p-4 h-16 bg-white border-b border-slate-200 shadow-sm">
+
+    <!-- Lado Izquierdo: Buscador -->
+    <div class="flex items-center w-full max-w-md">
+        <div class="relative w-full">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                <i class="fas fa-search text-slate-400"></i>
+            </span>
+            <!--
+                NOTA: Tailwind resetea los estilos. 'form-input' es una clase común de Tailwind,
+                pero 'form-control' de Bootstrap puede funcionar si lo prefieres,
+                aunque 'border-0' y 'rounded-full' son clases de Tailwind.
+            -->
+            <input type="text"
+                   class="w-full pl-10 pr-4 py-2 rounded-full border border-slate-300 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-0"
+                   placeholder="Buscar proyectos, proveedores...">
+        </div>
+    </div>
+
+    <!-- Lado Derecho: Iconos y Perfil de Usuario -->
+    <div class="flex items-center space-x-4">
+
+        <!-- Icono de Notificaciones -->
+        <button class="p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 relative">
+            <i class="bi bi-bell-fill"></i>
+            <!-- Punto de Notificación -->
+            <span class="absolute top-2 right-2 block w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+
+        <!-- Icono de Configuración -->
+        <button class="p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+            <i class="bi bi-gear-fill"></i>
+        </button>
+
+        <!-- Perfil de Usuario -->
+        <div class="flex items-center space-x-2">
+            <!-- Avatar (usando tus iniciales) -->
+            <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                JA
+            </div>
+            <div class="hidden md:block">
+                <div class="text-sm font-medium text-slate-700">Jesus Angulo</div>
+                <div class="text-xs text-slate-500">Gerente General</div>
+            </div>
+        </div>
+    </div>
+</header>

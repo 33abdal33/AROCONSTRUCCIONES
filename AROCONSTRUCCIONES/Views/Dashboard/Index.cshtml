@@ -1,0 +1,137 @@
+﻿@{
+    // Esta vista no necesita un @model, ya que es estática (por ahora)
+    ViewData["Title"] = "Dashboard Ejecutivo";
+}
+
+<div class="container-fluid">
+
+    <div class="row mb-4 align-items-center">
+        <div class="col-8">
+            <h1 class="display-6">Dashboard Ejecutivo</h1>
+            <p class="text-muted">Resumen general de proyectos y operaciones de AroConstrucciones</p>
+        </div>
+        <div class="col-4">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Buscar proyectos, proveedores...">
+                <button class="btn btn-outline-secondary" type="button"><i class="bi bi-search"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <hr class="mb-5" />
+
+    <div class="row mb-5">
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100 p-3 border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="text-muted text-uppercase mb-2">Proyectos Activos</h6>
+                        <i class="bi bi-briefcase text-primary fs-4"></i>
+                    </div>
+                    <h3 class="card-title mb-0">5</h3>
+                    <p class="text-success fs-6">+2 este mes</p>
+                    <small class="text-muted">73% completados</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100 p-3 border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="text-muted text-uppercase mb-2">Avance General</h6>
+                        <i class="bi bi-graph-up-arrow text-success fs-4"></i>
+                    </div>
+                    <h3 class="card-title mb-0">73%</h3>
+                    <p class="text-success fs-6">+5% vs mes anterior</p>
+                    <small class="text-muted">En promedio</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100 p-3 border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="text-muted text-uppercase mb-2">Personal Activo</h6>
+                        <i class="bi bi-people text-info fs-4"></i>
+                    </div>
+                    <h3 class="card-title mb-0">142</h3>
+                    <p class="text-success fs-6">8 nuevos ingresos</p>
+                    <small class="text-muted">En todas las obras</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100 p-3 border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="text-muted text-uppercase mb-2">Inversión Total</h6>
+                        <i class="bi bi-currency-dollar text-warning fs-4"></i>
+                    </div>
+                    <h3 class="card-title mb-0">$2.8M</h3>
+                    <p class="text-danger fs-6">$450K este mes</p>
+                    <small class="text-muted">Total acumulado</small>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row mb-5">
+
+        <div class="col-md-6">
+            <div class="card shadow h-100 p-3">
+                <h5 class="card-title">Avance de Proyectos</h5>
+                <p class="text-muted">Comparativo planificado vs ejecutado (%)</p>
+
+                <div style="height: 300px; background-color: #f8f9fa; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center;">
+                    <p class="text-muted">Espacio para Gráfico de Barras</p>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow h-100 p-3">
+                <h5 class="card-title">Ejecución Presupuestaria</h5>
+                <p class="text-muted">Últimos 6 meses (USD)</p>
+
+                <div style="height: 300px; background-color: #f8f9fa; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center;">
+                    <p class="text-muted">Espacio para Gráfico de Líneas</p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row mb-5">
+
+        <div class="col-md-8">
+            <div class="card shadow h-100 p-3">
+                <h5 class="card-title">Actividad Reciente</h5>
+                <p class="text-muted">Últimas actualizaciones del sistema</p>
+                <div style="height: 250px; background-color: #fff; border: 1px dashed #eee; display: flex; align-items: center; justify-content: center;">
+                    <p class="text-muted">Tabla de Logs o Transacciones</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow h-100 p-3">
+                <h5 class="card-title">Acceso Rápido a Módulos</h5>
+                <p class="text-muted">Gestione todas las áreas de su empresa</p>
+                <div style="height: 250px; background-color: #fff; border: 1px dashed #eee; display: flex; align-items: center; justify-content: center;">
+                    <p class="text-muted">Enlaces de Acceso Rápido</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">

@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AROCONSTRUCCIONES.Models\AROCONSTRUCCIONES.Models.csproj" />
+    <ProjectReference Include="..\AROCONSTRUCCIONES.PERSISTENCE\AROCONSTRUCCIONES.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>

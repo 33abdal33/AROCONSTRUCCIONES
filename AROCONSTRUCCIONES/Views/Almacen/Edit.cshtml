@@ -1,0 +1,53 @@
+﻿@model AROCONSTRUCCIONES.Dtos.AlmacenDto
+
+@{
+    ViewData["Title"] = "Editar Almacén";
+}
+
+<h1 class="display-6 mb-4">Editar Almacén: @Model.Nombre</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4">
+            <form asp-action="Edit">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <input type="hidden" asp-for="Id" />
+
+                <div class="mb-3">
+                    <label asp-for="Nombre" class="form-label"></label>
+                    <input asp-for="Nombre" class="form-control" />
+                    <span asp-validation-for="Nombre" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Ubicacion" class="form-label"></label>
+                    <input asp-for="Ubicacion" class="form-control" />
+                    <span asp-validation-for="Ubicacion" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Responsable" class="form-label"></label>
+                    <input asp-for="Responsable" class="form-control" />
+                    <span asp-validation-for="Responsable" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input class="form-check-input" asp-for="Estado" />
+                    <label class="form-check-label" asp-for="Estado"></label>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-success"><i class="bi bi-save me-1"></i> Guardar Cambios</button>
+                    <a asp-action="Index" class="btn btn-secondary ms-2">Volver a la Lista</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

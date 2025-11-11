@@ -1,0 +1,75 @@
+﻿@model AROCONSTRUCCIONES.Dtos.LogisticaDashboardDto
+@{
+    // Esta vista recibe 'LogisticaDashboardDto'
+}
+
+<!--
+    Este es el Header de "Compras y Almacén" reescrito con Tailwind CSS
+    para que coincida con tu nuevo _Layout.cshtml y la imagen de diseño.
+-->
+
+<div class="mb-6">
+    <div>
+        <h2 class="text-2xl font-semibold text-slate-800">Compras y Almacén</h2>
+        <p class="text-slate-500">Gestión de inventario, proveedores y órdenes de compra</p>
+    </div>
+</div>
+
+<!-- Contenedor de las 4 Tarjetas (KPIs) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+
+    <!-- Tarjeta 1: Valor Inventario -->
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-slate-500">Valor Inventario</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.ValorInventario.ToString("C2")</p>
+            <p class="text-xs text-slate-400">Valorizado al costo</p>
+        </div>
+        <div class="text-4xl text-blue-500 opacity-70">
+            <i class="fas fa-box-open"></i>
+        </div>
+    </div>
+
+    <!-- Tarjeta 2: Órdenes Pendientes -->
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-slate-500">Órdenes Pendientes</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.OrdenesPendientes</p>
+            <p class="text-xs text-slate-400">Por aprobar y recepcionar</p>
+        </div>
+        <div class="text-4xl text-amber-500 opacity-70">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+    </div>
+
+    <!-- Tarjeta 3: Movimientos del Mes -->
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-slate-500">Movimientos (30 días)</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.MovimientosMes</p>
+            <p class="text-xs text-slate-400">Ingresos y salidas</p>
+        </div>
+        <div class="text-4xl text-green-500 opacity-70">
+            <i class="fas fa-chart-line"></i>
+        </div>
+    </div>
+
+    <!-- Tarjeta 4: Alertas de Stock -->
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-slate-500">Alertas de Stock</p>
+            <p class="text-3xl font-bold text-red-600">@Model.AlertasStock</p>
+            <p class="text-xs text-red-500">Materiales bajo mínimo</p>
+        </div>
+        <div class="text-4xl text-red-500 opacity-70">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+    </div>
+</div>
+
+<!--
+    NOTA: He eliminado la barra de búsqueda y filtros de este archivo.
+    En el diseño que te gustó, esos filtros están DENTRO de la pestaña
+    "Inventario de Materiales", no en el header general.
+    Los añadiremos a '_InventarioTablePartial.cshtml' después.
+-->

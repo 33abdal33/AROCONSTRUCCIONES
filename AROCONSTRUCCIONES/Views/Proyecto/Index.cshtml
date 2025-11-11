@@ -1,0 +1,279 @@
+﻿@* ================================
+   VISTA: Views/Proyecto/Index.cshtml
+   Descripción: Página principal del módulo de gestión de proyectos
+   Incluye pestañas de proyectos y requerimientos
+   Autor: Abdal Lizano Muriel
+   ================================ *@
+
+@model IEnumerable<AROCONSTRUCCIONES.Dtos.ProyectoDto>
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    ViewData["Title"] = "Gestión de Proyectos";
+    var dashboardData = ViewBag.DashboardData as AROCONSTRUCCIONES.Dtos.ProyectoDashboardDto
+                        ?? new AROCONSTRUCCIONES.Dtos.ProyectoDashboardDto();
+}
+
+<!-- Estilos -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+<!-- Encabezado del dashboard -->
+@await Html.PartialAsync("_ProyectosHeaderPartial", dashboardData)
+
+<!-- Contenido principal -->
+<div class="mt-6">
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="p-4 md:p-6">
+
+            <!-- Sección de gráfico (placeholder) -->
+            <div class="mb-6">
+                <h5 class="text-xl font-semibold text-slate-700">Avance de Proyectos</h5>
+                <div class="p-5 bg-slate-50 text-center text-slate-400 rounded-lg mt-4">
+                    (Gráfico de Barras - Próximamente)
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="border-b border-gray-200">
+                <nav class="flex space-x-6" id="proyectoTab">
+                    <button class="py-3 px-1 font-medium text-blue-600 border-b-2 border-blue-600 tab-button active"
+                            data-tab-target="#proyectos-content"
+                            id="proyectos-tab"
+                            type="button">
+                        Proyectos
+                    </button>
+
+                    <button class="py-3 px-1 font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent hover:border-gray-300 tab-button"
+                            id="requerimientos-tab"
+                            data-tab-target="#requerimientos-content"
+                            type="button"
+                            data-url="@Url.Action("ListaRequerimientosPartial", "Requerimiento", new { proyectoId = Model.FirstOrDefault()?.Id })">
+                        Requerimientos
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Contenido de tabs -->
+            <div class="mt-4" id="proyectoTabContent">
+                <div id="proyectos-content" class="tab-content-pane">
+                    @await Html.PartialAsync("_ListaProyectosPartial", Model)
+                </div>
+
+                <div id="requerimientos-content" class="tab-content-pane hidden">
+                    <div class="flex justify-center items-center p-5">
+                        <i class="fas fa-spinner fa-spin fa-2x text-blue-500"></i>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- MODALES -->
+<div class="modal fade" id="requerimientoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-form">
+        <div class="modal-content" id="requerimientoModalContenido"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="proyectoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-form">
+        <div class="modal-content" id="proyectoModalContenido"></div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // ============================================================
+        // FUNCIONES GLOBALES
+        // ============================================================
+
+        // Recargar pestaña de proyectos
+        function recargarPestañaProyectos() {
+            const url = '@Url.Action("ListaProyectosPartial", "Proyecto")';
+            const $pane = $('#proyectos-content');
+
+            $pane.html('<div class="flex justify-center p-5"><i class="fas fa-spinner fa-spin fa-2x text-blue-500"></i></div>');
+
+            $.get(url, function (data) {
+                $pane.html(data);
+            }).fail(function () {
+                $pane.html('<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md">Error al recargar proyectos.</div>');
+            });
+        }
+
+        // ============================================================
+        // EVENTOS DOCUMENT READY
+        // ============================================================
+        $(document).ready(function () {
+            let requerimientosCargados = false;
+
+            // Cambiar pestañas
+            $('#proyectoTab .tab-button').on('click', function (e) {
+                e.preventDefault();
+
+                $('.tab-content-pane').addClass('hidden');
+                $('#proyectoTab .tab-button')
+                    .removeClass('active text-blue-600 border-blue-600')
+                    .addClass('text-slate-500 border-transparent hover:border-gray-300');
+
+                const targetPaneId = $(this).data('tab-target');
+                $(targetPaneId).removeClass('hidden');
+                $(this)
+                    .addClass('active text-blue-600 border-blue-600')
+                    .removeClass('text-slate-500 border-transparent hover:border-gray-300');
+
+                // Cargar Requerimientos solo una vez
+                if (targetPaneId === '#requerimientos-content' && !requerimientosCargados) {
+                    const url = $(this).data('url');
+                    const $pane = $(targetPaneId);
+
+                    $.get(url, function (data) {
+                        $pane.html(data);
+                        requerimientosCargados = true;
+                    }).fail(function () {
+                        $pane.html('<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md">Error al cargar requerimientos.</div>');
+                    });
+                }
+            });
+
+            // ============================================================
+            // NUEVO REQUERIMIENTO (AJAX)
+            // ============================================================
+            $(document).on('submit', 'form#formRequerimiento', function (e) {
+                e.preventDefault();
+                const $form = $(this);
+                if (!$form.valid()) return;
+
+                const $submitBtn = $form.find('button[type="submit"]');
+                $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...');
+
+                $.ajax({
+                    url: $form.attr('action'),
+                    type: 'POST',
+                    data: $form.serialize(),
+                    success: function () {
+                        const modalInstance = bootstrap.Modal.getInstance(document.getElementById('requerimientoModal'));
+                        modalInstance.hide();
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Requerimiento creado!',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        $('#requerimientos-tab').click(); // recargar requerimientos
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error al guardar el requerimiento.'
+                        });
+                        $submitBtn.prop('disabled', false).html('Guardar');
+                    }
+                });
+            });
+
+            // ============================================================
+            // ABRIR MODAL NUEVO REQUERIMIENTO
+            // ============================================================
+            $(document).on('click', '#btnNuevoRequerimiento', function () {
+                const proyectoId = $(this).data('proyecto-id');
+                const url = `@Url.Action("Create", "Requerimiento")?proyectoId=${proyectoId}`;
+                const $modalContent = $('#requerimientoModalContenido');
+
+                $modalContent.html('<div class="modal-body p-5 text-center"><i class="fas fa-spinner fa-spin fa-2x text-blue-500"></i></div>');
+                const modalInstance = new bootstrap.Modal(document.getElementById('requerimientoModal'));
+                modalInstance.show();
+
+                $.get(url, function (data) {
+                    $modalContent.html(data);
+                    $.validator.unobtrusive.parse($('form#formRequerimiento'));
+                }).fail(function () {
+                    $modalContent.html('<div class="modal-body p-5 text-center text-red-600">Error al cargar el formulario.</div>');
+                });
+            });
+
+            // ============================================================
+            // ABRIR MODAL CREAR / EDITAR PROYECTO
+            // ============================================================
+            $(document).on('click', '#btnNuevoProyecto, .btn-editar-proyecto', function () {
+                const id = $(this).data('id') || 0;
+                const url = `@Url.Action("GetProyectoParaEditar", "Proyecto")/${id}`;
+                const $modalContent = $('#proyectoModalContenido');
+
+                $modalContent.html('<div class="modal-body p-5 text-center"><i class="fas fa-spinner fa-spin fa-2x text-blue-500"></i></div>');
+                const modalInstance = new bootstrap.Modal(document.getElementById('proyectoModal'));
+                modalInstance.show();
+
+                $.get(url, function (data) {
+                    $modalContent.html(data);
+                    $.validator.unobtrusive.parse($('form#formProyecto'));
+                });
+            });
+
+            // ============================================================
+            // GUARDAR PROYECTO (CREAR / EDITAR)
+            // ============================================================
+            $(document).on('submit', 'form#formProyecto', function (e) {
+                e.preventDefault();
+                const $form = $(this);
+                if (!$form.valid()) return;
+
+                const $submitButton = $form.find('button[type="submit"]');
+                $submitButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...');
+
+                $.ajax({
+                    url: $form.attr('action'),
+                    type: 'POST',
+                    data: $form.serialize(),
+                    success: function (response) {
+                        if (response.success) {
+                            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('proyectoModal'));
+                            modalInstance.hide();
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Guardado!',
+                                text: response.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+
+                            recargarPestañaProyectos();
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message
+                            });
+                            $submitButton.prop('disabled', false).html('Guardar');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error de conexión.'
+                        });
+                        $submitButton.prop('disabled', false).html('Guardar');
+                    }
+                });
+            });
+
+            // ============================================================
+            // ABRIR TAB AUTOMÁTICAMENTE (SI SE INDICA DESDE CONTROLADOR)
+            // ============================================================
+            const openTab = "@ViewBag.OpenTab";
+            if (openTab === "#requerimientos-tab") {
+                $('#requerimientos-tab').click();
+            }
+        });
+    </script>
+}

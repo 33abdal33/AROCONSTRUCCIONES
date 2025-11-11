@@ -1,0 +1,23 @@
+﻿/*
+  ¡ESTE ARCHIVO DEBE ESTAR VACÍO O SOLO CONTENER ESTOS PARCHES!
+*/
+
+/* --- Parche para forzar el estilo de la Pestaña Activa --- */
+/* Tu HTML usa la clase 'active' para el botón activo. Tailwind debe ganarle. */
+.nav button.active {
+    /* Forzar los colores de Tailwind para la pestaña activa */
+    background-color: #f0f8ff !important; /* Tailwind: bg-blue-50 (fondo muy claro) */
+    color: #1d4ed8 !important; /* Tailwind: text-blue-700 */
+    border-radius: 0.375rem !important; /* Tailwind: rounded-lg */
+    border-bottom-color: transparent !important; /* Elimina la línea inferior del borde */
+}
+
+.nav button:hover {
+    background-color: #f3f4f6; /* Tailwind: bg-gray-100 */
+}
+
+/* Corrige el conflicto de DataTables y Tailwind (ya lo tenías) */
+.dataTables_wrapper .row {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+}

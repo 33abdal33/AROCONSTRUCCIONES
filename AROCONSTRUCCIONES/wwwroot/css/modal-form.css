@@ -1,0 +1,81 @@
+﻿/* Cambia el tamaño del modal */
+.modal-dialog.modal-form {
+    max-width: 650px;
+}
+
+.modal-form .modal-header {
+    border-bottom: 1px solid #eee;
+    padding: 1.25rem 1.5rem;
+}
+
+    .modal-form .modal-header .modal-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .modal-form .modal-header .btn-close {
+        opacity: 0.5;
+    }
+
+.modal-form .modal-body {
+    padding: 1.5rem 2rem 2rem 2rem; /* Más padding */
+}
+
+/* --- Estilo de los Inputs (Borde inferior) --- */
+.modal-form .form-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 0.25rem;
+}
+
+.modal-form .form-control,
+.modal-form .form-select {
+    border: none; /* Quita todos los bordes */
+    border-radius: 0;
+    padding-left: 0.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #eee; /* Solo borde inferior */
+    background-color: transparent;
+    transition: border-color 0.2s ease-in-out;
+}
+
+    .modal-form .form-control:focus,
+    .modal-form .form-select:focus {
+        box-shadow: none; /* Sin sombra de bootstrap */
+        border-bottom-color: #336699; /* Color de la barra de título */
+    }
+
+    .modal-form .form-control::placeholder {
+        color: #aaa;
+        font-style: italic;
+    }
+
+/* --- Estilo de la lista de Checkbox --- */
+.material-filter-box {
+    border: 2px solid #eee;
+    border-radius: 4px;
+    padding: 1rem;
+    height: 250px;
+    overflow-y: auto;
+}
+
+    .material-filter-box .form-check {
+        margin-bottom: 0.5rem;
+    }
+
+    .material-filter-box .form-check-label {
+        font-weight: normal;
+        font-size: 0.9rem;
+    }
+
+        .material-filter-box .form-check-label small {
+            font-size: 0.8rem;
+            color: #888;
+            margin-left: 5px;
+        }
+
+.modal-form .modal-footer {
+    border-top: 1px solid #eee;
+    padding: 1rem 1.5rem;
+}

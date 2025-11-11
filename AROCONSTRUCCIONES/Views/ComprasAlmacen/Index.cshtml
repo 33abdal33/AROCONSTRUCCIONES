@@ -1,0 +1,76 @@
+﻿@{
+    ViewData["Title"] = "Compras y Almacén";
+}
+
+<partial name="_ComprasAlmacenHeaderPartial" />
+
+
+<div x-data="{ activeTab: 'proveedores' }" class="w-full mt-6">
+
+    <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+
+            <button x-on:click="activeTab = 'proveedores'; loadTabContent('@Url.Action("ListaProveedores", "Proveedor")', '#tab-content-container')"
+                    :class="{
+                        'border-blue-500 text-blue-600': activeTab === 'proveedores',
+                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'proveedores'
+                    }"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-150">
+                Proveedores
+            </button>
+
+            <button x-on:click="activeTab = 'materiales'; loadTabContent('@Url.Action("ListaMateriales", "Material")', '#tab-content-container')"
+                    :class="{
+                        'border-blue-500 text-blue-600': activeTab === 'materiales',
+                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'materiales'
+                    }"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-150">
+                Materiales
+            </button>
+
+            <button x-on:click="activeTab = 'almacenes'; loadTabContent('@Url.Action("ListaAlmacenes", "Almacen")', '#tab-content-container')"
+                    :class="{
+                        'border-blue-500 text-blue-600': activeTab === 'almacenes',
+                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'almacenes'
+                    }"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-150">
+                Almacenes
+            </button>
+
+            <button x-on:click="activeTab = 'ordenes'; loadTabContent('@Url.Action("ListaOrdenes", "OrdenCompra")', '#tab-content-container')"
+                    :class="{
+                        'border-blue-500 text-blue-600': activeTab === 'ordenes',
+                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'ordenes'
+                    }"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-150">
+                Órdenes de Compra
+            </button>
+
+            <button x-on:click="activeTab = 'reportes'; loadTabContent('@Url.Action("Index", "ReportesLogistica")', '#tab-content-container')"
+                    :class="{
+                        'border-blue-500 text-blue-600': activeTab === 'reportes',
+                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'reportes'
+                    }"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-150">
+                Reportes
+            </button>
+
+        </nav>
+    </div>
+
+    <div id="tab-content-container" class="mt-6">
+    </div>
+
+    <div id="modal-placeholder"></div>
+
+</div>
+
+
+@section Scripts {
+    <script>
+        // Carga la pestaña inicial (Proveedores) al cargar la página
+        $(document).ready(function () {
+            loadTabContent('@Url.Action("ListaProveedores", "Proveedor")', '#tab-content-container');
+        });
+    </script>
+}

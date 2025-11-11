@@ -1,0 +1,303 @@
+﻿@model AROCONSTRUCCIONES.Dtos.OrdenCompraCreateDto
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    var proveedoresList = ViewBag.Proveedores as SelectList;
+}
+
+<div x-data="{ open: true }"
+     x-show="open"
+     x-transition:enter="ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     style="display: none;">
+
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+    <div class="flex items-center justify-center min-h-screen p-4">
+
+        <div x-on:click.away="open = false"
+             class="relative bg-white rounded-lg shadow-xl transform transition-all sm:my-8 sm:max-w-6xl sm:w-full">
+            <form asp-action="Create" method="post" id="formOrdenCompra">
+                @Html.AntiForgeryToken()
+
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 rounded-t-lg">
+                    <h3 class="text-xl font-semibold text-slate-700">
+                        <i class="fas fa-file-invoice mr-2 text-blue-600"></i>
+                        Nueva Orden de Compra
+                    </h3>
+                </div>
+
+                <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+
+                    @Html.ValidationSummary(false, "", new { @class = "text-red-600 bg-red-50 p-3 rounded-md mb-4 text-sm" })
+                    <p class="text-slate-500 text-sm mb-4">Complete los datos del encabezado y agregue los materiales al detalle.</p>
+
+                    <fieldset class="border border-gray-200 p-4 rounded-md mb-6">
+                        <legend class="px-2 font-medium text-slate-600">Datos Principales</legend>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="md:col-span-2">
+                                <label asp-for="IdProveedor" class="block text-sm font-medium text-gray-700">Proveedor *</label>
+                                <select asp-for="IdProveedor" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" asp-items="proveedoresList" required>
+                                    <option value="">Seleccione un proveedor...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label asp-for="Codigo" class="block text-sm font-medium text-gray-700">Código OC *</label>
+                                <input asp-for="Codigo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Ej: OC-2025-001" required />
+                            </div>
+                            <div>
+                                <label asp-for="FechaEmision" class="block text-sm font-medium text-gray-700">Fecha de Emisión</label>
+                                <input asp-for="FechaEmision" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                            </div>
+                            <div class="md:col-span-4">
+                                <label asp-for="Observaciones" class="block text-sm font-medium text-gray-700">Observaciones</label>
+                                <textarea asp-for="Observaciones" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" rows="2" placeholder="Condiciones de pago, tiempo de entrega, etc."></textarea>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="border border-gray-200 p-4 rounded-md mb-6">
+                        <legend class="px-2 font-medium text-slate-600">Detalle de Materiales</legend>
+                        <div class="p-4 bg-slate-50 rounded-md mb-4">
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                                <div class="md:col-span-5">
+                                    <label class="block text-sm font-medium text-gray-700">Material</label>
+                                    <select id="selectMaterial" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" disabled>
+                                        <option value="" data-texto="">[Seleccione un Proveedor primero]</option>
+                                    </select>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700">Cantidad</label>
+                                    <input type="number" id="inputCantidad" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="0" min="0.01" step="any">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700">Precio Unit. (S/)</label>
+                                    <input type="number" id="inputPrecio" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="0.00" min="0.01" step="any">
+                                </div>
+                                <div class="md:col-span-3">
+                                    <button type="button" class="w-full flex justify-center items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700" id="btnAnadirMaterial">
+                                        <i class="fas fa-plus mr-2"></i>Añadir a la Orden
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto bg-white rounded-lg shadow border">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Material</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase" style="width: 120px;">Cantidad</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase" style="width: 150px;">Precio Unit.</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase" style="width: 150px;">Subtotal</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase" style="width: 80px;">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaDetallesBody" class="bg-white divide-y divide-gray-200">
+                                    <tr id="fila-vacia" class="">
+                                        <td colspan="5" class="px-6 py-4 text-center text-slate-500">Aún no se han añadido materiales.</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="bg-slate-50">
+                                    <tr>
+                                        <td colspan="3" class="px-6 py-3 text-right text-sm font-medium text-slate-700 uppercase">TOTAL:</td>
+                                        <td class="px-6 py-3 text-right text-lg font-bold text-slate-900" id="totalGeneral">S/ 0.00</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </fieldset>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 sm:flex sm:flex-row-reverse rounded-b-lg">
+                    <button type="submit" class="ml-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
+                        <i class="fas fa-save mr-2"></i>Guardar Orden de Compra
+                    </button>
+                    <button type="button" x-on:click="open = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-sm font-medium">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+
+        // --- INICIALIZACIÓN (dentro del modal) ---
+        let detalleIndex = 0;
+        const $modal = $('#formOrdenCompra').closest('.relative'); // Busca el panel del modal
+        const $tablaBody = $modal.find('#tablaDetallesBody');
+        const $form = $modal.find('form#formOrdenCompra');
+        const $selectProveedor = $modal.find('#IdProveedor');
+        const $selectMaterial = $modal.find('#selectMaterial');
+        const $inputCantidad = $modal.find('#inputCantidad');
+        const $inputPrecio = $modal.find('#inputPrecio');
+        const $btnAnadir = $modal.find('#btnAnadirMaterial');
+        const $filaVacia = $modal.find('#fila-vacia');
+
+        function toggleFilaVacia() {
+            if ($tablaBody.find('tr').not('#fila-vacia').length > 0) {
+                $filaVacia.addClass('hidden');
+            } else {
+                $filaVacia.removeClass('hidden');
+            }
+        }
+        toggleFilaVacia();
+
+        // --- Lógica de Dropdown en Cascada ---
+        $selectProveedor.on('change', function() {
+            const proveedorId = $(this).val();
+            $selectMaterial.empty();
+            if (!proveedorId) {
+                $selectMaterial.append('<option value="">[Seleccione un Proveedor primero]</option>');
+                $selectMaterial.prop('disabled', true);
+                return;
+            }
+            $selectMaterial.prop('disabled', true);
+            $selectMaterial.append('<option value="">Cargando materiales...</option>');
+
+            $.get('@Url.Action("GetMaterialesPorProveedor", "OrdenCompra")', { proveedorId: proveedorId }, function(data) {
+                $selectMaterial.empty();
+                $selectMaterial.append('<option value="">Seleccione un material...</option>');
+                if (data.length > 0) {
+                    $.each(data, function(index, item) {
+                        $selectMaterial.append(`<option value="${item.value}" data-texto="${item.text}">${item.text}</option>`);
+                    });
+                    $selectMaterial.prop('disabled', false);
+                } else {
+                    $selectMaterial.empty();
+                    $selectMaterial.append('<option value="">[Este proveedor no tiene materiales]</option>');
+                    $selectMaterial.prop('disabled', true);
+                }
+            });
+        });
+
+        // --- Cálculo de Subtotal en Botón ---
+        $inputCantidad.add($inputPrecio).on('keyup change', function() {
+            const cantidad = parseFloat($inputCantidad.val()) || 0;
+            const precio = parseFloat($inputPrecio.val()) || 0;
+            const subtotal = cantidad * precio;
+            if (subtotal > 0) {
+                $btnAnadir.html(`<i class="fas fa-plus mr-2"></i>Añadir (S/ ${subtotal.toFixed(2)})`);
+            } else {
+                $btnAnadir.html('<i class="fas fa-plus mr-2"></i>Añadir a la Orden');
+            }
+        });
+
+        // --- Lógica para AÑADIR FILA ---
+        $btnAnadir.on('click', function () {
+            const materialId = $selectMaterial.val();
+            const materialTexto = $selectMaterial.find('option:selected').data('texto');
+            const cantidad = parseFloat($inputCantidad.val());
+            const precio = parseFloat($inputPrecio.val());
+
+            if (!materialId || isNaN(cantidad) || isNaN(precio) || cantidad <= 0 || precio <= 0) {
+                Swal.fire('Error', 'Por favor, seleccione un material e ingrese una cantidad y precio válidos.', 'warning');
+                return;
+            }
+            const subtotal = cantidad * precio;
+            const filaHtml = `
+                <tr id="fila-detalle-${detalleIndex}" class="text-sm">
+                    <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">
+                        ${materialTexto}
+                        <input type="hidden" name="Detalles.Index" value="${detalleIndex}" />
+                        <input type="hidden" name="Detalles[${detalleIndex}].IdMaterial" value="${materialId}" />
+                    </td>
+                    <td class="px-6 py-4 text-right">${cantidad.toFixed(2)}<input type="hidden" name="Detalles[${detalleIndex}].Cantidad" value="${cantidad}" /></td>
+                    <td class="px-6 py-4 text-right">S/ ${precio.toFixed(2)}<input type="hidden" name="Detalles[${detalleIndex}].PrecioUnitario" value="${precio}" /></td>
+                    <td class="px-6 py-4 text-right font-medium text-slate-800" data-subtotal="${subtotal}">S/ ${subtotal.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-center">
+                        <button type="button" class="p-1 text-slate-400 hover:text-red-600 btn-remover-fila" title="Quitar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            $tablaBody.append(filaHtml);
+            detalleIndex++;
+            actualizarTotalGeneral();
+            toggleFilaVacia();
+
+            $selectMaterial.val('');
+            $inputCantidad.val('');
+            $inputPrecio.val('');
+            $btnAnadir.html('<i class="fas fa-plus mr-2"></i>Añadir a la Orden');
+        });
+
+        // --- Lógica para REMOVER FILA ---
+        $tablaBody.on('click', '.btn-remover-fila', function () {
+            $(this).closest('tr').remove();
+            actualizarTotalGeneral();
+            toggleFilaVacia();
+        });
+
+        // --- Lógica para ACTUALIZAR TOTAL ---
+        function actualizarTotalGeneral() {
+            let total = 0;
+            $tablaBody.find('td[data-subtotal]').each(function() { total += parseFloat($(this).data('subtotal')); });
+            $modal.find('#totalGeneral').text(`S/ ${total.toFixed(2)}`);
+        }
+
+        // --- Habilitar validación ---
+        $.validator.unobtrusive.parse($form);
+
+        // --- LÓGICA DE ENVÍO AJAX (MODIFICADA PARA MODAL) ---
+        $form.on('submit', function(e) {
+            e.preventDefault();
+            $form.validate();
+
+            if ($tablaBody.find('tr').not('#fila-vacia').length === 0) {
+                Swal.fire('Error', 'Debe añadir al menos un material a la orden de compra.', 'warning');
+                return;
+            }
+            if (!$form.valid()) {
+                return;
+            }
+
+            const $submitButton = $(this).find('button[type="submit"]');
+            $submitButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...');
+
+            $.ajax({
+                url: $form.attr('action'),
+                type: 'POST',
+                data: $form.serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        // ¡ÉXITO! Cierra el modal y recarga la pestaña
+                        $('#modal-placeholder').html(''); // Cierra el modal
+
+                        Swal.fire({ icon: 'success', title: '¡Guardado!', text: response.message, timer: 1500, showConfirmButton: false });
+
+                        // Recarga la pestaña de Órdenes de Compra
+                        if (typeof loadTabContent === 'function') {
+                            // Busca el botón de la pestaña OC y simula un clic
+                            const $tabButton = $('button[data-url*="ListaOrdenes"]');
+                            if ($tabButton.length) {
+                                loadTabContent($tabButton.data('url'), '#tab-content-container');
+                            } else {
+                                location.reload(); // Fallback
+                            }
+                        } else {
+                            location.reload(); // Fallback
+                        }
+                    } else {
+                        // Error de validación del backend o de negocio
+                        Swal.fire('Error', response.message, 'error');
+                        $submitButton.prop('disabled', false).html('<i class="fas fa-save mr-2"></i>Guardar Orden de Compra');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Error de conexión. No se pudo guardar.', 'error');
+                    $submitButton.prop('disabled', false).html('<i class="fas fa-save mr-2"></i>Guardar Orden de Compra');
+                }
+            });
+        });
+    });
+</script>

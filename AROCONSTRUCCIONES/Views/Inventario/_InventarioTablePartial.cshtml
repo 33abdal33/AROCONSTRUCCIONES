@@ -1,0 +1,112 @@
+﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.InventarioDto>
+
+<div x-data="{ open: false }" class="pt-4">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-2xl font-semibold text-gray-800">
+            <i class="fas fa-boxes mr-3 text-green-600"></i>
+            Inventario de Materiales
+        </h3>
+
+        <button type="button"
+                class="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+                data-modal-url="@Url.Action("CargarFormularioMovimiento", "MovimientoInventario")">
+            <i class="fas fa-plus mr-2"></i> Nuevo Movimiento
+        </button>
+    </div>
+
+    <!-- FILTROS - Estilo de Card para la barra de búsqueda -->
+    <div class="p-4 border border-gray-200/50 rounded-lg shadow-md mb-4 bg-white">
+        <div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <div class="relative flex-1 max-w-lg w-full">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <i class="fas fa-search h-4 w-4 text-gray-400"></i>
+                </span>
+                <input type="text" id="inventarioSearchInput" class="form-control w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 bg-white focus:border-blue-500 focus:ring-0" placeholder="Buscar material o código...">
+            </div>
+            <div class="flex space-x-2">
+                <select id="inventarioCategoryFilter" class="form-select px-3 py-2 rounded-lg border border-gray-300 bg-white focus:border-blue-500 focus:ring-0 text-sm text-gray-700">
+                    <option value="">Todas las categorías</option>
+                </select>
+                <select id="inventarioStatusFilter" class="form-select px-3 py-2 rounded-lg border border-gray-300 bg-white focus:border-blue-500 focus:ring-0 text-sm text-gray-700">
+                    <option value="">Todos los estados</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Bajo">Bajo</option>
+                    <option value="Crítico">Crítico</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <partial name="_MensajesTempDataPartial" />
+
+    <!-- TABLA (Estilo Shadcn/ui) -->
+    <!-- Contenedor de tabla: rounded-md border border-border/50 -->
+    <div class="rounded-lg border border-gray-200/50 overflow-hidden shadow-sm">
+        <table class="min-w-full divide-y divide-gray-100/50" id="dataTableInventario">
+            <!-- Header de tabla: bg-muted/50 -->
+            <thead class="bg-gray-100/70">
+                <tr class="border-b border-gray-200/50">
+                    <!-- Columnas usan text-muted-foreground y font-medium -->
+                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Código</th>
+                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Material</th>
+                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Categoría</th>
+                    <th scope="col" class="h-10 px-4 text-right align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Stock Actual</th>
+                    <th scope="col" class="h-10 px-4 text-right align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Stock Mínimo</th>
+                    <th scope="col" class="h-10 px-4 text-right align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Costo Unitario</th>
+                    <th scope="col" class="h-10 px-4 text-right align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Valor Total</th>
+                    <th scope="col" class="h-10 px-4 text-center align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Estado</th>
+                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Ubicación</th>
+                    <th scope="col" class="h-10 px-4 text-center align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <!-- Filas usan hover:bg-muted/30 -->
+            <tbody class="divide-y divide-gray-100/50">
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        var estadoClass = item.NivelAlerta == 0 ? "bg-green-100 text-green-700" :
+                        item.NivelAlerta == 1 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700";
+                        var estadoTexto = item.NivelAlerta == 0 ? "Normal" : (item.NivelAlerta == 1 ? "Bajo" : "Crítico");
+
+                        <tr class="border-b transition-colors hover:bg-gray-100/30">
+                            <!-- Código usa font-mono text-sm -->
+                            <td class="p-4 align-middle text-sm text-gray-500 font-mono">@item.MaterialCodigo</td>
+                            <td class="p-4 align-middle">
+                                <div class="font-medium text-gray-800">@item.MaterialNombre</div>
+                                <div class="text-xs text-gray-500">@item.MaterialUnidadMedida</div>
+                            </td>
+                            <td class="p-4 align-middle text-sm text-gray-500">@item.MaterialCategoria</td>
+                            <td class="p-4 align-middle text-sm text-gray-800 font-semibold text-right">@item.StockActual.ToString("N0")</td>
+                            <td class="p-4 align-middle text-sm text-gray-500 text-right">@item.StockMinimo.ToString("N0")</td>
+                            <td class="p-4 align-middle text-sm text-gray-500 text-right">S/ @item.CostoPromedio.ToString("N4")</td>
+                            <td class="p-4 align-middle text-sm text-gray-800 font-semibold text-right">S/ @item.ValorTotal.ToString("N2")</td>
+                            <td class="p-4 align-middle text-center">
+                                <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full @estadoClass">
+                                    @estadoTexto
+                                </span>
+                            </td>
+                            <td class="p-4 align-middle text-sm text-gray-500">@item.AlmacenUbicacion</td>
+                            <td class="p-4 align-middle text-center text-sm font-medium">
+                                <a asp-action="Details" asp-controller="Inventario"
+                                   asp-route-materialId="@item.MaterialId"
+                                   asp-route-almacenId="@item.AlmacenId"
+                                   class="text-gray-500 hover:text-blue-600 transition-colors" title="Ver Kárdex/Historial">
+                                    <i class="fas fa-search"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" class="p-4 text-center text-gray-500">
+                            No hay inventario registrado. Recepcione una Orden de Compra para comenzar.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

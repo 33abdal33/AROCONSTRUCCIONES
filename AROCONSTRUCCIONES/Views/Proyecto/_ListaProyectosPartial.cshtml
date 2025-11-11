@@ -1,0 +1,83 @@
+﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.ProyectoDto>
+
+<div class="d-flex justify-content-between align-items-center my-3">
+    <h5 class="mb-0">Lista de Proyectos</h5>
+    <button type="button" class="btn btn-primary" id="btnNuevoProyecto">
+        <i class="fas fa-plus me-2"></i> Nuevo Proyecto
+    </button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Proyecto</th>
+                <th>Cliente</th>
+                <th>Ubicación</th>
+                <th>Avance</th>
+                <th class="text-end">Presupuesto</th>
+                <th class="text-end">Ejecutado (% vs Pres.)</th>
+                <th>Estado</th>
+                <th>Responsable</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var p in Model)
+                {
+                    decimal porcentajeEjecutado = (p.Presupuesto > 0) ? (p.CostoEjecutado / p.Presupuesto) * 100 : 0;
+
+                    <tr>
+                        <td><strong>@p.NombreProyecto</strong><br /><small class="text-muted">@p.CodigoProyecto</small></td>
+                        <td>@p.NombreCliente</td>
+                        <td>@p.Ubicacion</td>
+                        <td>
+                            @{
+                                // Esta lógica añade un ancho mínimo y texto oscuro si el avance es 0
+                                var avance = p.AvancePorcentaje;
+                                var style = $"width: {avance}%;";
+                                var textClass = ""; // Clase de texto por defecto (blanco)
+
+                                if (avance == 0)
+                                {
+                                    style += " min-width: 2.5em;"; // Añade un ancho mínimo para que se vea el "0%"
+                                    textClass = "text-dark"; // Cambia el texto a oscuro para que sea legible
+                                }
+                            }
+                            <div class="progress" style="height: 20px;" title="@avance%">
+                                <div class="progress-bar @textClass" role="progressbar"
+                                     style="@style"
+                                     aria-valuenow="@avance">
+                                    @avance%
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-end">@p.Presupuesto.ToString("C0")</td>
+                        <td class="text-end">
+                            @p.CostoEjecutado.ToString("C0")
+                            <br />
+                            <small class="text-muted">(@porcentajeEjecutado.ToString("N0")%)</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">@p.Estado</span>
+                        </td>
+                        <td>@p.Responsable</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary btn-editar-proyecto" data-id="@p.Id" title="Editar">
+                                <i class="fas fa-pencil-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="9" class="text-center p-4 text-muted">No hay proyectos registrados.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,107 @@
+﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.MaterialDto>
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<div class="pt-4">
+    <!-- 1. Encabezado y Botón "Nuevo Material" -->
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-2xl font-semibold text-gray-800">
+            <i class="fas fa-cube mr-3 text-blue-600"></i>
+            Catálogo de Materiales
+        </h3>
+
+        <button type="button"
+                class="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+                data-modal-url="@Url.Action("GetMaterialParaEditar", "Material", new { id = 0 })">
+            <i class="fas fa-plus mr-2"></i> Nuevo Material
+        </button>
+    </div>
+
+    <!-- FILTROS - Barra de búsqueda estilo Card -->
+    <div class="p-4 border border-gray-200/50 rounded-lg shadow-md mb-4 bg-white">
+        <div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <div class="relative flex-1 max-w-lg w-full">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <i class="fas fa-search h-4 w-4 text-gray-400"></i>
+                </span>
+                <!-- Input usa form-control para el estilo de modal-form.css -->
+                <input type="text" id="materialSearchInput" class="form-control w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 bg-white focus:border-blue-500 focus:ring-0" placeholder="Buscar materiales...">
+            </div>
+            <!-- (Otros filtros pueden ir aquí si son necesarios) -->
+        </div>
+    </div>
+
+    <partial name="_MensajesTempDataPartial" />
+
+    <!-- 2. Tabla de Materiales -->
+    <!-- Contenedor de tabla: rounded-md border border-border/50 -->
+    <div class="rounded-lg border border-gray-200/50 overflow-hidden shadow-sm">
+        <table class="min-w-full divide-y divide-gray-100/50" id="dataTableMateriales">
+            <!-- Header de tabla: bg-muted/50 -->
+            <thead class="bg-gray-100/70">
+                <tr class="border-b border-gray-200/50">
+                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Código</th>
+                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Nombre</th>
+                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Categoría</th>
+                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Unidad</th>
+                    <th scope="col" class="h-10 px-4 text-right align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Precio (Venta)</th>
+                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Estado</th>
+                    <th scope="col" class="h-10 px-4 text-center align-middle text-gray-600 font-medium text-xs uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <!-- Filas usan hover:bg-muted/30 -->
+            <tbody class="divide-y divide-gray-100/50">
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var mat in Model)
+                    {
+                        <tr class="border-b transition-colors hover:bg-gray-100/30">
+                            <!-- Código usa font-mono text-sm -->
+                            <td class="p-4 align-middle text-sm text-gray-500 font-mono"><strong>@mat.Codigo</strong></td>
+                            <!-- Nombre usa font-medium -->
+                            <td class="p-4 align-middle text-sm font-medium text-gray-800">@mat.Nombre</td>
+                            <td class="p-4 align-middle text-sm text-gray-500">@mat.Categoria</td>
+                            <td class="p-4 align-middle text-sm text-gray-500">@mat.UnidadMedida</td>
+                            <td class="p-4 align-middle text-sm text-gray-800 text-right">S/ @mat.PrecioUnitario.ToString("N2")</td>
+                            <td class="p-4 align-middle">
+                                @if (mat.Estado)
+                                {
+                                    <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-700">
+                                        Activo
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-700">
+                                        Inactivo
+                                    </span>
+                                }
+                            </td>
+                            <td class="p-4 align-middle text-center text-sm font-medium space-x-2">
+                                <button type="button" class="text-gray-500 hover:text-blue-600 btn-editar-material transition-colors"
+                                        data-modal-url="@Url.Action("GetMaterialParaEditar", "Material", new { id = mat.Id })"
+                                        title="Editar">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                                @if (mat.Estado)
+                                {
+                                    <button class="text-gray-500 hover:text-red-700 btn-desactivar-material transition-colors"
+                                            data-id="@mat.Id"
+                                            data-nombre="@mat.Nombre"
+                                            title="Desactivar">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="p-4 text-center text-gray-500">No hay materiales registrados.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

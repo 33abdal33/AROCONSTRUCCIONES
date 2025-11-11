@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ConstructorERP</title>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.tailwindcss.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <link href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css" rel="stylesheet" />
+    <!-- 1. Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. Carga de Bootstrap Icons (para los iconos de tu sidebar) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <!-- 3. Carga de Font Awesome (para los 
+    <!-- 4. Carga de tu CSS personalizado (¡SOLO PARA MODALES!) -->
+    <!-- (Asegúrate de que 'site.css' e 'inventario.css' estén vacíos) -->
+    <link rel="stylesheet" href="~/css/modal-form.css" />
+    <!-- Configuración de Tailwind (Opcional, para la fuente 'Inter') -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Corrige el conflicto de DataTables y Tailwind */
+        .dataTables_wrapper .row {
+            margin-top: 0.5rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <div class="flex h-screen bg-gray-100">
+
+        <!-- Contenedor del Sidebar (Barra Lateral) -->
+        <partial name="_SidebarPartial" />
+
+        <!-- Contenedor Principal (Derecha) -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+
+            <!-- Barra de Navegación Superior (NUEVO) -->
+            <partial name="_TopBarPartial" />
+
+            <!-- Contenido Principal de la Página -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-6">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts (Orden Correcto: jQuery -> Bootstrap (para modales) -> DataTables) -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

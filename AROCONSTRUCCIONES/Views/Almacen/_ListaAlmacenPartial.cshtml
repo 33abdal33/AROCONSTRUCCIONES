@@ -1,0 +1,83 @@
+﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.AlmacenDto>
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<div class="p-4">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold text-slate-700">
+            <i class="fas fa-warehouse mr-2 text-blue-600"></i>
+            Maestro de Almacenes
+        </h3>
+
+        <button type="button"
+                class="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                data-modal-url="@Url.Action("GetAlmacenParaEditar", "Almacen", new { id = 0 })">
+            <i class="fas fa-plus mr-2"></i> Nuevo Almacén
+        </button>
+    </div>
+
+    <partial name="_MensajesTempDataPartial" />
+
+    <div class="overflow-x-auto bg-white rounded-lg shadow">
+        <table class="min-w-full divide-y divide-gray-200" id="dataTableAlmacenes">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Ubicación</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Responsable</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
+                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var almacen in Model)
+                    {
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@almacen.Nombre</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@almacen.Ubicacion</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@almacen.Responsable</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if (almacen.Estado)
+                                {
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Activo
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Inactivo
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
+                                <button type="button" class="p-1 text-slate-500 hover:text-blue-700 btn-editar-almacen"
+                                        data-modal-url="@Url.Action("GetAlmacenParaEditar", "Almacen", new { id = almacen.Id })"
+                                        title="Editar">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+
+                                @if (almacen.Estado)
+                                {
+                                    <button class="p-1 text-slate-500 hover:text-red-700 btn-desactivar-almacen"
+                                            data-id="@almacen.Id"
+                                            data-nombre="@almacen.Nombre"
+                                            title="Desactivar">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-slate-500">No hay almacenes registrados.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

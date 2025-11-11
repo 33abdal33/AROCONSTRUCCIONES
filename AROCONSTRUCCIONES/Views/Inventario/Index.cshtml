@@ -1,0 +1,102 @@
+﻿@using AROCONSTRUCCIONES.Dtos
+@{
+    ViewData["Title"] = "Logística y Almacén";
+
+    // Obtenemos los datos del dashboard
+    var dashboard = ViewBag.DashboardData as LogisticaDashboardDto ?? new LogisticaDashboardDto();
+}
+
+<!-- 1. Encabezado de estadísticas -->
+<partial name="_ComprasAlmacenHeaderPartial" model="dashboard" />
+
+<!--
+  2. Contenedor de Pestañas (Tabs) con Alpine.js
+     x-data define la pestaña activa inicial.
+-->
+<div x-data="{ activeTab: 'inventario' }" class="w-full mt-6">
+
+    <!-- 3. La Navegación de Pestañas (ESTILO SHADCN/UI) -->
+    <div class="flex space-x-2">
+        <nav class="inline-flex h-10 items-center justify-center rounded-lg bg-gray-200 p-1 text-gray-600" aria-label="Tabs">
+
+            @{
+                // Definición de clases de TabsTrigger:
+                const string activeStyle = "bg-white text-gray-900 shadow-sm"; // bg-background, text-foreground
+                const string inactiveStyle = "text-gray-600 hover:bg-white/50"; // text-muted-foreground
+                const string baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50";
+            }
+
+            <!-- Pestaña 1: Inventario -->
+            <button x-on:click="activeTab = 'inventario'; loadTabContent('@Url.Action("InventarioPartial", "Inventario")', '#tab-content-container')"
+                    :class="{ '@activeStyle': activeTab === 'inventario', '@inactiveStyle': activeTab !== 'inventario' }"
+                    class="@baseClasses">
+                <i class="fas fa-boxes mr-2"></i> Inventario
+            </button>
+
+            <!-- Pestaña 2: Movimientos -->
+            <button x-on:click="activeTab = 'movimientos'; loadTabContent('@Url.Action("TablaMovimientosPartial", "MovimientoInventario")', '#tab-content-container')"
+                    :class="{ '@activeStyle': activeTab === 'movimientos', '@inactiveStyle': activeTab !== 'movimientos' }"
+                    class="@baseClasses">
+                <i class="fas fa-dolly mr-2"></i> Movimientos
+            </button>
+
+            <!-- Pestaña 3: Materiales -->
+            <button x-on:click="activeTab = 'materiales'; loadTabContent('@Url.Action("ListaMateriales", "Material")', '#tab-content-container')"
+                    :class="{ '@activeStyle': activeTab === 'materiales', '@inactiveStyle': activeTab !== 'materiales' }"
+                    class="@baseClasses">
+                <i class="fas fa-cube mr-2"></i> Catálogo de Materiales
+            </button>
+
+            <!-- Pestaña 4: Órdenes de Compra -->
+            <button x-on:click="activeTab = 'ordenes'; loadTabContent('@Url.Action("ListaOrdenes", "OrdenCompra")', '#tab-content-container')"
+                    :class="{ '@activeStyle': activeTab === 'ordenes', '@inactiveStyle': activeTab !== 'ordenes' }"
+                    class="@baseClasses">
+                <i class="fas fa-file-invoice mr-2"></i> Órdenes de Compra
+            </button>
+
+            <!-- Pestaña 5: Proveedores -->
+            <button x-on:click="activeTab = 'proveedores'; loadTabContent('@Url.Action("ListaProveedores", "Proveedor")', '#tab-content-container')"
+                    :class="{ '@activeStyle': activeTab === 'proveedores', '@inactiveStyle': activeTab !== 'proveedores' }"
+                    class="@baseClasses">
+                <i class="fas fa-truck-moving mr-2"></i> Proveedores
+            </button>
+
+            <!-- Pestaña 6: Almacenes -->
+            <button x-on:click="activeTab = 'almacenes'; loadTabContent('@Url.Action("ListaAlmacenes", "Almacen")', '#tab-content-container')"
+                    :class="{ '@activeStyle': activeTab === 'almacenes', '@inactiveStyle': activeTab !== 'almacenes' }"
+                    class="@baseClasses">
+                <i class="fas fa-warehouse mr-2"></i> Almacenes
+            </button>
+
+            <!-- Pestaña 7: Reportes -->
+            <button x-on:click="activeTab = 'reportes'; loadTabContent('@Url.Action("Index", "ReportesLogistica")', '#tab-content-container')"
+                    :class="{ '@activeStyle': activeTab === 'reportes', '@inactiveStyle': activeTab !== 'reportes' }"
+                    class="@baseClasses">
+                <i class="fas fa-chart-pie mr-2"></i> Reportes
+            </button>
+
+        </nav>
+    </div>
+
+    <!-- 4. Contenedor del Contenido de la Pestaña -->
+    <div id="tab-content-container" class="mt-6">
+        <!-- El contenido AJAX se cargará aquí -->
+    </div>
+
+    <!-- 5. Placeholder para los Modales (Popups) -->
+    <div id="modal-placeholder"></div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/logistica-tabs.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- Script para cargar la pestaña inicial -->
+    <script>
+        $(document).ready(function () {
+            // Carga la pestaña de Inventario por defecto
+            loadTabContent('@Url.Action("InventarioPartial", "Inventario")', '#tab-content-container');
+        });
+    </script>
+}

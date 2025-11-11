@@ -1,0 +1,37 @@
+﻿@model AROCONSTRUCCIONES.Dtos.AlmacenDto
+
+@{
+    ViewData["Title"] = "Detalles de Almacén";
+}
+
+<h1 class="display-6 mb-4">Detalles de Almacén: @Model.Nombre</h1>
+
+<div class="card shadow-sm p-4">
+    <dl class="row">
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Nombre)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Nombre)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Ubicacion)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Ubicacion)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Responsable)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Responsable)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Estado)</dt>
+        <dd class="col-sm-9">
+            @if (Model.Estado)
+            {
+                <span class="badge bg-success">Activo</span>
+            }
+            else
+            {
+                <span class="badge bg-danger">Inactivo</span>
+            }
+        </dd>
+    </dl>
+</div>
+
+<div class="mt-4">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-info"><i class="bi bi-pencil-square me-1"></i> Editar</a>
+    <a asp-action="Index" class="btn btn-secondary ms-2">Volver a la Lista</a>
+</div>

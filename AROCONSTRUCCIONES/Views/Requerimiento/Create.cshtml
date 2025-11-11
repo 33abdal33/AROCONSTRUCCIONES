@@ -1,0 +1,71 @@
+﻿@model AROCONSTRUCCIONES.Dtos.RequerimientoQuickCreateDto
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    var proyectosList = ViewBag.Proyectos as SelectList;
+    var prioridadesList = ViewBag.Prioridades as SelectList;
+}
+
+<!--
+    Este formulario usa el 'modal-form.css'
+    y está diseñado para el pop-up rápido.
+-->
+<form id="formQuickRequerimiento" asp-action="QuickCreate" asp-controller="Requerimiento" method="post">
+    @Html.AntiForgeryToken()
+
+    <!-- El ID del proyecto se pasa oculto -->
+    <input type="hidden" asp-for="IdProyecto" />
+
+    <div class="modal-header">
+        <h5 class="modal-title">Nuevo Requerimiento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+
+    <div class="modal-body">
+        @Html.ValidationSummary(false, "", new { @class = "text-danger text-xs bg-red-50 p-3 rounded-md mb-4" })
+
+        <!-- Fila 1: Proyecto y Solicitante -->
+        <div class="flex flex-col md:flex-row md:space-x-6">
+            <div class="w-full md:w-1/2 mb-4">
+                <label asp-for="IdProyecto" class="form-label">Proyecto *</label>
+                <!-- El proyecto viene seleccionado y deshabilitado -->
+                <select asp-for="IdProyecto" class="form-select bg-gray-100" asp-items="proyectosList" required disabled></select>
+            </div>
+            <div class="w-full md:w-1/2 mb-4">
+                <label asp-for="Solicitante" class="form-label">Solicitante *</label>
+                <input asp-for="Solicitante" class="form-control" placeholder="Nombre del solicitante" required />
+                <span asp-validation-for="Solicitante" class="text-danger text-xs"></span>
+            </div>
+        </div>
+
+        <!-- Fila 2: Fecha y Prioridad -->
+        <div class="flex flex-col md:flex-row md:space-x-6">
+            <div class="w-full md:w-1/2 mb-4">
+                <label asp-for="Fecha" class="form-label">Fecha *</label>
+                <input asp-for="Fecha" type="date" class="form-control" required />
+            </div>
+            <div class="w-full md:w-1/2 mb-4">
+                <label asp-for="Prioridad" class="form-label">Prioridad *</label>
+                <select asp-for="Prioridad" class="form-select" asp-items="prioridadesList" required></select>
+            </div>
+        </div>
+
+        <!-- Fila 3: Observaciones -->
+        <div class="mb-4">
+            <label asp-for="Observaciones" class="form-label">Observaciones</label>
+            <textarea asp-for="Observaciones" class="form-control" rows="3" placeholder="Detalles adicionales del requerimiento..."></textarea>
+        </div>
+
+        <p class="text-xs text-slate-500 text-center mt-6">
+            <i class="fas fa-info-circle mr-1"></i>
+            Los materiales se añadirán en el siguiente paso, desde la página de detalles del requerimiento.
+        </p>
+
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-sm font-medium" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+            Guardar y Añadir Materiales
+        </button>
+    </div>
+</form>
