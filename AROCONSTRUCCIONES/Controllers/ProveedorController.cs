@@ -1,9 +1,8 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
-using AROCONSTRUCCIONES.Persistence; // <-- 1. Necesario para DbContext
 using AROCONSTRUCCIONES.Services.Interface;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient; // <-- Lo mantenemos para el 'catch'
+using Microsoft.EntityFrameworkCore; // <-- Lo mantenemos para el 'catch'
 using System;
 using System.Threading.Tasks;
 
@@ -12,91 +11,92 @@ namespace AROCONSTRUCCIONES.Controllers
     public class ProveedorController : Controller
     {
         private readonly IProveedorService _proveedorService;
-        private readonly ApplicationDbContext _dbContext; // <-- 2. Para la transacción
+        // private readonly ApplicationDbContext _dbContext; // <-- SE VA
 
-        public ProveedorController(IProveedorService proveedorService, ApplicationDbContext dbContext)
+        // Constructor actualizado
+        public ProveedorController(IProveedorService proveedorService) // <-- CAMBIO
         {
             _proveedorService = proveedorService;
-            _dbContext = dbContext; // <-- 3. Asignar DbContext
-        }
+            // _dbContext = dbContext; // <-- SE VA
+        }
 
-        // ACCIÓN PARA LA PESTAÑA (OK)
-        [HttpGet]
+        // ... (ListaProveedores y GetProveedorParaEditar se quedan igual) ...
+        [HttpGet]
         public async Task<IActionResult> ListaProveedores()
         {
             var proveedores = await _proveedorService.GetAllAsync();
             return PartialView("_ListaProveedoresPartial", proveedores);
         }
 
-        [HttpGet]
+        [HttpGet]
         public async Task<IActionResult> GetProveedorParaEditar(int id)
         {
-            // Llama al nuevo método del servicio que prepara el ViewModel
-            var viewModel = await _proveedorService.GetEdicionProveedorAsync(id);
+            var viewModel = await _proveedorService.GetEdicionProveedorAsync(id);
             if (viewModel == null) return NotFound();
-
-            // Devuelve el formulario (con pestañas)
-            return PartialView("_ProveedorFormPartial", viewModel);
+            return PartialView("_ProveedorFormPartial", viewModel);
         }
 
-        [HttpPost]
+
+        // --- ACCIONES DE ESCRITURA (AHORA "THIN") ---
+
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ProveedorEdicionViewModelDto vm)
         {
             if (!ModelState.IsValid)
             {
-                // ¡CORREGIDO! Si falla, recarga el ViewModel y devuelve el Partial
-                var viewModelRecargado = await _proveedorService.GetEdicionProveedorAsync(0); // Recarga listas
-                vm.TodosLosMateriales = viewModelRecargado.TodosLosMateriales; // Transfiere las listas
+                // Si falla, recarga el ViewModel y devuelve el Partial
+                var viewModelRecargado = await _proveedorService.GetEdicionProveedorAsync(0);
+                vm.TodosLosMateriales = viewModelRecargado.TodosLosMateriales;
                 vm.CategoriasMateriales = viewModelRecargado.CategoriasMateriales;
-                return PartialView("_ProveedorFormPartial", vm); // Devuelve el form con errores
+                return PartialView("_ProveedorFormPartial", vm);
             }
 
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            // El bloque 'using var transaction' DESAPARECE
             try
             {
-                await _proveedorService.CreateAsync(vm.Proveedor);
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-
+                // El servicio ahora toma el VM completo y guarda todo
+                await _proveedorService.CreateAsync(vm); // <-- CAMBIO
                 return Json(new { success = true, message = "Proveedor creado." });
             }
-            catch (DbUpdateException ex)
+            catch (DbUpdateException ex) // Captura errores de BD (ej. RUC duplicado)
             {
-                await transaction.RollbackAsync();
+                // Esta lógica de revisar el error SQL la podemos dejar aquí o en el servicio
                 if (ex.InnerException is SqlException sqlEx && sqlEx.Number == 2601)
                 {
                     return Json(new { success = false, message = "Error: Ya existe un proveedor con ese RUC." });
                 }
                 return Json(new { success = false, message = "Error de base de datos: " + ex.InnerException?.Message ?? ex.Message });
             }
-            catch (Exception ex)
+            catch (ApplicationException appEx) // Captura errores de negocio
             {
-                await transaction.RollbackAsync();
+                return Json(new { success = false, message = appEx.Message });
+            }
+            catch (Exception ex) // Captura cualquier otro error
+            {
                 return Json(new { success = false, message = ex.Message });
             }
         }
 
-        // POST: /Proveedor/Edit
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ProveedorEdicionViewModelDto vm)
         {
             if (!ModelState.IsValid)
             {
-                // ¡CORREGIDO! Si falla, recarga el ViewModel y devuelve el Partial
-                var viewModelRecargado = await _proveedorService.GetEdicionProveedorAsync(vm.Proveedor.Id); // Recarga listas
-                vm.TodosLosMateriales = viewModelRecargado.TodosLosMateriales; // Transfiere las listas
+                var viewModelRecargado = await _proveedorService.GetEdicionProveedorAsync(vm.Proveedor.Id);
+                vm.TodosLosMateriales = viewModelRecargado.TodosLosMateriales;
                 vm.CategoriasMateriales = viewModelRecargado.CategoriasMateriales;
-                return PartialView("_ProveedorFormPartial", vm); // Devuelve el form con errores
+                return PartialView("_ProveedorFormPartial", vm);
             }
 
             try
             {
-                await _proveedorService.UpdateProveedorCompletoAsync(vm);
+                // El servicio se encarga de la transacción y el guardado
+                await _proveedorService.UpdateProveedorCompletoAsync(vm); // <-- CAMBIO
                 return Json(new { success = true, message = "Proveedor actualizado." });
             }
-            catch (DbUpdateException ex)
+            catch (DbUpdateException ex) // Captura errores de BD (ej. RUC duplicado)
             {
                 if (ex.InnerException is SqlException sqlEx && sqlEx.Number == 2601)
                 {
@@ -104,33 +104,32 @@ namespace AROCONSTRUCCIONES.Controllers
                 }
                 return Json(new { success = false, message = "Error de base de datos: " + ex.InnerException?.Message ?? ex.Message });
             }
+            catch (ApplicationException appEx) // Captura errores de negocio
+            {
+                return Json(new { success = false, message = appEx.Message });
+            }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
             }
         }
 
-        // POST: /Proveedor/Deactivate/5 (Esta acción está bien)
-        [HttpPost]
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Deactivate(int id)
         {
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            // El bloque 'using var transaction' DESAPARECE
             try
             {
-                var result = await _proveedorService.DeactivateAsync(id);
+                var result = await _proveedorService.DeactivateAsync(id); // <-- CAMBIO
                 if (!result)
                     return Json(new { success = false, message = "Proveedor no encontrado." });
-
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
 
                 TempData["OpenTab"] = "#proveedores-tab";
                 return Json(new { success = true, message = "Proveedor desactivado." });
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 return Json(new { success = false, message = ex.Message });
             }
         }

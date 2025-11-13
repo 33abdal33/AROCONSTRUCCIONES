@@ -1,108 +1,100 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Models;
-using AROCONSTRUCCIONES.Persistence;
 using AROCONSTRUCCIONES.Repository.Interfaces;
 using AROCONSTRUCCIONES.Services.Interface;
 using AutoMapper;
+using Microsoft.Extensions.Logging; // <-- 1. AÑADIR
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Services.Implementation
 {
     public class OrdenCompraService : IOrdenCompraServices
     {
-        // Inyectamos todo lo que necesitamos, siguiendo tu patrón
-        private readonly IOrdenCompraRepository _ordenCompraRepository;
-        private readonly IProveedorRepository _proveedorRepository;
-        private readonly IMaterialRepository _materialRepository; // Para validación futura
-        private readonly ApplicationDbContext _dbContext; // Para la transacción
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IPdfService _pdfService;
         private readonly IMapper _mapper;
+        private readonly ILogger<OrdenCompraService> _logger; // <-- 2. AÑADIR
 
         public OrdenCompraService(
-            IOrdenCompraRepository ordenCompraRepository,
-            IProveedorRepository proveedorRepository,
-            IMaterialRepository materialRepository,
-            ApplicationDbContext dbContext,
-            IInventarioRepository inventarioRepository,
+            IUnitOfWork unitOfWork,
             IPdfService pdfService,
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<OrdenCompraService> logger) // <-- 3. AÑADIR
         {
-            _ordenCompraRepository = ordenCompraRepository;
-            _proveedorRepository = proveedorRepository;
-            _materialRepository = materialRepository;
-            _dbContext = dbContext;
+            _unitOfWork = unitOfWork;
             _pdfService = pdfService;
             _mapper = mapper;
+            _logger = logger; // <-- 4. AÑADIR
         }
 
         public async Task<IEnumerable<OrdenCompraListDto>> GetAllOrdenesCompraAsync()
         {
-            var ordenes = await _ordenCompraRepository.GetAllWithProveedorAsync();
+            // ... (Este método no cambia)
+            var ordenes = await _unitOfWork.OrdenesCompra.GetAllWithProveedorAsync();
             return _mapper.Map<IEnumerable<OrdenCompraListDto>>(ordenes);
         }
 
         public async Task<OrdenCompra> CreateOrdenCompraAsync(OrdenCompraCreateDto dto)
         {
-            // 1. Validaciones de negocio
-            var proveedor = await _proveedorRepository.GetByIdAsync(dto.IdProveedor);
+            _logger.LogInformation("--- Iniciando CreateOrdenCompraAsync ---"); // LOG
+
+            // 1. Validaciones
+            _logger.LogInformation("Validando proveedor...");
+            var proveedor = await _unitOfWork.Proveedores.GetByIdAsync(dto.IdProveedor);
             if (proveedor == null)
-            {
                 throw new ApplicationException($"El Proveedor con ID {dto.IdProveedor} no fue encontrado.");
-            }
 
             if (dto.Detalles == null || !dto.Detalles.Any())
-            {
-                throw new ApplicationException("La Orden de Compra debe tener al menos un material en el detalle.");
-            }
+                throw new ApplicationException("La Orden de Compra debe tener al menos un material.");
 
-            // (Aquí podrías añadir una validación para asegurar que todos los IdMaterial existen)
-
-            // 2. Iniciar Transacción (igual que en tu MovimientoInventarioService)
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            _logger.LogInformation("Validación completada. Iniciando transacción.");
+            using var transaction = await _unitOfWork.Context.Database.BeginTransactionAsync();
             try
             {
-                // 3. Mapear DTO a Entidad
-                // Gracias al Profile, esto mapea OrdenCompra Y su lista ICollection<DetalleOrdenCompra>
                 var ordenCompra = _mapper.Map<OrdenCompra>(dto);
-
-                // 4. Lógica de negocio y valores por defecto
                 ordenCompra.Estado = "Pendiente";
                 ordenCompra.FechaEmision = DateTime.Now;
-
-                // Calculamos el total basado en los detalles (ya mapeados)
                 ordenCompra.Total = ordenCompra.Detalles.Sum(d => d.Cantidad * d.PrecioUnitario);
 
-                // 5. Agregar al Repositorio (SOLO EN MEMORIA)
-                // EF Core es lo suficientemente inteligente para guardar la 'ordenCompra' (Padre)
-                // y todos los 'Detalles' (Hijos) que están en su colección.
-                await _ordenCompraRepository.AddAsync(ordenCompra);
+                _logger.LogInformation("Entidad mapeada. Agregando al repositorio.");
+                await _unitOfWork.OrdenesCompra.AddAsync(ordenCompra);
 
-                // 6. Guardar y completar la transacción
-                // Este es el único SaveChanges(). Guarda la OC y los Detalles
-                await _dbContext.SaveChangesAsync();
-                var ocCompleta = await _ordenCompraRepository.GetByIdWithDetailsAsync(ordenCompra.Id);
+                _logger.LogInformation("Llamando a SaveChangesAsync (COMMIT 1 - Obtener ID)");
+                await _unitOfWork.SaveChangesAsync(); // COMMIT 1
+                _logger.LogInformation($"COMMIT 1 Exitoso. Nuevo ID de OC: {ordenCompra.Id}");
 
-                string rutaPdf = await _pdfService.GenerarPdfOrdenCompra(ocCompleta);
+
+                // 5. Generar PDF
+                _logger.LogInformation("Recargando OC completa para generar PDF...");
+                var ocCompleta = await _unitOfWork.OrdenesCompra.GetByIdWithDetailsAsync(ordenCompra.Id);
+
+                _logger.LogInformation("Llamando a PdfService.GenerarPdfOrdenCompra...");
+                string rutaPdf = await _pdfService.GenerarPdfOrdenCompra(ocCompleta); // <-- PUNTO PROBABLE DE FALLO
+                _logger.LogInformation($"PdfService Exitoso. Ruta: {rutaPdf}");
+
+
                 ordenCompra.RutaPdf = rutaPdf;
-                await _dbContext.SaveChangesAsync(); // ¡COMMIT 2! (Guarda la ruta del PDF)
 
+                _logger.LogInformation("Llamando a SaveChangesAsync (COMMIT 2 - Guardar Ruta PDF)");
+                await _unitOfWork.SaveChangesAsync(); // COMMIT 2
+                _logger.LogInformation("COMMIT 2 Exitoso.");
 
-
+                // 7. Confirmar
+                _logger.LogInformation("Confirmando transacción (CommitAsync)...");
                 await transaction.CommitAsync();
+                _logger.LogInformation("--- Transacción COMPLETA ---");
 
-                return ordenCompra; // Devolvemos la entidad creada
+                return ordenCompra;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "ERROR DENTRO de la transacción. Haciendo Rollback."); // LOG DE ERROR
                 await transaction.RollbackAsync();
-                // Relanzamos la excepción para que el Controlador la atrape
                 throw new ApplicationException("Error al crear la orden de compra y el pdf: " + ex.Message, ex);
             }
         }
-
     }
 }

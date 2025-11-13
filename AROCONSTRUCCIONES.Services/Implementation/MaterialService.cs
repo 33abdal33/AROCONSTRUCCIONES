@@ -13,26 +13,24 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 {
     public class MaterialService : IMaterialServices
     {
-        private readonly IMaterialRepository _materialRepository;
-        private readonly ApplicationDbContext _dbContext; // AUN LO NECESITAMOS
+        private readonly IUnitOfWork _unitOfWork; // <-- CAMBIO
         private readonly IMapper _mapper;
 
-        public MaterialService(IMaterialRepository materialRepository, ApplicationDbContext dbContext, IMapper mapper)
+        public MaterialService(IUnitOfWork unitOfWork, IMapper mapper) // <-- CAMBIO
         {
-            _materialRepository = materialRepository;
-            _dbContext = dbContext;
+            _unitOfWork = unitOfWork; // <-- CAMBIO
             _mapper = mapper;
         }
 
         public async Task<IEnumerable<MaterialDto>> GetAllAsync()
         {
-            var materiales = await _materialRepository.GetAllAsync();
+            var materiales = await _unitOfWork.Materiales.GetAllAsync();
             return _mapper.Map<IEnumerable<MaterialDto>>(materiales);
         }
 
         public async Task<MaterialDto?> GetByIdAsync(int id)
         {
-            var materialEntity = await _materialRepository.GetByIdAsync(id);
+            var materialEntity = await _unitOfWork.Materiales.GetByIdAsync(id);
             if (materialEntity is null) return null;
             return _mapper.Map<MaterialDto>(materialEntity);
         }
@@ -42,45 +40,37 @@ namespace AROCONSTRUCCIONES.Services.Implementation
         public async Task CreateAsync(MaterialDto dto)
         {
             var entity = _mapper.Map<Material>(dto);
-            // El mapeo debería encargarse de todo, pero por si acaso:
-            entity.Estado = true; // Asegurarse de que esté activo al crear
-
-            await _materialRepository.AddAsync(entity);
-            // LA LÍNEA DE SAVESCHANGES FUE ELIMINADA
+            entity.Estado = true;
+            await _unitOfWork.Materiales.AddAsync(entity);
+            await _unitOfWork.SaveChangesAsync(); // <-- GUARDA
         }
 
-        // --- REFACTORIZADO ---
-        // Ya no devuelve DTO y NO guarda cambios.
         public async Task<Material> UpdateAsync(int id, MaterialDto dto)
         {
-            var existing = await _materialRepository.GetByIdAsync(id);
+            var existing = await _unitOfWork.Materiales.GetByIdAsync(id);
             if (existing is null) return null;
 
-            _mapper.Map(dto, existing); // Mapea los cambios al objeto rastreado
-            await _materialRepository.UpdateAsync(existing); // Marca la entidad como modificada
-            // LA LÍNEA DE SAVESCHANGES FUE ELIMINADA
-            return existing; // Devuelve la entidad para que el controlador la tenga
+            _mapper.Map(dto, existing);
+            await _unitOfWork.Materiales.UpdateAsync(existing);
+            await _unitOfWork.SaveChangesAsync(); // <-- GUARDA
+            return existing;
         }
-
-        // --- REFACTORIZADO ---
-        // NO guarda cambios.
         public async Task<bool> DeactivateAsync(int id)
         {
-            var existing = await _materialRepository.GetByIdAsync(id);
+            var existing = await _unitOfWork.Materiales.GetByIdAsync(id);
             if (existing is null) return false;
 
             existing.Estado = false;
-            await _materialRepository.UpdateAsync(existing);
-            // LA LÍNEA DE SAVESCHANGES FUE ELIMINADA
+            await _unitOfWork.Materiales.UpdateAsync(existing);
+            await _unitOfWork.SaveChangesAsync(); // <-- GUARDA
             return true;
         }
 
         public async Task<IEnumerable<MaterialDto>> GetAllActiveAsync()
         {
-            var materiales = await _materialRepository.FindAsync(m => m.Estado, m => m.Nombre);
+            var materiales = await _unitOfWork.Materiales.FindAsync(m => m.Estado, m => m.Nombre);
             return _mapper.Map<IEnumerable<MaterialDto>>(materiales);
         }
-
         // (Tus métodos GetMaterialCategoriesAsync y GetMaterialUnitsAsync están perfectos, no se tocan)
         public Task<List<string>> GetMaterialCategoriesAsync()
         {
@@ -150,21 +140,20 @@ namespace AROCONSTRUCCIONES.Services.Implementation
         // --- ¡AÑADE ESTE MÉTODO COMPLETO! ---
         public async Task<IEnumerable<MaterialDto>> GetMaterialesPorProveedorAsync(int proveedorId)
         {
-            // 1. Vamos a la tabla de unión
-            var idsMateriales = await _dbContext.ProveedorMateriales
-                .Where(pm => pm.ProveedorId == proveedorId) // Filtramos por el proveedor
-                .Select(pm => pm.MaterialId) // Obtenemos solo los IDs de los materiales
+            // Usamos el Context del UoW para la tabla de unión
+            var idsMateriales = await _unitOfWork.Context.ProveedorMateriales
+                .Where(pm => pm.ProveedorId == proveedorId)
+                .Select(pm => pm.MaterialId)
                 .ToListAsync();
 
             if (!idsMateriales.Any())
             {
-                return new List<MaterialDto>(); // Devuelve lista vacía si no vende nada
+                return new List<MaterialDto>();
             }
 
-            // 2. Buscamos esos materiales en la tabla Material
-            var materiales = await _materialRepository.FindAsync(
-                m => idsMateriales.Contains(m.Id) && m.Estado == true, // Filtramos por los IDs Y que estén activos
-                m => m.Nombre // Ordenamos por nombre
+            var materiales = await _unitOfWork.Materiales.FindAsync(
+                m => idsMateriales.Contains(m.Id) && m.Estado == true,
+                m => m.Nombre
             );
 
             return _mapper.Map<IEnumerable<MaterialDto>>(materiales);

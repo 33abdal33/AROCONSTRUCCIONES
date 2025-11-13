@@ -89,6 +89,8 @@
 </div>
 
 @section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+
     <script src="~/js/logistica-tabs.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 

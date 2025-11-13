@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,7 +9,8 @@ namespace AROCONSTRUCCIONES.Models
 {
     public class Requerimiento : EntityBase
     {
-        public int IdProyecto { get; set; }      // La Clave Foránea
+        [ForeignKey("Proyecto")]
+        public int IdProyecto { get; set; }     // La Clave Foránea
         public Proyecto? Proyecto { get; set; }  // La Propiedad de Navegación
         public string Codigo { get; set; }
         public DateTime Fecha { get; set; } = DateTime.Now;

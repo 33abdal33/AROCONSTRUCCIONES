@@ -1,6 +1,4 @@
-﻿// Controlador: AROCONSTRUCCIONES.Controllers.InventarioController.cs (CORREGIDO)
-
-using AROCONSTRUCCIONES.Dtos;
+﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Services.Interface;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;

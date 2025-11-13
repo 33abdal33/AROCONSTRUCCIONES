@@ -1,71 +1,197 @@
-﻿@model AROCONSTRUCCIONES.Dtos.RequerimientoQuickCreateDto
+﻿@model AROCONSTRUCCIONES.Dtos.RequerimientoCreateDto
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 @{
+    // Los dropdowns se cargan desde el ViewBag
     var proyectosList = ViewBag.Proyectos as SelectList;
     var prioridadesList = ViewBag.Prioridades as SelectList;
+    var materialesList = ViewBag.Materiales as IEnumerable<SelectListItem>;
 }
 
-<!--
-    Este formulario usa el 'modal-form.css'
-    y está diseñado para el pop-up rápido.
--->
-<form id="formQuickRequerimiento" asp-action="QuickCreate" asp-controller="Requerimiento" method="post">
-    @Html.AntiForgeryToken()
+<div x-data="{ open: true }"
+     x-show="open"
+     x-transition:enter="ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     style="display: none;">
 
-    <!-- El ID del proyecto se pasa oculto -->
-    <input type="hidden" asp-for="IdProyecto" />
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
 
-    <div class="modal-header">
-        <h5 class="modal-title">Nuevo Requerimiento</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-    </div>
+    <div class="flex items-center justify-center min-h-screen p-4">
 
-    <div class="modal-body">
-        @Html.ValidationSummary(false, "", new { @class = "text-danger text-xs bg-red-50 p-3 rounded-md mb-4" })
+        <div x-on:click.away="open = false"
+             class="relative bg-white rounded-lg shadow-xl transform transition-all sm:my-8 sm:max-w-4xl sm:w-full">
 
-        <!-- Fila 1: Proyecto y Solicitante -->
-        <div class="flex flex-col md:flex-row md:space-x-6">
-            <div class="w-full md:w-1/2 mb-4">
-                <label asp-for="IdProyecto" class="form-label">Proyecto *</label>
-                <!-- El proyecto viene seleccionado y deshabilitado -->
-                <select asp-for="IdProyecto" class="form-select bg-gray-100" asp-items="proyectosList" required disabled></select>
-            </div>
-            <div class="w-full md:w-1/2 mb-4">
-                <label asp-for="Solicitante" class="form-label">Solicitante *</label>
-                <input asp-for="Solicitante" class="form-control" placeholder="Nombre del solicitante" required />
-                <span asp-validation-for="Solicitante" class="text-danger text-xs"></span>
-            </div>
+            <form id="formRequerimiento"
+                  asp-action="Create"
+                  asp-controller="Requerimiento"
+                  method="post"
+                  data-form-ajax="true">
+
+                @Html.AntiForgeryToken()
+
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 rounded-t-lg">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                        Nuevo Requerimiento
+                    </h3>
+                </div>
+
+                <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+
+                    <fieldset class="border border-gray-200 p-4 rounded-md">
+                        <legend class="px-2 font-medium text-slate-600">Datos Principales</legend>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label asp-for="IdProyecto" class="block text-sm font-medium text-gray-700">Proyecto *</label>
+                                <select asp-for="IdProyecto" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" asp-items="proyectosList" required>
+                                    <option value="">Seleccione un proyecto...</option>
+                                </select>
+                                <span asp-validation-for="IdProyecto" class="text-sm text-red-600"></span>
+                            </div>
+                            <div>
+                                <label asp-for="Codigo" class="block text-sm font-medium text-gray-700">Código Req. *</label>
+                                <input asp-for="Codigo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required />
+                                <span asp-validation-for="Codigo" class="text-sm text-red-600"></span>
+                            </div>
+                            <div>
+                                <label asp-for="Fecha" class="block text-sm font-medium text-gray-700">Fecha *</label>
+                                <input asp-for="Fecha" type="date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required />
+                                <span asp-validation-for="Fecha" class="text-sm text-red-600"></span>
+                            </div>
+                            <div>
+                                <label asp-for="Solicitante" class="block text-sm font-medium text-gray-700">Solicitante *</label>
+                                <input asp-for="Solicitante" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Nombre del solicitante" required />
+                                <span asp-validation-for="Solicitante" class="text-sm text-red-600"></span>
+                            </div>
+                            <div>
+                                <label asp-for="Area" class="block text-sm font-medium text-gray-700">Área</label>
+                                <input asp-for="Area" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ej: Frente 1" />
+                            </div>
+                            <div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="border border-gray-200 p-4 rounded-md">
+                        <legend class="px-2 font-medium text-slate-600">Detalle de Materiales</legend>
+                        <div class="p-4 bg-slate-50 rounded-md mb-4">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700">Material</label>
+                                    <select id="selectMaterial" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" asp-items="materialesList">
+                                        <option value="">Seleccione material...</option>
+                                    </select>
+                                </div>
+                                <div class="md:col-span-1">
+                                    <label class="block text-sm font-medium text-gray-700">Cantidad</label>
+                                    <input type="number" id="inputCantidad" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="0" min="0.01" step="any">
+                                </div>
+                                <div class="md:col-span-1">
+                                    <button type="button" class="w-full flex justify-center items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700" id="btnAnadirMaterial">
+                                        <i class="fas fa-plus mr-2"></i>Añadir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto bg-white rounded-lg shadow border">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Material</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase" style="width: 120px;">Cantidad</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase" style="width: 80px;">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaDetallesBody" class="bg-white divide-y divide-gray-200">
+                                    <tr id="fila-vacia" class="">
+                                        <td colspan="3" class="px-6 py-4 text-center text-slate-500">Aún no se han añadido materiales.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <span asp-validation-for="Detalles" class="text-sm text-red-600"></span>
+                    </fieldset>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 sm:flex sm:flex-row-reverse rounded-b-lg">
+                    <button type="submit"
+                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Guardar Requerimiento
+                    </button>
+                    <button type="button" x-on:click="open = false"
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
         </div>
-
-        <!-- Fila 2: Fecha y Prioridad -->
-        <div class="flex flex-col md:flex-row md:space-x-6">
-            <div class="w-full md:w-1/2 mb-4">
-                <label asp-for="Fecha" class="form-label">Fecha *</label>
-                <input asp-for="Fecha" type="date" class="form-control" required />
-            </div>
-            <div class="w-full md:w-1/2 mb-4">
-                <label asp-for="Prioridad" class="form-label">Prioridad *</label>
-                <select asp-for="Prioridad" class="form-select" asp-items="prioridadesList" required></select>
-            </div>
-        </div>
-
-        <!-- Fila 3: Observaciones -->
-        <div class="mb-4">
-            <label asp-for="Observaciones" class="form-label">Observaciones</label>
-            <textarea asp-for="Observaciones" class="form-control" rows="3" placeholder="Detalles adicionales del requerimiento..."></textarea>
-        </div>
-
-        <p class="text-xs text-slate-500 text-center mt-6">
-            <i class="fas fa-info-circle mr-1"></i>
-            Los materiales se añadirán en el siguiente paso, desde la página de detalles del requerimiento.
-        </p>
-
     </div>
-    <div class="modal-footer">
-        <button type="button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-sm font-medium" data-bs-dismiss="modal">Cancelar</button>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
-            Guardar y Añadir Materiales
-        </button>
-    </div>
-</form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        let detalleIndex = 0;
+        const $modal = $('#formRequerimiento').closest('.relative');
+        const $tablaBody = $modal.find('#tablaDetallesBody');
+        const $selectMaterial = $modal.find('#selectMaterial');
+        const $inputCantidad = $modal.find('#inputCantidad');
+        const $btnAnadir = $modal.find('#btnAnadirMaterial');
+        const $filaVacia = $modal.find('#fila-vacia');
+
+        function toggleFilaVacia() {
+            if ($tablaBody.find('tr').not('#fila-vacia').length > 0) {
+                $filaVacia.addClass('hidden');
+            } else {
+                $filaVacia.removeClass('hidden');
+            }
+        }
+
+        $btnAnadir.on('click', function () {
+            const materialId = $selectMaterial.val();
+            const materialTexto = $selectMaterial.find('option:selected').text();
+            const cantidad = parseFloat($inputCantidad.val());
+
+            if (!materialId || isNaN(cantidad) || cantidad <= 0) {
+                // (Podrías usar Swal.fire aquí)
+                alert('Seleccione un material e ingrese una cantidad válida.');
+                return;
+            }
+
+            const filaHtml = `
+                <tr id="fila-detalle-${detalleIndex}" class="text-sm">
+                    <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">
+                        ${materialTexto}
+                        <input type="hidden" name="Detalles.Index" value="${detalleIndex}" />
+                        <input type="hidden" name="Detalles[${detalleIndex}].IdMaterial" value="${materialId}" />
+                    </td>
+                    <td class="px-6 py-4 text-right">${cantidad.toFixed(2)}<input type="hidden" name="Detalles[${detalleIndex}].Cantidad" value="${cantidad}" /></td>
+                    <td class="px-6 py-4 text-center">
+                        <button type="button" class="p-1 text-slate-400 hover:text-red-600 btn-remover-fila" title="Quitar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+
+            $tablaBody.append(filaHtml);
+            detalleIndex++;
+            toggleFilaVacia();
+
+            $selectMaterial.val('');
+            $inputCantidad.val('');
+        });
+
+        // Lógica para REMOVER FILA
+        $tablaBody.on('click', '.btn-remover-fila', function () {
+            $(this).closest('tr').remove();
+            toggleFilaVacia();
+        });
+
+        // Activa la validación
+        $.validator.unobtrusive.parse($modal.find('form'));
+    });
+</script>

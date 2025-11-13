@@ -8,9 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="15.0.1" />
-    <PackageReference Include="IronPdf" Version="2025.10.8" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor" Version="2.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.3.0" />
+    <PackageReference Include="QuestPDF" Version="2025.7.4" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,51 +1,52 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Models;
-using AROCONSTRUCCIONES.Persistence;
-using AROCONSTRUCCIONES.Repository.Interfaces;
+// using AROCONSTRUCCIONES.Persistence; // <-- SE VA
+using AROCONSTRUCCIONES.Repository.Interfaces; // <-- AÑADIDO
 using AROCONSTRUCCIONES.Services.Interface;
 using AutoMapper;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Services.Implementation
 {
     public class RecepcionService : IRecepcionService
     {
-        // Inyectamos TODOS los repositorios que necesitamos + DbContext para la transacción
-        private readonly IOrdenCompraRepository _ordenCompraRepo;
-        private readonly IInventarioRepository _inventarioRepo;
-        private readonly IMovimientoInventarioRepository _movimientoRepo;
-        private readonly IMaterialRepository _materialRepo;
-        private readonly ApplicationDbContext _dbContext;
+        private readonly IUnitOfWork _unitOfWork; // <-- CAMBIO
         private readonly IMapper _mapper;
 
         public RecepcionService(
-            IOrdenCompraRepository ordenCompraRepo,
-            IInventarioRepository inventarioRepo,
-            IMovimientoInventarioRepository movimientoRepo,
-            IMaterialRepository materialRepo,
-            ApplicationDbContext dbContext,
+            IUnitOfWork unitOfWork, // <-- CAMBIO
             IMapper mapper)
         {
-            _ordenCompraRepo = ordenCompraRepo;
-            _inventarioRepo = inventarioRepo;
-            _movimientoRepo = movimientoRepo;
-            _materialRepo = materialRepo;
-            _dbContext = dbContext;
+            _unitOfWork = unitOfWork; // <-- CAMBIO
             _mapper = mapper;
+        }
+
+        public async Task<RecepcionMaestroDto?> GetDatosParaModalRecepcionAsync(int id)
+        {
+            // 1. Buscamos la OC usando el UoW
+            var oc = await _unitOfWork.OrdenesCompra.GetByIdWithDetailsAsync(id);
+            if (oc == null)
+                return null;
+
+            // 2. Mapeamos (sin cambios aquí)
+            var dto = _mapper.Map<RecepcionMaestroDto>(oc);
+            foreach (var detalle in dto.Detalles)
+            {
+                detalle.CantidadARecibir = detalle.CantidadPendiente;
+            }
+            return dto;
         }
 
         public async Task RegistrarRecepcionAsync(RecepcionMaestroDto dto)
         {
-            // 1. Iniciar Transacción (Tu patrón)
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            // 1. Transacción NO es necesaria manualmente.
+            // SaveChangesAsync() al final será atómico.
             try
             {
-                // 2. Obtener la Orden de Compra (con sus detalles)
-                var oc = await _ordenCompraRepo.GetByIdWithDetailsAsync(dto.OrdenCompraId);
+                // 2. Obtener la OC (usando UoW)
+                var oc = await _unitOfWork.OrdenesCompra.GetByIdWithDetailsAsync(dto.OrdenCompraId);
                 if (oc == null)
                     throw new ApplicationException("Orden de Compra no encontrada.");
                 if (oc.Estado == "Completado" || oc.Estado == "Cancelado")
@@ -53,28 +54,26 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
                 bool algoRecibido = false;
 
-                // 3. Iterar sobre los materiales que el usuario está recibiendo
+                // 3. Iterar sobre los materiales recibidos
                 foreach (var detalleDto in dto.Detalles)
                 {
                     decimal cantidadARecibir = detalleDto.CantidadARecibir;
-                    if (cantidadARecibir <= 0) continue; // Ignorar filas que no se recibieron
+                    if (cantidadARecibir <= 0) continue;
 
                     algoRecibido = true;
                     var detalleOC = oc.Detalles.FirstOrDefault(d => d.Id == detalleDto.DetalleOrdenCompraId);
                     if (detalleOC == null)
                         throw new ApplicationException("Detalle de OC no encontrado.");
 
-                    // Validar que no se reciba más de lo pendiente
                     decimal pendiente = detalleOC.Cantidad - detalleOC.CantidadRecibida;
                     if (cantidadARecibir > pendiente)
                         throw new ApplicationException($"Intenta recibir {cantidadARecibir} de {detalleDto.MaterialNombre}, pero solo quedan {pendiente} pendientes.");
 
-                    // --- 4. LÓGICA DE INGRESO (Copiada de tu MovimientoInventarioService) ---
-                    var saldo = await _inventarioRepo.FindByKeysAsync(detalleOC.IdMaterial, dto.AlmacenDestinoId);
+                    // 4. Lógica de INVENTARIO (usando UoW)
+                    var saldo = await _unitOfWork.Inventario.FindByKeysAsync(detalleOC.IdMaterial, dto.AlmacenDestinoId);
                     decimal stockFinal;
-
-                    // El costo es el de la Orden de Compra
                     decimal costoIngreso = detalleOC.PrecioUnitario;
+                    DateTime fechaRecepcion = dto.FechaRecepcion ?? DateTime.Now;
 
                     if (saldo == null)
                     {
@@ -85,26 +84,23 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                             AlmacenId = dto.AlmacenDestinoId,
                             StockActual = stockFinal,
                             StockMinimo = detalleOC.Material?.StockMinimo ?? 0,
-                            CostoPromedio = costoIngreso, // El primer costo es el de la compra
-                            FechaUltimoMovimiento = dto.FechaRecepcion ?? DateTime.Now
+                            CostoPromedio = costoIngreso,
+                            FechaUltimoMovimiento = fechaRecepcion
                         };
-                        await _inventarioRepo.AddAsync(saldo);
+                        await _unitOfWork.Inventario.AddAsync(saldo);
                     }
                     else
                     {
-                        // Recalcular Costo Promedio Ponderado (CUPM)
                         decimal costoActualTotal = saldo.StockActual * saldo.CostoPromedio;
                         decimal costoNuevoTotal = cantidadARecibir * costoIngreso;
                         stockFinal = saldo.StockActual + cantidadARecibir;
-
                         saldo.CostoPromedio = (stockFinal > 0) ? (costoActualTotal + costoNuevoTotal) / stockFinal : 0;
                         saldo.StockActual = stockFinal;
-                        saldo.FechaUltimoMovimiento = dto.FechaRecepcion ?? DateTime.Now;
-                        await _inventarioRepo.UpdateAsync(saldo);
+                        saldo.FechaUltimoMovimiento = fechaRecepcion;
+                        await _unitOfWork.Inventario.UpdateAsync(saldo);
                     }
-                    // --- Fin Lógica de Inventario ---
 
-                    // 5. Crear el Movimiento de Inventario
+                    // 5. Crear el MOVIMIENTO (usando UoW)
                     var movimiento = new MovimientoInventario
                     {
                         MaterialId = detalleOC.IdMaterial,
@@ -112,17 +108,17 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                         TipoMovimiento = "INGRESO",
                         Motivo = $"INGRESO OC: {oc.Codigo}",
                         Cantidad = cantidadARecibir,
-                        FechaMovimiento = dto.FechaRecepcion ?? DateTime.Now,
+                        FechaMovimiento = fechaRecepcion,
                         Responsable = dto.ResponsableNombre,
                         NroFacturaGuia = dto.NroFacturaGuia,
                         PrecioUnitario = costoIngreso,
                         CostoUnitarioMovimiento = costoIngreso,
                         ProveedorId = oc.IdProveedor,
-                        StockFinal = stockFinal // El stock final calculado
+                        StockFinal = stockFinal
                     };
-                    await _movimientoRepo.AddAsync(movimiento);
+                    await _unitOfWork.MovimientosInventario.AddAsync(movimiento);
 
-                    // 6. Actualizar el detalle de la OC
+                    // 6. Actualizar el detalle de la OC (EF Core rastrea 'oc')
                     detalleOC.CantidadRecibida += cantidadARecibir;
                 }
 
@@ -132,40 +128,17 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                 // 7. Actualizar el estado general de la OC
                 decimal totalPendiente = oc.Detalles.Sum(d => d.Cantidad - d.CantidadRecibida);
                 oc.Estado = (totalPendiente == 0) ? "Completado" : "Recibido Parcial";
+                await _unitOfWork.OrdenesCompra.UpdateAsync(oc);
 
-                await _ordenCompraRepo.UpdateAsync(oc); // Marca la OC para actualizar
-
-                // 8. ¡COMMIT! (Guardar todo en la BD)
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+                // 8. ¡COMMIT ATÓMICO!
+                // Guarda todo: (Inventario + Movimiento + DetalleOC + OrdenCompra)
+                await _unitOfWork.SaveChangesAsync();
             }
             catch (Exception)
             {
-                await transaction.RollbackAsync();
-                throw; // Relanzar la excepción para que el controlador la atrape
+                // No hay rollback manual, EF Core lo maneja.
+                throw; // Relanzar la excepción
             }
-        }
-        public async Task<RecepcionMaestroDto?> GetDatosParaModalRecepcionAsync(int id)
-        {
-            // 1. Buscamos la OC con todos sus detalles
-            //    (Usamos el repo que ya tenías inyectado)
-            var oc = await _ordenCompraRepo.GetByIdWithDetailsAsync(id);
-            if (oc == null)
-                return null;
-
-            // 2. Mapeamos la Entidad al DTO
-            var dto = _mapper.Map<RecepcionMaestroDto>(oc);
-
-            // 3. Pre-llenamos las cantidades a recibir
-            //    (Esta es la lógica que el controlador ya no hace)
-            foreach (var detalle in dto.Detalles)
-            {
-                // CantidadPendiente se calcula automáticamente en el DTO
-                detalle.CantidadARecibir = detalle.CantidadPendiente;
-            }
-
-            return dto;
         }
     }
 }
-

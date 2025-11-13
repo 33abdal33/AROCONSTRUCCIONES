@@ -1,83 +1,111 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.ProyectoDto>
 
-<div class="d-flex justify-content-between align-items-center my-3">
-    <h5 class="mb-0">Lista de Proyectos</h5>
-    <button type="button" class="btn btn-primary" id="btnNuevoProyecto">
-        <i class="fas fa-plus me-2"></i> Nuevo Proyecto
-    </button>
-</div>
+<div class="bg-white rounded-lg shadow-md">
+    <div class="p-4 md:p-6">
 
-<div class="table-responsive">
-    <table class="table table-hover align-middle">
-        <thead class="table-light">
-            <tr>
-                <th>Proyecto</th>
-                <th>Cliente</th>
-                <th>Ubicación</th>
-                <th>Avance</th>
-                <th class="text-end">Presupuesto</th>
-                <th class="text-end">Ejecutado (% vs Pres.)</th>
-                <th>Estado</th>
-                <th>Responsable</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model != null && Model.Any())
-            {
-                foreach (var p in Model)
-                {
-                    decimal porcentajeEjecutado = (p.Presupuesto > 0) ? (p.CostoEjecutado / p.Presupuesto) * 100 : 0;
+        <!-- Controles de la Tabla -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+            <!-- Filtros (Pestañas) -->
+            <div class="flex space-x-1 rounded-lg bg-slate-100 p-1">
+                <button class="px-3 py-1 text-sm font-medium text-slate-700 rounded-md bg-white shadow-sm">Todos</button>
+                <button class="px-3 py-1 text-sm font-medium text-slate-500 hover:text-slate-700">En Ejecución</button>
+                <button class="px-3 py-1 text-sm font-medium text-slate-500 hover:text-slate-700">Planificación</button>
+                <button class="px-3 py-1 text-sm font-medium text-slate-500 hover:text-slate-700">Finalizados</button>
+                <button class="px-3 py-1 text-sm font-medium text-slate-500 hover:text-slate-700">Pausados</button>
+            </div>
 
+            <!-- Botón y Búsqueda -->
+            <div class="flex items-center space-x-2 mt-4 md:mt-0">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <i class="fas fa-search h-4 w-4 text-gray-400"></i>
+                    </span>
+                    <input type="text" id="proyectoSearchInput" class="form-control w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 bg-white focus:border-blue-500 focus:ring-0" placeholder="Buscar proyectos...">
+                </div>
+                <button type="button"
+                        class="flex-shrink-0 flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none"
+                        data-modal-url="@Url.Action("GetProyectoParaEditar", "Proyecto", new { id = 0 })">
+                    <i class="fas fa-plus mr-2"></i> Nuevo Proyecto
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabla de Proyectos -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200" id="dataTableProyectos">
+                <thead class="bg-slate-50">
                     <tr>
-                        <td><strong>@p.NombreProyecto</strong><br /><small class="text-muted">@p.CodigoProyecto</small></td>
-                        <td>@p.NombreCliente</td>
-                        <td>@p.Ubicacion</td>
-                        <td>
-                            @{
-                                // Esta lógica añade un ancho mínimo y texto oscuro si el avance es 0
-                                var avance = p.AvancePorcentaje;
-                                var style = $"width: {avance}%;";
-                                var textClass = ""; // Clase de texto por defecto (blanco)
-
-                                if (avance == 0)
-                                {
-                                    style += " min-width: 2.5em;"; // Añade un ancho mínimo para que se vea el "0%"
-                                    textClass = "text-dark"; // Cambia el texto a oscuro para que sea legible
-                                }
-                            }
-                            <div class="progress" style="height: 20px;" title="@avance%">
-                                <div class="progress-bar @textClass" role="progressbar"
-                                     style="@style"
-                                     aria-valuenow="@avance">
-                                    @avance%
-                                </div>
-                            </div>
-                        </td>
-                        <td class="text-end">@p.Presupuesto.ToString("C0")</td>
-                        <td class="text-end">
-                            @p.CostoEjecutado.ToString("C0")
-                            <br />
-                            <small class="text-muted">(@porcentajeEjecutado.ToString("N0")%)</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-primary">@p.Estado</span>
-                        </td>
-                        <td>@p.Responsable</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-secondary btn-editar-proyecto" data-id="@p.Id" title="Editar">
-                                <i class="fas fa-pencil-alt"></i>
-                            </button>
-                        </td>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Proyecto</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Cliente</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Ubicación</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Avance</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Presupuesto</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Ejecutado</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Responsable</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Acciones</th>
                     </tr>
-                }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="9" class="text-center p-4 text-muted">No hay proyectos registrados.</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var p in Model)
+                        {
+                            decimal porcentajeEjecutado = (p.Presupuesto > 0) ? (p.CostoEjecutado / p.Presupuesto) * 100 : 0;
+
+                            string estadoClass = "bg-gray-100 text-gray-800";
+                            switch (p.Estado)
+                            {
+                                case "En Ejecución": estadoClass = "bg-blue-100 text-blue-800"; break;
+                                case "Planificación": estadoClass = "bg-yellow-100 text-yellow-800"; break;
+                                case "Finalizado": estadoClass = "bg-green-100 text-green-800"; break;
+                                case "Pausado": estadoClass = "bg-red-100 text-red-800"; break;
+                            }
+
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-slate-900">@p.NombreProyecto</div>
+                                    <div class="text-sm text-slate-500">@p.CodigoProyecto</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@p.NombreCliente</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@p.Ubicacion</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: @p.AvancePorcentaje%"></div>
+                                        </div>
+                                        <span class="text-sm text-slate-600 ml-2">@p.AvancePorcentaje%</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 text-right">@p.Presupuesto.ToString("C0")</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <div class="text-sm text-slate-900">@p.CostoEjecutado.ToString("C0")</div>
+                                    <div class="text-sm text-slate-500">@porcentajeEjecutado.ToString("N0")%</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @estadoClass">
+                                        @p.Estado
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@p.Responsable</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <button type="button" class="text-slate-500 hover:text-blue-700"
+                                            data-modal-url="@Url.Action("GetProyectoParaEditar", "Proyecto", new { id = p.Id })"
+                                            title="Editar Proyecto">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="px-6 py-4 text-center text-slate-500">No hay proyectos registrados.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>

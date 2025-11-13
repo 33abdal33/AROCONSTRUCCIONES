@@ -467,9 +467,6 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.Property<int>("IdProyecto")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ProyectoId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Solicitante")
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
@@ -479,7 +476,7 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.HasIndex("Codigo")
                         .IsUnique();
 
-                    b.HasIndex("ProyectoId");
+                    b.HasIndex("IdProyecto");
 
                     b.ToTable("Requerimiento", (string)null);
                 });
@@ -600,7 +597,9 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                 {
                     b.HasOne("AROCONSTRUCCIONES.Models.Proyecto", "Proyecto")
                         .WithMany("Requerimientos")
-                        .HasForeignKey("ProyectoId");
+                        .HasForeignKey("IdProyecto")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Proyecto");
                 });

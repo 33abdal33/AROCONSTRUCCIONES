@@ -13,5 +13,7 @@ namespace AROCONSTRUCCIONES.Dtos
         public DateTime Fecha { get; set; }
         public string Solicitante { get; set; }
         public string Estado { get; set; } // Pendiente, Aprobado, Despachado, Cancelado
+        public string ProyectoNombre { get; set; } // Para la nueva columna de la tabla
+
     }
 }

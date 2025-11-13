@@ -5,8 +5,12 @@ using AROCONSTRUCCIONES.Services.Implementation;
 using AROCONSTRUCCIONES.Services.Interface;
 using AROCONSTRUCCIONES.Services.Mapping_Profile;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
+using System.Runtime.Loader;
+
 
 var builder = WebApplication.CreateBuilder(args);
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -20,6 +24,7 @@ builder.Services.AddAutoMapper(config =>
     config.AddProfile<InventarioProfile>();
     config.AddProfile<OrdenCompraProfile>();
     config.AddProfile<ProyectoProfile>();
+    config.AddProfile<RequerimientoProfile>();
 });
 
 builder.Services.AddScoped<IMaterialServices, MaterialService>();
@@ -42,7 +47,7 @@ builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IProyectoDashboardService, ProyectoDashboardService>();
 builder.Services.AddScoped<IRequerimientoRepository, RequerimientoRepository>();
 builder.Services.AddScoped<IRequerimientoService, RequerimientoService>();
-
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHttpContextAccessor();
 //Configure Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

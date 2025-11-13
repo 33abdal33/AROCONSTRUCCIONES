@@ -12,14 +12,14 @@ namespace AROCONSTRUCCIONES.Controllers
     public class AlmacenController : Controller
     {
         private readonly IAlmacenService _almacenService;
-        private readonly ApplicationDbContext _dbContext;
+        // private readonly ApplicationDbContext _dbContext; // <-- SE VA
 
-        public AlmacenController(IAlmacenService almacenService, ApplicationDbContext dbContext)
+        // Constructor actualizado: Solo inyecta el servicio
+        public AlmacenController(IAlmacenService almacenService) // <-- CAMBIO
         {
             _almacenService = almacenService;
-            _dbContext = dbContext;
+            // _dbContext = dbContext; // <-- SE VA
         }
-
         // ACCIÓN PARA LA PESTAÑA (AJAX GET)
         [HttpGet]
         public async Task<IActionResult> ListaAlmacenes()
@@ -42,34 +42,29 @@ namespace AROCONSTRUCCIONES.Controllers
             return PartialView("_AlmacenFormPartial", almacen);
         }
 
-        // ACCIÓN PARA CREAR (AJAX POST)
-        [HttpPost]
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(AlmacenDto dto)
         {
             if (!ModelState.IsValid)
             {
-                // ¡CORREGIDO! Devuelve el PartialView con los errores
                 return PartialView("_AlmacenFormPartial", dto);
             }
 
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            // El bloque 'using var transaction' DESAPARECE
             try
             {
-                await _almacenService.CreateAsync(dto);
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-
+                // Solo llamas al servicio. El servicio se encarga de guardar.
+                await _almacenService.CreateAsync(dto); // <-- CAMBIO
                 return Json(new { success = true, message = "Almacén creado." });
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                // El Rollback es automático porque el servicio lanzó una excepción
+                // antes de llamar a SaveChangesAsync()
                 return Json(new { success = false, message = ex.Message });
             }
         }
-
-        // ACCIÓN PARA EDITAR (AJAX POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, AlmacenDto dto)
@@ -79,25 +74,20 @@ namespace AROCONSTRUCCIONES.Controllers
 
             if (!ModelState.IsValid)
             {
-                // ¡CORREGIDO! Devuelve el PartialView con los errores
                 return PartialView("_AlmacenFormPartial", dto);
             }
 
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            // El bloque 'using var transaction' DESAPARECE
             try
             {
-                var updated = await _almacenService.UpdateAsync(id, dto);
+                var updated = await _almacenService.UpdateAsync(id, dto); // <-- CAMBIO
                 if (updated == null)
                     return Json(new { success = false, message = "Almacén no encontrado." });
-
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
 
                 return Json(new { success = true, message = "Almacén actualizado." });
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 return Json(new { success = false, message = ex.Message });
             }
         }
@@ -107,22 +97,18 @@ namespace AROCONSTRUCCIONES.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Deactivate(int id)
         {
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            // El bloque 'using var transaction' DESAPARECE
             try
             {
-                var result = await _almacenService.DeactivateAsync(id);
+                var result = await _almacenService.DeactivateAsync(id); // <-- CAMBIO
                 if (!result)
                     return Json(new { success = false, message = "Almacén no encontrado." });
-
-                await _dbContext.SaveChangesAsync(); // El Controlador guarda
-                await transaction.CommitAsync();
 
                 TempData["OpenTab"] = "#almacenes-tab";
                 return Json(new { success = true, message = "Almacén desactivado." });
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 if (ex.InnerException != null && ex.InnerException.Message.Contains("REFERENCE constraint"))
                 {
                     return Json(new { success = false, message = "No se puede desactivar. El almacén tiene inventario o movimientos asociados." });

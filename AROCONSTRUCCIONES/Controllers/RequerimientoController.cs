@@ -1,13 +1,12 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
+using AROCONSTRUCCIONES.Services.Implementation;
 using AROCONSTRUCCIONES.Services.Interface;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
-using System.Collections.Generic; // <-- Asegúrate de tener este 'using'
-using System.Linq; // <-- Asegúrate de tener este 'using'
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace AROCONSTRUCCIONES.Controllers
 {
@@ -16,114 +15,126 @@ namespace AROCONSTRUCCIONES.Controllers
         private readonly IRequerimientoService _requerimientoService;
         private readonly IProyectoService _proyectoService;
         private readonly IMaterialServices _materialService;
+        private readonly ILogger<RequerimientoController> _logger; // <-- 2. AÑADIR
 
         public RequerimientoController(
           IRequerimientoService requerimientoService,
           IProyectoService proyectoService,
-          IMaterialServices materialService)
+          IMaterialServices materialService, // <-- 1. AÑADIR
+          ILogger<RequerimientoController> logger) // <-- 3. AÑADIR
         {
             _requerimientoService = requerimientoService;
             _proyectoService = proyectoService;
             _materialService = materialService;
+            _logger = logger; // <-- 4. AÑADIR
         }
 
-        // --- ACCIÓN PARA LLENAR LA PESTAÑA "REQUERIMIENTOS" ---
-        [HttpGet]
-        public async Task<IActionResult> ListaRequerimientosPartial(int proyectoId)
+        // --- ACCIÓN PARA LLENAR LA PESTAÑA "REQUERIMIENTOS" (Global) ---
+        [HttpGet]
+        public async Task<IActionResult> ListaRequerimientosPartial()
         {
-            // Si no hay proyectoId (ej. no hay proyectos creados), devuelve una lista vacía
-            if (proyectoId == 0)
+            _logger.LogInformation("--- [RequerimientoController] Iniciando ListaRequerimientosPartial ---");
+            try
             {
-                // Pasa el ID del proyecto a la vista parcial para que el botón "Nuevo" lo sepa
-                ViewBag.ProyectoId = 0;
-                return PartialView("_ListaRequerimientosPartial", new List<RequerimientoListDto>());
-            }
+                var requerimientos = await _requerimientoService.GetAllRequerimientosAsync();
 
-            var requerimientos = await _requerimientoService.GetRequerimientosPorProyectoAsync(proyectoId);
-            ViewBag.ProyectoId = proyectoId; // Pasa el ID del proyecto a la vista
-            return PartialView("_ListaRequerimientosPartial", requerimientos);
+                int count = requerimientos.Count();
+                _logger.LogInformation($"[RequerimientoController] Servicio devolvió {count} requerimientos.");
+
+                if (count == 0)
+                {
+                    _logger.LogWarning("[RequerimientoController] La lista de requerimientos está vacía. Se mostrará la tabla vacía.");
+                }
+
+                _logger.LogInformation("[RequerimientoController] Renderizando _ListaRequerimientosPartial...");
+                return PartialView("_ListaRequerimientosPartial", requerimientos);
+            }
+            catch (Exception ex)
+            {
+                // ¡ESTO ES CLAVE!
+                // Si algo falla (el servicio o el renderizado de la vista), 
+                // devolvemos el error como HTML para que el AJAX lo muestre.
+                _logger.LogError(ex, "[RequerimientoController] ERROR al obtener o renderizar ListaRequerimientosPartial.");
+                return Content($"<div class='text-red-500 p-4'><b>Error al cargar la pestaña:</b><br>{ex.Message}<br><pre>{ex.StackTrace}</pre></div>");
+            }
         }
 
-        // --- ACCIÓN PARA MOSTRAR EL FORMULARIO DE CREACIÓN ---
-        // GET: /Requerimiento/Create?proyectoId=5
-        [HttpGet]
-        public async Task<IActionResult> Create(int proyectoId)
+        // --- ACCIÓN PARA MOSTRAR EL FORMULARIO MODAL DE CREACIÓN (Global) ---
+        [HttpGet]
+        public async Task<IActionResult> Create()
         {
-            // --- ¡INICIO DE LA CORRECCIÓN 1! ---
-            if (proyectoId == 0)
+            var dto = new RequerimientoCreateDto // <-- CAMBIO A DTO COMPLETO
             {
-                TempData["Error"] = "Error: No se ha especificado un proyecto. Intente de nuevo desde la pestaña de Proyectos.";
-                // Lo redirigimos a la página principal de Proyectos
-                return RedirectToAction("Index", "Proyecto");
-            }
-            // --- FIN DE LA CORRECCIÓN 1 ---
-
-            var dto = new RequerimientoCreateDto
-            {
-                IdProyecto = proyectoId
+                Fecha = DateTime.Now,
+                Codigo = $"REQ-{DateTime.Now:yyyyMMdd-HHmmss}" // Sugerimos un código
             };
 
-            await CargarViewBagsFormulario(proyectoId);
-            return View(dto);
+            await CargarViewBagsFormulario();
+            return PartialView("Create", dto);
         }
 
-        // --- ACCIÓN PARA GUARDAR EL NUEVO REQUERIMIENTO ---
-        [HttpPost]
+        // --- ACCIÓN PARA GUARDAR EL NUEVO REQUERIMIENTO (DESDE EL MODAL) ---
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(RequerimientoCreateDto dto)
+        public async Task<IActionResult> Create(RequerimientoCreateDto dto) // <-- CAMBIO A DTO COMPLETO
         {
+            if (dto.Detalles == null || !dto.Detalles.Any())
+            {
+                ModelState.AddModelError("Detalles", "Debe añadir al menos un material al requerimiento.");
+            }
+
             if (!ModelState.IsValid)
             {
-                TempData["Error"] = "Datos inválidos. Revisa el formulario.";
-                await CargarViewBagsFormulario(dto.IdProyecto);
-                return View(dto);
+                await CargarViewBagsFormulario();
+                return PartialView("Create", dto);
             }
 
             try
             {
                 await _requerimientoService.CreateAsync(dto);
-
-                TempData["Exito"] = "¡Requerimiento guardado exitosamente!";
                 TempData["OpenTab"] = "#requerimientos-tab";
-
-                // Redirigimos de vuelta al Index del Proyecto
-                // ¡OJO! El ID del proyecto está en el DTO.
-                return RedirectToAction("Index", "Proyecto");
+                return Json(new { success = true, message = "Requerimiento creado exitosamente." });
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al guardar: {ex.Message}";
-                await CargarViewBagsFormulario(dto.IdProyecto);
-                return View(dto);
+                return Json(new { success = false, message = ex.Message });
             }
-         }
+        }
 
         // --- HELPER (ACTUALIZADO) ---
-         private async Task CargarViewBagsFormulario(int proyectoId)
+        private async Task CargarViewBagsFormulario()
         {
-            var proyecto = await _proyectoService.GetByIdAsync(proyectoId);
+            // Carga Proyectos
+            var proyectos = await _proyectoService.GetAllAsync();
+            ViewBag.Proyectos = new SelectList(proyectos.Where(p => p.Estado != "Finalizado"), "Id", "NombreProyecto");
 
-            // --- ¡INICIO DE LA CORRECCIÓN 2! ---
-            if (proyecto == null)
-            {
-                // Si el proyecto es nulo (ej. proyectoId = 0), creamos una lista vacía
-                ViewBag.Proyectos = new SelectList(new List<ProyectoDto>(), "Id", "NombreProyecto");
-            }
-            else
-            {
-                // Si existe, lo añadimos a la lista
-                ViewBag.Proyectos = new SelectList(new[] { proyecto }, "Id", "NombreProyecto", proyectoId);
-            }
-            // --- FIN DE LA CORRECCIÓN 2 ---
+            // Carga Prioridades
+            ViewBag.Prioridades = new SelectList(new List<string> { "Baja", "Media", "Alta", "Urgente" });
 
-            var materiales = await _materialService.GetAllActiveAsync();
+            // --- AÑADIDO ---
+            // Carga Materiales para el dropdown de detalles
+            var materiales = await _materialService.GetAllActiveAsync();
             ViewBag.Materiales = materiales.Select(m => new SelectListItem
-      
-           {
+            {
                 Value = m.Id.ToString(),
-                Text = $"{m.Codigo} - {m.Nombre} ({m.UnidadMedida})"
-      
-      }).ToList();
+                Text = $"{m.Codigo} - {m.Nombre} ({m.UnidadMedida})"
+            }).ToList();
+        }
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            _logger.LogInformation($"[RequerimientoController] Solicitando modal de Detalles para ID: {id}");
+
+            var dto = await _requerimientoService.GetRequerimientoDetailsAsync(id);
+
+            if (dto == null)
+            {
+                _logger.LogWarning($"[RequerimientoController] Detalles no encontrados para ID: {id}");
+                return NotFound();
+            }
+
+            // Devolvemos la nueva vista parcial que crearemos en el siguiente paso
+            return PartialView("_DetailsModalPartial", dto);
         }
     }
 }

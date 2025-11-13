@@ -1,5 +1,6 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
-using AROCONSTRUCCIONES.Persistence;
+// using AROCONSTRUCCIONES.Persistence; // <-- SE VA
+using AROCONSTRUCCIONES.Repository.Interfaces; // <-- AÑADIDO
 using AROCONSTRUCCIONES.Services.Interface;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -9,22 +10,22 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 {
     public class ProyectoDashboardService : IProyectoDashboardService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IUnitOfWork _unitOfWork; // <-- CAMBIO
 
-        public ProyectoDashboardService(ApplicationDbContext context)
+        public ProyectoDashboardService(IUnitOfWork unitOfWork) // <-- CAMBIO
         {
-            _context = context;
+            _unitOfWork = unitOfWork; // <-- CAMBIO
         }
-
         public async Task<ProyectoDashboardDto> GetDashboardSummaryAsync()
         {
-            // Filtra solo los proyectos que están "En Ejecución"
-            var proyectosActivosQuery = _context.Proyectos
+            // Usamos el Contexto expuesto por el Unit of Work
+            var dbContext = _unitOfWork.Context;
+
+            var proyectosActivosQuery = dbContext.Proyectos
                 .Where(p => p.Estado == "En Ejecución");
 
-            // Calcula los KPIs
             var resumen = await proyectosActivosQuery
-                .GroupBy(p => 1) // Agrupa todo en una sola fila
+                .GroupBy(p => 1)
                 .Select(g => new
                 {
                     ProyectosActivos = g.Count(),
@@ -34,14 +35,12 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                 })
                 .FirstOrDefaultAsync();
 
-            // Cuenta los que están en cronograma (Avance >= % esperado)
-            // (Esta es una lógica simplificada. Una real compararía fechas)
             var enCronograma = await proyectosActivosQuery
-                .CountAsync(p => p.AvancePorcentaje >= 75); // Asumiendo "75%" como "a tiempo"
+                .CountAsync(p => p.AvancePorcentaje >= 75);
 
             if (resumen == null)
             {
-                return new ProyectoDashboardDto(); // Devuelve DTO vacío si no hay proyectos
+                return new ProyectoDashboardDto();
             }
 
             return new ProyectoDashboardDto

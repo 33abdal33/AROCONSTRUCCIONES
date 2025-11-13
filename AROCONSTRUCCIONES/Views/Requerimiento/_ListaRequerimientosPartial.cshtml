@@ -1,132 +1,90 @@
-﻿@* Views/Requerimiento/_ListaRequerimientoPartial *@
-@model IEnumerable<AROCONSTRUCCIONES.Dtos.RequerimientoListDto>
+﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.RequerimientoListDto>
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 @{
-    var proyectoId = ViewData["ProyectoId"];
+    var proyectoId = ViewData["ProyectoId"] ?? 0;
 }
 
-<!-- Contenedor con Alpine -->
-<div x-data="{ showModal: false }">
+<div class="bg-white rounded-lg shadow-md">
+    <div class="p-4 md:p-6">
 
-    <!-- 1. Encabezado y Botón -->
-    <div class="flex justify-between items-center mb-4 pt-4">
-        <h3 class="text-xl font-semibold text-slate-700">
-            <i class="fas fa-clipboard-list mr-2 text-blue-600"></i>
-            Requerimientos de Material
-        </h3>
-        <button type="button"
-                class="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                x-on:click="showModal = true">
-            <i class="fas fa-plus mr-2"></i> Nuevo Requerimiento
-        </button>
-    </div>
-
-    <partial name="_MensajesTempDataPartial" />
-
-    <!-- 2. Tabla de Requerimientos -->
-    <div class="overflow-x-auto bg-white rounded-lg shadow">
-        <table class="min-w-full divide-y divide-gray-200" id="dataTableRequerimientos">
-            <thead class="bg-slate-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Código Req.</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Solicitante</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                @if (Model != null && Model.Any())
-                {
-                    @foreach (var req in Model)
+        <!-- Controles de la Tabla -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold text-slate-700">
+                <i class="fas fa-clipboard-list mr-2 text-blue-600"></i>
+                Requerimientos de Material
+            </h3>
+            <div class="flex items-center space-x-2 mt-4 md:mt-0">
+                <!-- El botón de Nuevo Requerimiento AHORA abre un modal -->
+                <button type="button"
+                        class="flex-shrink-0 flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none"
+                        data-modal-url="@Url.Action("Create", "Requerimiento", new { proyectoId = proyectoId })">
+                    <i class="fas fa-plus mr-2"></i> Nuevo Requerimiento
+                </button>
+            </div>
+        </div>
+        <!-- Tabla de Requerimientos -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200" id="dataTableRequerimientos">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Código Req.</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Solicitante</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Estado</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @if (Model != null && Model.Any())
                     {
-                        string estadoClass = "bg-gray-100 text-gray-800";
-                        switch (req.Estado)
+                        @foreach (var req in Model)
                         {
-                            case "Pendiente": estadoClass = "bg-yellow-100 text-yellow-800"; break;
-                            case "Aprobado": estadoClass = "bg-blue-100 text-blue-800"; break;
-                            case "Despachado": estadoClass = "bg-green-100 text-green-800"; break;
-                            case "Cancelado": estadoClass = "bg-red-100 text-red-800"; break;
-                        }
+                            string estadoClass = "bg-gray-100 text-gray-800";
+                            switch (req.Estado)
+                            {
+                                case "Pendiente": estadoClass = "bg-yellow-100 text-yellow-800"; break;
+                                case "Aprobado": estadoClass = "bg-blue-100 text-blue-800"; break;
+                                case "Despachado": estadoClass = "bg-green-100 text-green-800"; break;
+                                case "Cancelado": estadoClass = "bg-red-100 text-red-800"; break;
+                            }
 
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@req.Codigo</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@req.Fecha.ToString("dd/MM/yyyy")</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@req.Solicitante</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @estadoClass">
-                                    @req.Estado
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-                                <button class="p-1 text-slate-500 hover:text-blue-700" title="Ver Detalles">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                @if (req.Estado == "Pendiente")
-                                {
-                                    <button class="p-1 text-slate-500 hover:text-red-700" title="Cancelar">
-                                        <i class="fas fa-trash-alt"></i>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@req.Codigo</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@req.Fecha.ToString("dd/MM/yyyy")</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@req.Solicitante</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @estadoClass">
+                                        @req.Estado
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
+
+                                    <button type="button" class="p-1 text-slate-500 hover:text-blue-700" title="Ver Detalles"
+                                            data-modal-url="@Url.Action("Details", "Requerimiento", new { id = req.Id })">
+                                        <i class="fas fa-eye"></i>
                                     </button>
-                                }
+
+                                    @if (req.Estado == "Pendiente")
+                                    {
+                                        <button class="p-1 text-slate-500 hover:text-red-700" title="Cancelar">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-slate-500">
+                                Este proyecto aún no tiene requerimientos de material.
                             </td>
                         </tr>
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-slate-500">
-                            Este proyecto aún no tiene requerimientos de material.
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-
-    <!-- 3. Modal de Creación (Tailwind + Alpine) -->
-    <div x-show="showModal"
-         x-transition
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative">
-
-            <!-- Botón cerrar -->
-            <button x-on:click="showModal = false"
-                    class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
-                <i class="fas fa-times"></i>
-            </button>
-
-            <!-- Título -->
-            <h3 class="text-lg font-semibold text-slate-700 mb-4">
-                Nuevo Requerimiento
-            </h3>
-
-            <!-- Contenido del formulario -->
-            <form asp-action="Create" asp-controller="Requerimiento" method="get">
-                <input type="hidden" name="proyectoId" value="@proyectoId" />
-
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del solicitante</label>
-                    <input type="text" name="solicitante" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" required />
-                </div>
-
-                <div class="flex justify-end space-x-2 mt-6">
-                    <button type="button" x-on:click="showModal = false"
-                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        Crear
-                    </button>
-                </div>
-            </form>
-
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-}

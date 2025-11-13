@@ -13,57 +13,38 @@ namespace AROCONSTRUCCIONES.Services.Implementation
     // ... (Inyección de dependencias igual)
     public class MovimientoInventarioService : IMovimientoInventarioServices
     {
-        private readonly IMovimientoInventarioRepository _movimientoRepository;
-        private readonly IMaterialRepository _materialRepository;
-        private readonly IAlmacenRepository _almacenRepository;
-        private readonly IInventarioRepository _inventarioRepository;
-        private readonly ApplicationDbContext _dbContext;
+        private readonly IUnitOfWork _unitOfWork; // <-- CAMBIO
         private readonly IMapper _mapper;
 
         public MovimientoInventarioService(
-            IMovimientoInventarioRepository movimientoRepository,
-            IMaterialRepository materialRepository,
-            IAlmacenRepository almacenRepository,
-            ApplicationDbContext dbContext,
-            IInventarioRepository inventarioRepository,
+            IUnitOfWork unitOfWork, // <-- CAMBIO
             IMapper mapper)
         {
-            _movimientoRepository = movimientoRepository;
-            _materialRepository = materialRepository;
-            _almacenRepository = almacenRepository;
-            _dbContext = dbContext;
-            _inventarioRepository = inventarioRepository;
+            _unitOfWork = unitOfWork; // <-- CAMBIO
             _mapper = mapper;
         }
 
         public async Task<bool> RegistrarIngreso(MovimientoInventarioDto dto)
         {
-            // 1. Validaciones
-            var material = await _materialRepository.GetByIdAsync(dto.MaterialId);
-            var almacen = await _almacenRepository.GetByIdAsync(dto.AlmacenId);
-
+            // 1. Validaciones usando el UoW
+            var material = await _unitOfWork.Materiales.GetByIdAsync(dto.MaterialId);
             if (material == null)
-            {
                 throw new ApplicationException($"El Material con ID {dto.MaterialId} no fue encontrado.");
-            }
-            if (almacen == null)
-            {
-                throw new ApplicationException($"El Almacén con ID {dto.AlmacenId} no fue encontrado.");
-            }
 
-            // 2. Usar transacción para atomicidad
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            var almacen = await _unitOfWork.Almacenes.GetByIdAsync(dto.AlmacenId);
+            if (almacen == null)
+                throw new ApplicationException($"El Almacén con ID {dto.AlmacenId} no fue encontrado.");
+
+            // 2. Transacción DESAPARECE. SaveChangesAsync() es atómico por defecto.
             try
             {
-                var saldo = await _inventarioRepository.FindByKeysAsync(dto.MaterialId, dto.AlmacenId);
+                var saldo = await _unitOfWork.Inventario.FindByKeysAsync(dto.MaterialId, dto.AlmacenId);
                 decimal stockFinal;
 
-                // CÁLCULO DE CUPM y ACTUALIZACIÓN DE STOCK
                 if (saldo == null)
                 {
-                    // Primera entrada: CREAR Inventario
+                    // ... (lógica de crear inventario)
                     stockFinal = dto.Cantidad;
-
                     saldo = new Inventario
                     {
                         MaterialId = dto.MaterialId,
@@ -71,56 +52,46 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                         StockActual = stockFinal,
                         StockMinimo = material.StockMinimo,
                         CostoPromedio = dto.CostoUnitarioCompra,
-                        // NO ADJUNTAMOS ENTIDADES RELACIONADAS COMPLETAS (Material o Almacen)
-                        // Solo usamos las IDs.
+                        FechaUltimoMovimiento = dto.FechaMovimiento
                     };
-                    await _inventarioRepository.AddAsync(saldo);
+                    await _unitOfWork.Inventario.AddAsync(saldo); // <-- Usa UoW
                 }
                 else
                 {
-                    // Saldo existente: ACTUALIZAR CUPM y Stock
+                    // ... (lógica de actualizar CUPM)
                     decimal costoActualTotal = saldo.StockActual * saldo.CostoPromedio;
                     decimal costoNuevoTotal = dto.Cantidad * dto.CostoUnitarioCompra;
                     stockFinal = saldo.StockActual + dto.Cantidad;
                     decimal nuevoCostoTotal = costoActualTotal + costoNuevoTotal;
 
                     if (stockFinal > 0)
-                    {
                         saldo.CostoPromedio = nuevoCostoTotal / stockFinal;
-                    }
 
                     saldo.StockActual = stockFinal;
                     saldo.StockMinimo = material.StockMinimo;
+                    saldo.FechaUltimoMovimiento = dto.FechaMovimiento;
 
-                    // 🚨 Punto clave: Solo marcamos 'saldo' como modificado.
-                    await _inventarioRepository.UpdateAsync(saldo);
+                    await _unitOfWork.Inventario.UpdateAsync(saldo); // <-- Usa UoW
                 }
 
-                // 3. Mapear DTO a Entidad de Movimiento y registrar
+                // 3. Mapear y registrar el movimiento
                 var movimiento = _mapper.Map<MovimientoInventario>(dto);
                 movimiento.TipoMovimiento = "INGRESO";
-                movimiento.FechaMovimiento = DateTime.Now;
                 movimiento.CostoUnitarioMovimiento = dto.CostoUnitarioCompra;
                 movimiento.StockFinal = stockFinal;
                 movimiento.Responsable = dto.ResponsableNombre;
 
-                // Al agregar el movimiento, NINGUNA de sus propiedades de navegación (Material, Almacen, Proveedor)
-                // debe tener un objeto completo adjunto, solo las IDs (MaterialId, AlmacenId, ProveedorId).
-                // Esto depende de cómo está configurado AutoMapper. Si mapea objetos completos, tenemos que corregir el mapper.
+                await _unitOfWork.MovimientosInventario.AddAsync(movimiento); // <-- Usa UoW
 
-                await _movimientoRepository.AddAsync(movimiento);
-
-                // 4. Guardar y completar la transacción
-                // 🚨 La excepción DbUpdateException ocurre aquí si hay una entidad duplicada.
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+                // 4. Guardar TODO (Inventario + Movimiento) en una sola transacción
+                await _unitOfWork.SaveChangesAsync(); // <-- CAMBIO
 
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                await transaction.RollbackAsync();
-                // Si es un error de duplicado (lo que vemos), relanzamos para que el controlador muestre el mensaje.
+                // No hay 'transaction.RollbackAsync()'. 
+                // Si SaveChangesAsync falla, EF Core lo hace automáticamente.
                 throw;
             }
         }
@@ -128,65 +99,56 @@ namespace AROCONSTRUCCIONES.Services.Implementation
         public async Task<bool> RegistrarSalida(MovimientoInventarioDto dto)
         {
             // 1. Validaciones
-            var material = await _materialRepository.GetByIdAsync(dto.MaterialId);
-            var almacen = await _almacenRepository.GetByIdAsync(dto.AlmacenId);
-
+            var material = await _unitOfWork.Materiales.GetByIdAsync(dto.MaterialId);
             if (material == null)
-            {
-                throw new ApplicationException($"El Material con ID {dto.MaterialId} no fue encontrado.");
-            }
-            if (almacen == null)
-            {
-                throw new ApplicationException($"El Almacén con ID {dto.AlmacenId} no fue encontrado.");
-            }
+                throw new ApplicationException("Material no encontrado.");
 
-            // 2. Iniciar Transacción
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            var almacen = await _unitOfWork.Almacenes.GetByIdAsync(dto.AlmacenId);
+            if (almacen == null)
+                throw new ApplicationException("Almacén no encontrado.");
+
             try
             {
-                var saldo = await _inventarioRepository.FindByKeysAsync(dto.MaterialId, dto.AlmacenId);
+                var saldo = await _unitOfWork.Inventario.FindByKeysAsync(dto.MaterialId, dto.AlmacenId);
 
                 if (saldo == null || saldo.StockActual < dto.Cantidad)
                 {
-                    throw new ApplicationException($"Stock insuficiente en el almacén ({almacen.Nombre}) para la salida solicitada. Stock actual: {saldo?.StockActual ?? 0}.");
+                    throw new ApplicationException($"Stock insuficiente. Stock actual: {saldo?.StockActual ?? 0}.");
                 }
 
-                // VALORACIÓN DE SALIDA y Actualización de Stock
                 decimal costoUnitarioSalida = saldo.CostoPromedio;
                 decimal nuevoStock = saldo.StockActual - dto.Cantidad;
 
-                // 3. Actualizar el Saldo de Inventario
+                // 3. Actualizar el Saldo
                 saldo.StockActual = nuevoStock;
                 saldo.StockMinimo = material.StockMinimo;
+                saldo.FechaUltimoMovimiento = dto.FechaMovimiento;
+                await _unitOfWork.Inventario.UpdateAsync(saldo); // <-- Usa UoW
 
-                await _inventarioRepository.UpdateAsync(saldo);
-
-                // 4. Mapear DTO a Entidad de Movimiento y registrar
+                // 4. Registrar el Movimiento
                 var movimiento = _mapper.Map<MovimientoInventario>(dto);
                 movimiento.TipoMovimiento = "SALIDA";
-                movimiento.FechaMovimiento = DateTime.Now;
                 movimiento.CostoUnitarioMovimiento = costoUnitarioSalida;
                 movimiento.StockFinal = nuevoStock;
                 movimiento.Responsable = dto.ResponsableNombre;
 
-                await _movimientoRepository.AddAsync(movimiento);
+                await _unitOfWork.MovimientosInventario.AddAsync(movimiento); // <-- Usa UoW
 
                 // 5. Completar la Transacción
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+                await _unitOfWork.SaveChangesAsync(); // <-- CAMBIO
 
                 return true;
             }
             catch (Exception)
             {
-                await transaction.RollbackAsync();
                 throw;
             }
         }
 
         public async Task<IEnumerable<MovimientoInventarioDto>> GetAllMovimientosAsync()
         {
-            var movimientos = await _dbContext.MovimientosInventario
+            // Para consultas complejas con "Include", es válido usar el Context del UoW
+            var movimientos = await _unitOfWork.Context.MovimientosInventario
                .Include(m => m.Material)
                .Include(m => m.Almacen)
                .Include(m => m.Proveedor)
@@ -197,21 +159,14 @@ namespace AROCONSTRUCCIONES.Services.Implementation
         }
         public async Task<IEnumerable<MovimientoInventarioDto>> GetHistorialPorMaterialYAlmacenAsync(int materialId, int almacenId)
         {
-            // 1. Buscamos en la tabla de Movimientos
-            var movimientos = await _dbContext.MovimientosInventario
-                .Include(m => m.Material) // Incluimos Material para el DTO
-                .Include(m => m.Almacen)  // Incluimos Almacen para el DTO
-                .Include(m => m.Proveedor) // Incluimos Proveedor (si existe)
-
-                // 2. Filtramos por el Material Y el Almacén
+            var movimientos = await _unitOfWork.Context.MovimientosInventario
+                .Include(m => m.Material)
+                .Include(m => m.Almacen)
+                .Include(m => m.Proveedor)
                 .Where(m => m.MaterialId == materialId && m.AlmacenId == almacenId)
-
-                // 3. Ordenamos por fecha (el más reciente primero)
                 .OrderByDescending(m => m.FechaMovimiento)
-
                 .ToListAsync();
 
-            // 4. Mapeamos las entidades a DTOs y devolvemos
             return _mapper.Map<IEnumerable<MovimientoInventarioDto>>(movimientos);
         }
     }

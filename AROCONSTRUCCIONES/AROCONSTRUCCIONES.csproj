@@ -25,4 +25,10 @@
     <ProjectReference Include="..\AROCONSTRUCCIONES.Services\AROCONSTRUCCIONES.Services.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="WkHtmlToPdf\libwkhtmltox.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

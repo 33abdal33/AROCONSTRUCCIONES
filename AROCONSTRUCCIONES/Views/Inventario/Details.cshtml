@@ -1,6 +1,5 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.MovimientoInventarioDto>
 @using AROCONSTRUCCIONES.Dtos
-@* ADD COMENCT *@
 @{
     var saldo = ViewData["Saldo"] as InventarioDto;
     ViewData["Title"] = $"Kárdex - {saldo?.MaterialNombre}";

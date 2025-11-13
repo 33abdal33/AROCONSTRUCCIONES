@@ -22,7 +22,7 @@
 
         <div x-on:click.away="open = false"
              class="relative bg-white rounded-lg shadow-xl transform transition-all sm:my-8 sm:max-w-6xl sm:w-full">
-            <form asp-action="Create" method="post" id="formOrdenCompra">
+            <form asp-controller="OrdenCompra" asp-action="Create" method="post" id="formOrdenCompra">
                 @Html.AntiForgeryToken()
 
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 rounded-t-lg">

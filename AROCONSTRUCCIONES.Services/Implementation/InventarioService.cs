@@ -7,39 +7,32 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 {
     public class InventarioService : IInventarioService
     {
-        private readonly IInventarioRepository _inventarioRepository;
+        private readonly IUnitOfWork _unitOfWork; // <-- CAMBIO
         private readonly IMapper _mapper;
 
-        public InventarioService(IInventarioRepository inventarioRepository, IMapper mapper)
+        public InventarioService(IUnitOfWork unitOfWork, IMapper mapper) // <-- CAMBIO
         {
-            _inventarioRepository = inventarioRepository;
+            _unitOfWork = unitOfWork; // <-- CAMBIO
             _mapper = mapper;
         }
 
         public async Task<IEnumerable<InventarioDto>> GetAllStockViewAsync()
         {
-            // 1. Obtener las Entidades desde el Repositorio.
-            // El repositorio ya se encarga del .Include(Material) y .Include(Almacen)
-            var inventarioEntidades = await _inventarioRepository.GetAllAsync();
-
-            // 2. Mapear la colección de Entidades a DTOs (usando el InventarioProfile que creaste)
+            // Usa el repositorio de Inventario desde el Unit of Work
+            var inventarioEntidades = await _unitOfWork.Inventario.GetAllAsync(); // <-- CAMBIO
             var inventarioDtos = _mapper.Map<IEnumerable<InventarioDto>>(inventarioEntidades);
-
-            // NOTA: AutoMapper se encarga de calcular el ValorTotal y el EstadoTexto si lo configuraste.
-
             return inventarioDtos;
         }
 
         public async Task<InventarioDto?> GetStockByKeysAsync(int materialId, int almacenId)
         {
-            var inventarioEntidad = await _inventarioRepository.FindByKeysAsync(materialId, almacenId);
+            // Usa el repositorio de Inventario desde el Unit of Work
+            var inventarioEntidad = await _unitOfWork.Inventario.FindByKeysAsync(materialId, almacenId); // <-- CAMBIO
 
             if (inventarioEntidad == null)
             {
                 return null;
             }
-
-            // Mapear la entidad individual al DTO
             return _mapper.Map<InventarioDto>(inventarioEntidad);
         }
     }

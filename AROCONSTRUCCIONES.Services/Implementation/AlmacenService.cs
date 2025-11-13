@@ -12,66 +12,72 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 {
     public class AlmacenService : IAlmacenService
     {
-        private readonly IAlmacenRepository _almacenRepository;
+        private readonly IUnitOfWork _unitOfWork; // <-- CAMBIO
         private readonly IMapper _mapper;
-        // DbContext se elimina, ya no guarda.
 
-        public AlmacenService(IAlmacenRepository almacenRepository, IMapper mapper)
+        // Constructor actualizado: Inyecta IUnitOfWork
+        public AlmacenService(IUnitOfWork unitOfWork, IMapper mapper) // <-- CAMBIO
         {
-            _almacenRepository = almacenRepository;
+            _unitOfWork = unitOfWork; // <-- CAMBIO
             _mapper = mapper;
         }
 
         public async Task<IEnumerable<AlmacenDto>> GetAllAsync()
         {
-            var almacenes = await _almacenRepository.GetAllAsync();
+            var almacenes = await _unitOfWork.Almacenes.GetAllAsync();
             return _mapper.Map<IEnumerable<AlmacenDto>>(almacenes);
         }
 
         public async Task<IEnumerable<AlmacenDto>> GetAllActiveAsync()
         {
-            var activos = await _almacenRepository.FindAsync(a => a.Estado == true, a => a.Nombre);
+            var activos = await _unitOfWork.Almacenes.FindAsync(a => a.Estado == true, a => a.Nombre);
             return _mapper.Map<IEnumerable<AlmacenDto>>(activos);
         }
 
         public async Task<AlmacenDto?> GetByIdAsync(int id)
         {
-            var almacenEntity = await _almacenRepository.GetByIdAsync(id);
+            var almacenEntity = await _unitOfWork.Almacenes.GetByIdAsync(id);
             return almacenEntity is null ? null : _mapper.Map<AlmacenDto?>(almacenEntity);
         }
 
         // --- REFACTORIZADO ---
-        public async Task CreateAsync(AlmacenDto dto)
+        public async Task CreateAsync(AlmacenDto dto)
         {
             var entity = _mapper.Map<Almacen>(dto);
-            entity.Estado = true; // Asegurar que esté activo al crear
-            await _almacenRepository.AddAsync(entity);
-            // SaveChanges() ELIMINADO
-        }
+            entity.Estado = true;
 
-        // --- REFACTORIZADO ---
-        public async Task<Almacen> UpdateAsync(int id, AlmacenDto dto)
+            await _unitOfWork.Almacenes.AddAsync(entity);
+            await _unitOfWork.SaveChangesAsync(); // <-- AHORA EL SERVICIO GUARDA
+        }
+
+        public async Task<Almacen> UpdateAsync(int id, AlmacenDto dto)
         {
-            var existingEntity = await _almacenRepository.GetByIdAsync(id);
+            // OJO: GetByIdAsync para actualizar debe traer la entidad CON tracking
+            // Tu RepositoryBase usa AsNoTracking(), necesitarás un método
+            // GetByIdWithTrackingAsync(int id) en tu IRepositoryBase.
+
+            // Por ahora, asumiremos que GetByIdAsync() trae la entidad CON tracking:
+            var existingEntity = await _unitOfWork.Almacenes.GetByIdAsync(id);
             if (existingEntity == null) return null;
 
             _mapper.Map(dto, existingEntity);
-            await _almacenRepository.UpdateAsync(existingEntity);
-            // SaveChanges() ELIMINADO
+
+            // UpdateAsync en RepositoryBase solo marca la entidad como "Modified"
+            await _unitOfWork.Almacenes.UpdateAsync(existingEntity);
+            await _unitOfWork.SaveChangesAsync(); // <-- AHORA EL SERVICIO GUARDA
             return existingEntity;
         }
 
-        // --- REFACTORIZADO ---
-        // Implementa DeactivateAsync (Soft Delete)
-        public async Task<bool> DeactivateAsync(int id)
+        public async Task<bool> DeactivateAsync(int id)
         {
-            var existing = await _almacenRepository.GetByIdAsync(id);
+            var existing = await _unitOfWork.Almacenes.GetByIdAsync(id);
             if (existing is null) return false;
 
-            existing.Estado = false; // Soft Delete
-            await _almacenRepository.UpdateAsync(existing);
-            // SaveChanges() ELIMINADO
-            return true;
+            existing.Estado = false;
+
+            await _unitOfWork.Almacenes.UpdateAsync(existing);
+            await _unitOfWork.SaveChangesAsync(); // <-- AHORA EL SERVICIO GUARDA
+            return true;
         }
     }
 }

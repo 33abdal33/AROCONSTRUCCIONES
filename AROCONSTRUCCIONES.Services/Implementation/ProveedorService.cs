@@ -1,141 +1,148 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Models;
-using AROCONSTRUCCIONES.Persistence;
-using AROCONSTRUCCIONES.Repository.Interfaces;
+using AROCONSTRUCCIONES.Repository.Interfaces; // <-- CAMBIO
 using AROCONSTRUCCIONES.Services.Interface;
 using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore; // <-- Para DbUpdateException
+using Microsoft.Data.SqlClient; // <-- Para SqlException
 using System.Collections.Generic;
-using System.Linq; // <-- ¡Asegúrate de tener este using!
+using System.Linq;
 using System.Threading.Tasks;
-using System; // <-- Para ApplicationException
+using System;
 
 namespace AROCONSTRUCCIONES.Services.Implementation
 {
     public class ProveedorService : IProveedorService
     {
-        private readonly IProveedorRepository _proveedorRepository;
-        private readonly IMaterialRepository _materialRepository; // Para leer materiales
-        private readonly IMaterialServices _materialService; // Para leer categorías
-        private readonly ApplicationDbContext _dbContext; // Para transacciones y tablas de unión
-        private readonly IMapper _mapper;
+        // --- CAMBIOS EN DEPENDENCIAS ---
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMaterialServices _materialService; // Para leer categorías
+        private readonly IMapper _mapper;
 
         public ProveedorService(
-          IProveedorRepository proveedorRepository,
-          IMaterialRepository materialRepository,
-                IMaterialServices materialService,
-          ApplicationDbContext dbContext,
+          IUnitOfWork unitOfWork, // <-- CAMBIO
+          IMaterialServices materialService,
           IMapper mapper)
         {
-            _proveedorRepository = proveedorRepository;
-            _materialRepository = materialRepository;
+            _unitOfWork = unitOfWork; // <-- CAMBIO
             _materialService = materialService;
-            _dbContext = dbContext;
             _mapper = mapper;
         }
 
-        // --- Métodos CRUD simples (sin cambios) ---
-        public async Task<IEnumerable<ProveedorDto>> GetAllAsync()
+        // --- MÉTODOS DE LECTURA (usando _unitOfWork) ---
+
+        public async Task<IEnumerable<ProveedorDto>> GetAllAsync()
         {
-            var proveedores = await _proveedorRepository.GetAllAsync();
+            var proveedores = await _unitOfWork.Proveedores.GetAllAsync();
             return _mapper.Map<IEnumerable<ProveedorDto>>(proveedores);
         }
 
         public async Task<IEnumerable<ProveedorDto>> GetAllActiveAsync()
         {
-            var activos = await _proveedorRepository.FindAsync(p => p.Estado == true, p => p.RazonSocial);
+            var activos = await _unitOfWork.Proveedores.FindAsync(p => p.Estado == true, p => p.RazonSocial);
             return _mapper.Map<IEnumerable<ProveedorDto>>(activos);
         }
 
         public async Task<ProveedorDto?> GetByIdAsync(int id)
         {
-            var proveedorEntity = await _proveedorRepository.GetByIdAsync(id);
+            var proveedorEntity = await _unitOfWork.Proveedores.GetByIdAsync(id);
             if (proveedorEntity is null) return null;
             return _mapper.Map<ProveedorDto>(proveedorEntity);
         }
 
-        public async Task CreateAsync(ProveedorDto dto)
-        {
-            var entity = _mapper.Map<Proveedor>(dto);
-            entity.Estado = true;
-            await _proveedorRepository.AddAsync(entity);
-        }
-
-        public async Task<Proveedor> UpdateAsync(int id, ProveedorDto dto)
-        {
-            var existing = await _proveedorRepository.GetByIdAsync(id);
-            if (existing is null) return null;
-            _mapper.Map(dto, existing);
-            await _proveedorRepository.UpdateAsync(existing);
-            return existing;
-        }
-
-        public async Task<bool> DeactivateAsync(int id)
-        {
-            var existing = await _proveedorRepository.GetByIdAsync(id);
-            if (existing is null) return false;
-            existing.Estado = false;
-            await _proveedorRepository.UpdateAsync(existing);
-            return true;
-        }
-
-        // --- ¡MÉTODOS NUEVOS IMPLEMENTADOS! ---
-
         public async Task<ProveedorEdicionViewModelDto> GetEdicionProveedorAsync(int id)
         {
             var vm = new ProveedorEdicionViewModelDto();
-
-            // 1. Cargar las listas de soporte (Categorías y TODOS los materiales)
             vm.CategoriasMateriales = await _materialService.GetMaterialCategoriesAsync();
-            var todosLosMateriales = await _materialRepository.GetAllAsync();
+
+            // Usamos el UoW para acceder al repo de materiales
+            var todosLosMateriales = await _unitOfWork.Materiales.GetAllAsync();
             vm.TodosLosMateriales = _mapper.Map<List<MaterialDto>>(todosLosMateriales);
 
-            if (id == 0) // Es "Crear Nuevo"
+            if (id == 0) return vm;
+
+            vm.Proveedor = await GetByIdAsync(id);
+            if (vm.Proveedor == null) throw new ApplicationException("Proveedor no encontrado");
+
+            // Usamos el Context del UoW para la tabla de unión
+            vm.MaterialesAsignadosIds = await _unitOfWork.Context.ProveedorMateriales
+                .Where(pm => pm.ProveedorId == id)
+                .Select(pm => pm.MaterialId)
+                .ToListAsync();
+
+            return vm;
+        }
+
+        // --- MÉTODOS DE ESCRITURA (Ahora con UoW y manejo de errores) ---
+
+        public async Task CreateAsync(ProveedorEdicionViewModelDto vm)
+        {
+            try
             {
-                // vm ya tiene un ProveedorDto vacío y listas vacías, listo para usarse
-                return vm;
+                var entity = _mapper.Map<Proveedor>(vm.Proveedor);
+                entity.Estado = true;
+                await _unitOfWork.Proveedores.AddAsync(entity);
+
+                // Asignar materiales (si los hay)
+                if (vm.MaterialesAsignadosIds != null)
+                {
+                    foreach (var materialId in vm.MaterialesAsignadosIds)
+                    {
+                        // Creamos la relación. EF Core la asociará al 'entity' en memoria.
+                        var nuevaAsignacion = new ProveedorMaterial
+                        {
+                            Proveedor = entity, // Asocia la entidad en memoria
+                            MaterialId = materialId
+                        };
+                        // Añadimos al DbContext a través del UoW
+                        await _unitOfWork.Context.ProveedorMateriales.AddAsync(nuevaAsignacion);
+                    }
+                }
+
+                // Guardamos TODO (Proveedor y ProveedorMateriales) en una sola transacción
+                await _unitOfWork.SaveChangesAsync();
             }
-            else // Es "Editar"
+            catch (DbUpdateException ex)
             {
-                // 2. Cargar los datos del Proveedor
-                vm.Proveedor = await GetByIdAsync(id);
-                if (vm.Proveedor == null)
-                    throw new ApplicationException("Proveedor no encontrado");
-
-                // 3. Cargar los IDs de los materiales que YA tiene asignados
-                vm.MaterialesAsignadosIds = await _dbContext.ProveedorMateriales
-                    .Where(pm => pm.ProveedorId == id)
-                    .Select(pm => pm.MaterialId)
-                    .ToListAsync();
-
-                return vm;
+                if (ex.InnerException is SqlException sqlEx && sqlEx.Number == 2601)
+                {
+                    throw new ApplicationException("Error: Ya existe un proveedor con ese RUC.");
+                }
+                throw; // Lanza otra excepción de BD
             }
         }
 
+        // Este método se queda igual, solo que no devuelve nada
+        public async Task<Proveedor> UpdateAsync(int id, ProveedorDto dto)
+        {
+            var existing = await _unitOfWork.Proveedores.GetByIdAsync(id);
+            if (existing is null) return null;
+            _mapper.Map(dto, existing);
+            await _unitOfWork.Proveedores.UpdateAsync(existing);
+            await _unitOfWork.SaveChangesAsync(); // <-- Guarda
+            return existing;
+        }
+
+        // Este método ya estaba casi bien, solo reemplazamos el DbContext por el UoW
         public async Task UpdateProveedorCompletoAsync(ProveedorEdicionViewModelDto vm)
         {
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                // 1. Guardar los datos del Proveedor (Pestaña 1)
-                var proveedor = await _proveedorRepository.GetByIdAsync(vm.Proveedor.Id);
+                // 1. Guardar los datos del Proveedor
+                var proveedor = await _unitOfWork.Proveedores.GetByIdAsync(vm.Proveedor.Id);
                 if (proveedor == null)
                     throw new ApplicationException("Proveedor no encontrado.");
 
                 _mapper.Map(vm.Proveedor, proveedor);
-                await _proveedorRepository.UpdateAsync(proveedor);
+                await _unitOfWork.Proveedores.UpdateAsync(proveedor);
 
-                // (Guardamos una vez para asegurar que el proveedor existe)
-                await _dbContext.SaveChangesAsync();
+                // 2. Sincronizar los Materiales Asignados
+                var asignacionesViejas = _unitOfWork.Context.ProveedorMateriales
+                    .Where(pm => pm.ProveedorId == vm.Proveedor.Id);
 
-                // 2. Guardar los Materiales Asignados (Pestaña 2)
-                var asignacionesViejas = _dbContext.ProveedorMateriales
-          .Where(pm => pm.ProveedorId == vm.Proveedor.Id);
+                _unitOfWork.Context.ProveedorMateriales.RemoveRange(asignacionesViejas);
 
-                _dbContext.ProveedorMateriales.RemoveRange(asignacionesViejas);
-
-                // Si el usuario no seleccionó nada, la lista puede ser nula
-                if (vm.MaterialesAsignadosIds != null)
+                if (vm.MaterialesAsignadosIds != null)
                 {
                     foreach (var materialId in vm.MaterialesAsignadosIds)
                     {
@@ -144,20 +151,32 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                             ProveedorId = vm.Proveedor.Id,
                             MaterialId = materialId
                         };
-                        await _dbContext.ProveedorMateriales.AddAsync(nuevaAsignacion);
+                        await _unitOfWork.Context.ProveedorMateriales.AddAsync(nuevaAsignacion);
                     }
                 }
 
-                // Guardamos los cambios de la tabla de unión
-                await _dbContext.SaveChangesAsync();
-
-                await transaction.CommitAsync();
+                // Guardamos TODO (Proveedor actualizado y ProveedorMateriales) en una sola transacción
+                await _unitOfWork.SaveChangesAsync();
             }
-            catch (Exception)
+            catch (DbUpdateException ex)
             {
-                await transaction.RollbackAsync();
+                if (ex.InnerException is SqlException sqlEx && sqlEx.Number == 2601)
+                {
+                    throw new ApplicationException("Error: El RUC ingresado ya pertenece a otro proveedor.");
+                }
                 throw;
             }
+        }
+
+        public async Task<bool> DeactivateAsync(int id)
+        {
+            var existing = await _unitOfWork.Proveedores.GetByIdAsync(id);
+            if (existing is null) return false;
+
+            existing.Estado = false;
+            await _unitOfWork.Proveedores.UpdateAsync(existing);
+            await _unitOfWork.SaveChangesAsync(); // <-- Guarda
+            return true;
         }
     }
 }
