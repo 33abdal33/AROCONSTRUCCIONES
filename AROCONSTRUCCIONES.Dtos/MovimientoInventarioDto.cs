@@ -12,6 +12,9 @@ namespace AROCONSTRUCCIONES.Dtos
 
         // Usado para identificar el movimiento si se necesita (ej. edición)
         public int Id { get; set; }
+        // --- ¡AÑADIR ESTE CAMPO! ---
+        [DisplayName("Proyecto")]
+        public int? IdProyecto { get; set; } // Nullable, por si es una salida que no es de proyecto
 
         [Required(ErrorMessage = "Debe seleccionar el material.")]
         [DisplayName("Material")]
@@ -57,12 +60,6 @@ namespace AROCONSTRUCCIONES.Dtos
         public DateTime FechaMovimiento { get; set; } = DateTime.Now;
 
         public decimal Total => Cantidad * CostoUnitarioCompra;
-
-        // =========================================================
-        // ⭐ PROPIEDADES DE LECTURA (KÁRDEX) ⭐
-        // Son las que faltaban y se llenan con AutoMapper desde el Servicio.
-        // =========================================================
-
         // 1. Tipo y Costo Real
         public string TipoMovimiento { get; set; } = string.Empty; // "INGRESO" o "SALIDA"
         public decimal CostoUnitarioMovimiento { get; set; } // Costo Real aplicado (CUPM en Salida, Compra en Ingreso)
@@ -81,5 +78,6 @@ namespace AROCONSTRUCCIONES.Dtos
 
         // 5. Stock y Saldo (Calculado o Almacenado en la Entidad MovimientoInventario)
         public decimal StockFinal { get; set; }
+
     }
 }

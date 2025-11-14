@@ -6,9 +6,10 @@
     var almacenes = ViewBag.Almacenes as SelectList;
     var materiales = ViewBag.Materiales as IEnumerable<SelectListItem>;
     var proveedores = ViewBag.Proveedores as SelectList;
+    var proyectos = ViewBag.Proyectos as SelectList; // <-- 1. AÑADIDO
 }
 
-<div x-data="{ open: true, tipo: 'INGRESO' }"
+<div x-data="{ open: true, tipo: 'INGRESO', motivo: '@(Model.Motivo ?? "")' }"
      x-show="open"
      x-transition:enter="ease-out duration-300"
      x-transition:enter-start="opacity-0"
@@ -117,18 +118,16 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label asp-for="Motivo" class="block text-sm font-medium text-gray-700">Motivo *</label>
-                            <select asp-for="Motivo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+                            <select asp-for="Motivo" x-model="motivo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
                                 <option value="">Selecciona un motivo</option>
                                 <optgroup label="Ingresos">
                                     <option value="COMPRA">Compra (Ingreso)</option>
-                                    <option value="DEVOLUCION">Devolución (Ingreso)</option>
-                                    <option value="TRANSFERENCIA_ENTRADA">Transferencia (Entrada)</option>
+                                    <option value="DEVOLUCION_PROYECTO">Devolución de Proyecto (Ingreso)</option>
                                     <option value="AJUSTE_POSITIVO">Ajuste Positivo (Ingreso)</option>
                                 </optgroup>
                                 <optgroup label="Salidas">
-                                    <option value="VENTA">Venta (Salida)</option>
                                     <option value="CONSUMO_PROYECTO">Consumo Proyecto (Salida)</option>
-                                    <option value="TRANSFERENCIA_SALIDA">Transferencia (Salida)</option>
+                                    <option value="VENTA">Venta (Salida)</option>
                                     <option value="AJUSTE_NEGATIVO">Ajuste Negativo (Salida)</option>
                                 </optgroup>
                             </select>
@@ -139,6 +138,16 @@
                             <input asp-for="ResponsableNombre" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Nombre del responsable" required />
                             <span asp-validation-for="ResponsableNombre" class="text-sm text-red-600"></span>
                         </div>
+                    </div>
+
+                    <div x-show="motivo === 'CONSUMO_PROYECTO'" x-transition>
+                        <label asp-for="IdProyecto" class="block text-sm font-medium text-gray-700">Asignar a Proyecto *</label>
+                        <select asp-for="IdProyecto" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                asp-items="proyectos"
+                                x-bind:required="motivo === 'CONSUMO_PROYECTO'">
+                            <option value="">Seleccione el proyecto...</option>
+                        </select>
+                        <span asp-validation-for="IdProyecto" class="text-sm text-red-600"></span>
                     </div>
                     <div>
                         <label asp-for="FechaMovimiento" class="block text-sm font-medium text-gray-700">Fecha del Movimiento</label>

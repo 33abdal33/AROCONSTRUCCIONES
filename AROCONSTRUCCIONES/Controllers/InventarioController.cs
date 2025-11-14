@@ -18,6 +18,7 @@ namespace AROCONSTRUCCIONES.Controllers
         private readonly IAlmacenService _almacenService;
         private readonly IProveedorService _proveedorService;
         private readonly ILogisticaDashboardService _dashboardService;
+        private readonly IProyectoService _proyectoService;
 
         public InventarioController(
             IInventarioService inventarioService,
@@ -25,7 +26,8 @@ namespace AROCONSTRUCCIONES.Controllers
             IMaterialServices materialService,
             IAlmacenService almacenService,
             IProveedorService proveedorService,
-            ILogisticaDashboardService dashboardService)
+            ILogisticaDashboardService dashboardService,
+            IProyectoService proyectoService)
         {
             _inventarioService = inventarioService;
             _movimientoInventarioServices = movimientoInventarioServices;
@@ -33,6 +35,7 @@ namespace AROCONSTRUCCIONES.Controllers
             _almacenService = almacenService;
             _proveedorService = proveedorService;
             _dashboardService = dashboardService;
+            _proyectoService = proyectoService;
         }
 
         // --- 2. ACCIÓN INDEX (MODIFICADA) ---
@@ -101,8 +104,7 @@ namespace AROCONSTRUCCIONES.Controllers
             // Apunta a la ruta completa del modal que te di
             return PartialView("~/Views/MovimientoInventario/_MovimientoUnificadoModalPartial.cshtml", model);
         }
-
-        // --- 5. MÉTODO AUXILIAR (El tuyo estaba perfecto) ---
+        // --- 4. ACTUALIZAR ESTE MÉTODO ---
         private async Task LoadModalSelectLists()
         {
             // --- Cargar Materiales ---
@@ -122,6 +124,13 @@ namespace AROCONSTRUCCIONES.Controllers
             // --- Cargar Proveedores ---
             var proveedores = await _proveedorService.GetAllActiveAsync();
             ViewBag.Proveedores = new SelectList(proveedores, "Id", "RazonSocial");
+
+            // --- ¡NUEVO! Cargar Proyectos (solo activos) ---
+            var proyectos = await _proyectoService.GetAllAsync();
+            ViewBag.Proyectos = new SelectList(
+                proyectos.Where(p => p.Estado == "En Ejecución" || p.Estado == "Planificación"),
+                "Id",
+                "NombreProyecto");
         }
 
         // --- 6. MÉTODO DETAILS (El tuyo estaba perfecto) ---

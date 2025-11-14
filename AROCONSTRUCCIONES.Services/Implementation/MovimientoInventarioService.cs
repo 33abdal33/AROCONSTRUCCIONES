@@ -5,6 +5,7 @@ using AROCONSTRUCCIONES.Repository.Interfaces;
 using AROCONSTRUCCIONES.Services.Interface;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System; // Agregado para Exception/ApplicationException
 using System.Threading.Tasks;
 
@@ -15,13 +16,16 @@ namespace AROCONSTRUCCIONES.Services.Implementation
     {
         private readonly IUnitOfWork _unitOfWork; // <-- CAMBIO
         private readonly IMapper _mapper;
+        private readonly ILogger<MovimientoInventarioService> _logger; // <-- Inyectar Logger
 
         public MovimientoInventarioService(
             IUnitOfWork unitOfWork, // <-- CAMBIO
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<MovimientoInventarioService> logger) // <-- Inyectar Logger)
         {
             _unitOfWork = unitOfWork; // <-- CAMBIO
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<bool> RegistrarIngreso(MovimientoInventarioDto dto)
@@ -98,6 +102,8 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
         public async Task<bool> RegistrarSalida(MovimientoInventarioDto dto)
         {
+            _logger.LogInformation("Iniciando RegistrarSalida...");
+
             // 1. Validaciones
             var material = await _unitOfWork.Materiales.GetByIdAsync(dto.MaterialId);
             if (material == null)
@@ -106,6 +112,14 @@ namespace AROCONSTRUCCIONES.Services.Implementation
             var almacen = await _unitOfWork.Almacenes.GetByIdAsync(dto.AlmacenId);
             if (almacen == null)
                 throw new ApplicationException("Almacén no encontrado.");
+
+            DateTime fechaMovimiento = dto.FechaMovimiento == default ? DateTime.Now : dto.FechaMovimiento;
+
+            // Validación específica para Consumo de Proyecto
+            if (dto.Motivo == "CONSUMO_PROYECTO" && (!dto.IdProyecto.HasValue || dto.IdProyecto == 0))
+            {
+                throw new ApplicationException("Para 'Consumo Proyecto', es obligatorio seleccionar un proyecto.");
+            }
 
             try
             {
@@ -118,29 +132,52 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
                 decimal costoUnitarioSalida = saldo.CostoPromedio;
                 decimal nuevoStock = saldo.StockActual - dto.Cantidad;
+                decimal costoTotalSalida = dto.Cantidad * costoUnitarioSalida; // <-- Costo de esta operación
 
                 // 3. Actualizar el Saldo
                 saldo.StockActual = nuevoStock;
-                saldo.StockMinimo = material.StockMinimo;
-                saldo.FechaUltimoMovimiento = dto.FechaMovimiento;
-                await _unitOfWork.Inventario.UpdateAsync(saldo); // <-- Usa UoW
+                saldo.StockMinimo = material.StockMinimo; // (Asegura que esté sincronizado)
+                saldo.FechaUltimoMovimiento = fechaMovimiento;
+                await _unitOfWork.Inventario.UpdateAsync(saldo);
+                _logger.LogInformation($"Inventario actualizado. Nuevo stock: {nuevoStock}");
 
                 // 4. Registrar el Movimiento
                 var movimiento = _mapper.Map<MovimientoInventario>(dto);
                 movimiento.TipoMovimiento = "SALIDA";
-                movimiento.CostoUnitarioMovimiento = costoUnitarioSalida;
+                movimiento.FechaMovimiento = fechaMovimiento;
+                movimiento.CostoUnitarioMovimiento = costoUnitarioSalida; // Costeado al CUPM
                 movimiento.StockFinal = nuevoStock;
                 movimiento.Responsable = dto.ResponsableNombre;
+                // 'IdProyecto' se mapea automáticamente desde el DTO
 
-                await _unitOfWork.MovimientosInventario.AddAsync(movimiento); // <-- Usa UoW
+                await _unitOfWork.MovimientosInventario.AddAsync(movimiento);
+                _logger.LogInformation("Movimiento de salida registrado.");
 
-                // 5. Completar la Transacción
-                await _unitOfWork.SaveChangesAsync(); // <-- CAMBIO
+                // --- 5. ¡NUEVA LÓGICA: ACTUALIZAR COSTO DE PROYECTO! ---
+                if (dto.IdProyecto.HasValue && dto.Motivo == "CONSUMO_PROYECTO")
+                {
+                    var proyecto = await _unitOfWork.Proyectos.GetByIdAsync(dto.IdProyecto.Value);
+                    if (proyecto != null)
+                    {
+                        proyecto.CostoEjecutado += costoTotalSalida;
+                        await _unitOfWork.Proyectos.UpdateAsync(proyecto);
+                        _logger.LogInformation($"Costo (S/ {costoTotalSalida}) añadido al Proyecto ID: {proyecto.Id}. Nuevo CostoEjecutado: {proyecto.CostoEjecutado}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"Se intentó costear al Proyecto ID: {dto.IdProyecto.Value}, pero no fue encontrado.");
+                    }
+                }
+
+                // 6. Completar la Transacción (Guarda Inventario, Movimiento y Proyecto)
+                await _unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("¡Transacción completada!");
 
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error en RegistrarSalida");
                 throw;
             }
         }
