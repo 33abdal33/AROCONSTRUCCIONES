@@ -1,51 +1,67 @@
-﻿@*
-    Esta es la nueva barra de navegación superior que se muestra en tu diseño.
-*@
+﻿@using AROCONSTRUCCIONES.Models
+@using Microsoft.AspNetCore.Identity
+
+@* 1. Inyectamos los servicios de Identity *@
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ApplicationUser user = null;
+    if (SignInManager.IsSignedIn(User))
+    {
+        user = await UserManager.GetUserAsync(User);
+    }
+}
+
 
 <header class="flex justify-between items-center p-4 h-16 bg-white border-b border-slate-200 shadow-sm">
 
-    <!-- Lado Izquierdo: Buscador -->
     <div class="flex items-center w-full max-w-md">
         <div class="relative w-full">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3">
                 <i class="fas fa-search text-slate-400"></i>
             </span>
-            <!--
-                NOTA: Tailwind resetea los estilos. 'form-input' es una clase común de Tailwind,
-                pero 'form-control' de Bootstrap puede funcionar si lo prefieres,
-                aunque 'border-0' y 'rounded-full' son clases de Tailwind.
-            -->
             <input type="text"
                    class="w-full pl-10 pr-4 py-2 rounded-full border border-slate-300 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-0"
                    placeholder="Buscar proyectos, proveedores...">
         </div>
     </div>
 
-    <!-- Lado Derecho: Iconos y Perfil de Usuario -->
     <div class="flex items-center space-x-4">
 
-        <!-- Icono de Notificaciones -->
-        <button class="p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 relative">
-            <i class="bi bi-bell-fill"></i>
-            <!-- Punto de Notificación -->
-            <span class="absolute top-2 right-2 block w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
+        @if (user != null)
+        {
+            <button class="p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 relative">
+                <i class="bi bi-bell-fill"></i>
+                <span class="absolute top-2 right-2 block w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
 
-        <!-- Icono de Configuración -->
-        <button class="p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700">
-            <i class="bi bi-gear-fill"></i>
-        </button>
+            <button class="p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+                <i class="bi bi-gear-fill"></i>
+            </button>
 
-        <!-- Perfil de Usuario -->
-        <div class="flex items-center space-x-2">
-            <!-- Avatar (usando tus iniciales) -->
-            <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
-                JA
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                    @* (Obtiene las iniciales del nombre) *@
+                    @(user.NombreCompleto?.Substring(0, 1) ?? "A")
+                </div>
+                <div class="hidden md:block">
+                    <div class="text-sm font-medium text-slate-700">@user.NombreCompleto</div>
+                    <div class="text-xs text-slate-500">@user.Email</div>
+                </div>
             </div>
-            <div class="hidden md:block">
-                <div class="text-sm font-medium text-slate-700">Jesus Angulo</div>
-                <div class="text-xs text-slate-500">Gerente General</div>
-            </div>
-        </div>
+
+            <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
+                <button typeT="submit" class="p-2 rounded-full text-slate-500 hover:bg-red-100 hover:text-red-600" title="Cerrar Sesión">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </form>
+        }
+        else
+        {
+            <a asp-controller="Account" asp-action="Login" class="text-sm font-medium text-blue-600 hover:text-blue-500">
+                Iniciar Sesión
+            </a>
+        }
     </div>
 </header>

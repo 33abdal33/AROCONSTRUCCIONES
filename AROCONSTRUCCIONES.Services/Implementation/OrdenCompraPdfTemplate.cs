@@ -2,6 +2,7 @@
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using System.Globalization;
 
 namespace AROCONSTRUCCIONES.Services.Implementation
 {
@@ -11,12 +12,14 @@ namespace AROCONSTRUCCIONES.Services.Implementation
     public class OrdenCompraPdfTemplate : IDocument
     {
         private readonly OrdenCompraPdfModel _model;
-        private readonly OrdenCompra _oc; // Acceso directo a la OC
+        private readonly OrdenCompra _oc;
+        private readonly CultureInfo culture;
 
         public OrdenCompraPdfTemplate(OrdenCompraPdfModel model)
         {
             _model = model;
             _oc = model.OrdenCompra;
+            culture = CultureInfo.CreateSpecificCulture("es-PE");
         }
 
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
@@ -46,22 +49,27 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                     if (System.IO.File.Exists(_model.LogoPath))
                         col.Item().Image(_model.LogoPath).FitWidth();
                     else
-                        col.Item().Text("ARO CONSTRUCCIONES").Bold();
+                        col.Item().Height(40).Text(text => text.Span("ARO").Bold().FontSize(18).FontColor(Colors.Red.Medium).LineHeight(0.8f)); 
                 });
 
                 // Columna 2: Datos Empresa
                 row.RelativeItem(5).AlignCenter().Column(col =>
                 {
-                    col.Item().Text("ARO CONSTRUCTORA Y MINEROS E.I.R.L.").Bold().FontSize(12);
-                    col.Item().Text("RUC: 20547282559").FontSize(9);
-                    col.Item().Text("Av. Jose Galvez N° 1146 Lima - Lima - Lima").FontSize(9);
+                    col.Item().Text(text => text.Span("ARO CONSTRUCTORA Y MINEROS E.I.R.L.").Bold().FontSize(10));
+                    col.Item().Text(text => text.Span("RUC: 20547282559").FontSize(7));
+                    col.Item().Text(text => text.Span("Av. Jose Galvez N° 1146 Lima - Lima - Lima").FontSize(7));
                 });
 
-                // Columna 3: Nro de Orden
-                row.RelativeItem(3).Border(1).Padding(5).Column(col =>
+                // Columna 3: Nro de Orden (OC Box)
+                row.RelativeItem(3).Border(2).BorderColor(Colors.Black).Padding(5).Column(col =>
                 {
-                    col.Item().Background(Colors.Grey.Lighten3).AlignCenter().Text("ORDEN DE COMPRA").Bold();
-                    col.Item().AlignCenter().Text(_oc.Codigo).Bold().FontSize(12).FontColor(Colors.Red.Medium);
+                    // Encabezado
+                    col.Item().Background(Colors.Grey.Lighten3).AlignCenter()
+                        .Text(text => text.Span("ORDEN DE COMPRA / SERVICIO").Bold().FontSize(9));
+                    
+                    // Código de OC (Se elimina la restricción Height(10))
+                    col.Item().AlignCenter() 
+                        .Text(text => text.Span(_oc.Codigo).Bold().FontSize(12).FontColor(Colors.Red.Medium));
                 });
             });
         }

@@ -1,9 +1,13 @@
+using AROCONSTRUCCIONES.Models;
 using AROCONSTRUCCIONES.Persistence;
 using AROCONSTRUCCIONES.Repository.Interfaces;
 using AROCONSTRUCCIONES.Repository.Repositories;
 using AROCONSTRUCCIONES.Services.Implementation;
 using AROCONSTRUCCIONES.Services.Interface;
 using AROCONSTRUCCIONES.Services.Mapping_Profile;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
 using System.Runtime.Loader;
@@ -13,7 +17,17 @@ var builder = WebApplication.CreateBuilder(args);
 QuestPDF.Settings.License = LicenseType.Community;
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    // Esto crea una política que exige que CUALQUIER usuario logueado
+    // sea requerido en CUALQUIER endpoint de la aplicación.
+    var policy = new AuthorizationPolicyBuilder()
+                     .RequireAuthenticatedUser()
+                     .Build();
+
+    // Añadimos este filtro globalmente
+    options.Filters.Add(new AuthorizeFilter(policy));
+});
 
 builder.Services.AddAutoMapper(config =>
 {
@@ -55,8 +69,32 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("defaultConnection"));
 });
 
-var app = builder.Build();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // Puedes configurar opciones de contraseña aquí si quieres
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequiredLength = 6;
+})
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders(); // Necesario para reseteo de contraseña, etc.
 
+var app = builder.Build();
+try
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        await DbInitializer.InitializeAsync(services);
+    }
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Un error ocurrió al sembrar la BD.");
+}
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -69,11 +107,11 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Dashboard}/{action=Index}/{id?}");
+    pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();

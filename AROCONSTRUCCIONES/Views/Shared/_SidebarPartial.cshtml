@@ -3,7 +3,11 @@
     para que coincida con el nuevo _Layout.
 *@
 
-<!-- Lógica de C# para determinar la pestaña activa -->
+@* 1. Inyectamos los servicios de Identity para saber quién está logueado y qué rol tiene *@
+@using Microsoft.AspNetCore.Identity
+@using AROCONSTRUCCIONES.Models
+@inject SignInManager<ApplicationUser> SignInManager
+
 @{
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
 
@@ -12,102 +16,127 @@
     bool esLogistica = logisticaControllers.Contains(controller);
 }
 
-<!-- Contenedor del Sidebar -->
-<div class="flex-shrink-0 w-64 bg-slate-800 text-slate-300 flex flex-col">
+@* 2. Solo mostramos el Sidebar COMPLETO si el usuario ha iniciado sesión *@
+@if (SignInManager.IsSignedIn(User))
+{
+    <div class="flex-shrink-0 w-64 bg-slate-800 text-slate-300 flex flex-col">
 
-    <!-- Logo y Título -->
-    <div class="flex items-center h-16 px-6 border-b border-slate-700">
-        <i class="bi bi-buildings-fill text-xl text-white mr-3"></i>
-        <div>
-            <div class="font-semibold text-white">ConstructorERP</div>
-            <div class="text-xs text-slate-400">Sistema de Gestión</div>
+        <div class="flex items-center h-16 px-6 border-b border-slate-700">
+            <i class="bi bi-buildings-fill text-xl text-white mr-3"></i>
+            <div>
+                <div class="font-semibold text-white">ConstructorERP</div>
+                <div class="text-xs text-slate-400">Sistema de Gestión</div>
+            </div>
         </div>
+
+        <nav class="flex-1 overflow-y-auto p-4 space-y-2">
+            <h3 class="px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Módulos</h3>
+
+            <ul class="space-y-1">
+
+                <li>
+                    <a asp-controller="Dashboard" asp-action="Index"
+                       class="flex items-center px-3 py-2.5 rounded-lg transition-colors
+                                  @(controller == "Dashboard" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
+                        <i class="bi bi-grid-1x2-fill w-6 text-center text-lg"></i>
+                        <span class="ml-2 text-sm font-medium">Dashboard</span>
+                    </a>
+                </li>
+                @if (User.IsInRole("Administrador"))
+                {
+                    <h3 class="px-2 pt-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Administración</h3>
+                    <ul class="space-y-1">
+                        <li>
+                            <a asp-controller="User" asp-action="Index"
+                               class="flex items-center px-3 py-2.5 rounded-lg transition-colors
+                                          @(controller == "User" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
+                                <i class="bi bi-person-plus-fill w-6 text-center text-lg"></i>
+                                <span class="ml-2 text-sm font-medium">Usuarios</span>
+                            </a>
+                        </li>
+                    </ul>
+                }
+                @if (User.IsInRole("Administrador") || User.IsInRole("Usuario"))
+                {
+                    <li>
+                        <a asp-controller="Proyecto" asp-action="Index"
+                           class="flex items-center px-3 py-2.5 rounded-lg transition-colors
+                                          @(controller == "Proyecto" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
+                            <i class="bi bi-journal-text w-6 text-center text-lg"></i>
+                            <span class="ml-2 text-sm font-medium">Proyectos</span>
+                        </a>
+                    </li>
+                }
+
+                @if (User.IsInRole("Administrador") || User.IsInRole("Usuario"))
+                {
+                    <li>
+                        <a asp-controller="Presupuestos" asp-action="Index"
+                           class="flex items-center px-3 py-2.5 rounded-lg transition-colors
+                                          @(controller == "Presupuestos" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
+                            <i class="bi bi-calculator-fill w-6 text-center text-lg"></i>
+                            <span class="ml-2 text-sm font-medium">Presupuestos</span>
+                        </a>
+                    </li>
+                }
+
+                @if (User.IsInRole("Administrador") || User.IsInRole("Usuario"))
+                {
+                    <li>
+                        <a asp-controller="RRHH" asp-action="Index"
+                           class="flex items-center px-3 py-2.5 rounded-lg transition-colors
+                                          @(controller == "RRHH" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
+                            <i class="bi bi-person-lines-fill w-6 text-center text-lg"></i>
+                            <span class="ml-2 text-sm font-medium">Recursos Humanos</span>
+                        </a>
+                    </li>
+                }
+
+                <li>
+                    <a asp-controller="Inventario" asp-action="Index"
+                       class="flex items-center px-3 py-2.5 rounded-lg transition-colors
+                                  @(esLogistica ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
+                        <i class="bi bi-box-seam-fill w-6 text-center text-lg"></i>
+                        <span class="ml-2 text-sm font-medium">Logistica</span>
+                    </a>
+                </li>
+
+                @if (User.IsInRole("Administrador"))
+                {
+                    <li>
+                        <a asp-controller="Tesoreria" asp-action="Index"
+                           class="flex items-center px-3 py-2.5 rounded-lg transition-colors
+                                          @(controller == "Tesoreria" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
+                            <i class="bi bi-cash-coin w-6 text-center text-lg"></i>
+                            <span class="ml-2 text-sm font-medium">Tesorería</span>
+                        </a>
+                    </li>
+                }
+
+                @if (User.IsInRole("Administrador") || User.IsInRole("Usuario"))
+                {
+                    <li>
+                        <a asp-controller="Finanzas" asp-action="Index"
+                           class="flex items-center px-3 py-2.5 rounded-lg transition-colors
+                                          @(controller == "Finanzas" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
+                            <i class="bi bi-bank w-6 text-center text-lg"></i>
+                            <span class="ml-2 text-sm font-medium">Finanzas</span>
+                        </a>
+                    </li>
+                }
+
+                @if (User.IsInRole("Administrador") || User.IsInRole("Usuario"))
+                {
+                    <li>
+                        <a asp-controller="Clientes" asp-action="Index"
+                           class="flex items-center px-3 py-2.5 rounded-lg transition-colors
+                                          @(controller == "Clientes" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
+                            <i class="bi bi-person-badge-fill w-6 text-center text-lg"></i>
+                            <span class="ml-2 text-sm font-medium">Clientes y Contratos</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
     </div>
-
-    <!-- Navegación -->
-    <nav class="flex-1 overflow-y-auto p-4 space-y-2">
-        <h3 class="px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Módulos</h3>
-
-        <ul class="space-y-1">
-            <!-- Dashboard -->
-            <li>
-                <a asp-controller="Dashboard" asp-action="Index"
-                   class="flex items-center px-3 py-2.5 rounded-lg transition-colors
-                          @(controller == "Dashboard" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
-                    <i class="bi bi-grid-1x2-fill w-6 text-center text-lg"></i>
-                    <span class="ml-2 text-sm font-medium">Dashboard</span>
-                </a>
-            </li>
-
-            <!-- Proyectos -->
-            <li>
-                <a asp-controller="Proyecto" asp-action="Index"
-                   class="flex items-center px-3 py-2.5 rounded-lg transition-colors
-                          @(controller == "Proyecto" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
-                    <i class="bi bi-journal-text w-6 text-center text-lg"></i>
-                    <span class="ml-2 text-sm font-medium">Proyectos</span>
-                </a>
-            </li>
-
-            <!-- Presupuestos -->
-            <li>
-                <a asp-controller="Presupuestos" asp-action="Index"
-                   class="flex items-center px-3 py-2.5 rounded-lg transition-colors
-                          @(controller == "Presupuestos" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
-                    <i class="bi bi-calculator-fill w-6 text-center text-lg"></i>
-                    <span class="ml-2 text-sm font-medium">Presupuestos</span>
-                </a>
-            </li>
-
-            <!-- Recursos Humanos -->
-            <li>
-                <a asp-controller="RRHH" asp-action="Index"
-                   class="flex items-center px-3 py-2.5 rounded-lg transition-colors
-                          @(controller == "RRHH" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
-                    <i class="bi bi-person-lines-fill w-6 text-center text-lg"></i>
-                    <span class="ml-2 text-sm font-medium">Recursos Humanos</span>
-                </a>
-            </li>
-
-            <!-- Compras y Almacén (Grupo de Logística) -->
-            <li>
-                <a asp-controller="Inventario" asp-action="Index"
-                   class="flex items-center px-3 py-2.5 rounded-lg transition-colors
-                          @(esLogistica ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
-                    <i class="bi bi-box-seam-fill w-6 text-center text-lg"></i>
-                    <span class="ml-2 text-sm font-medium">Compras y Almacén</span>
-                </a>
-            </li>
-
-            <!-- Tesorería -->
-            <li>
-                <a asp-controller="Tesoreria" asp-action="Index"
-                   class="flex items-center px-3 py-2.5 rounded-lg transition-colors
-                          @(controller == "Tesoreria" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
-                    <i class="bi bi-cash-coin w-6 text-center text-lg"></i>
-                    <span class="ml-2 text-sm font-medium">Tesorería</span>
-                </a>
-            </li>
-
-            <!-- Finanzas -->
-            <li>
-                <a asp-controller="Finanzas" asp-action="Index"
-                   class="flex items-center px-3 py-2.5 rounded-lg transition-colors
-                          @(controller == "Finanzas" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
-                    <i class="bi bi-bank w-6 text-center text-lg"></i>
-                    <span class="ml-2 text-sm font-medium">Finanzas</span>
-                </a>
-            </li>
-
-            <!-- Clientes y Contratos -->
-            <li>
-                <a asp-controller="Clientes" asp-action="Index"
-                   class="flex items-center px-3 py-2.5 rounded-lg transition-colors
-                          @(controller == "Clientes" ? "bg-slate-700 text-white" : "hover:bg-slate-700 hover:text-white")">
-                    <i class="bi bi-person-badge-fill w-6 text-center text-lg"></i>
-                    <span class="ml-2 text-sm font-medium">Clientes y Contratos</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
-</div>
+}

@@ -1,6 +1,7 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Services.Implementation;
 using AROCONSTRUCCIONES.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Controllers
 {
+    [Authorize(Roles = "Administrador,Usuario")]
     public class RequerimientoController : Controller
     {
         private readonly IRequerimientoService _requerimientoService;
@@ -135,6 +137,32 @@ namespace AROCONSTRUCCIONES.Controllers
 
             // Devolvemos la nueva vista parcial que crearemos en el siguiente paso
             return PartialView("_DetailsModalPartial", dto);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        // ¡Seguridad! Solo Admin y Usuario pueden aprobar
+        [Authorize(Roles = "Administrador,Usuario")]
+        public async Task<IActionResult> Approve(int id)
+        {
+            _logger.LogInformation($"[RequerimientoController] Recibida solicitud POST para Aprobar ID: {id}");
+            try
+            {
+                var result = await _requerimientoService.ApproveAsync(id);
+                if (!result)
+                {
+                    return Json(new { success = false, message = "No se pudo aprobar. El requerimiento no fue encontrado o ya fue procesado." });
+                }
+
+                // Si es exitoso, le decimos a la pestaña que se recargue
+                TempData["OpenTab"] = "#requerimientos-tab";
+                return Json(new { success = true, message = "Requerimiento Aprobado. Listo para Compras." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[RequerimientoController] Error al aprobar.");
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 }

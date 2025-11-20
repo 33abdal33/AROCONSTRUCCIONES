@@ -1,4 +1,5 @@
 ﻿using AROCONSTRUCCIONES.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Persistence
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions options) : base(options)
         {
@@ -26,6 +27,7 @@ namespace AROCONSTRUCCIONES.Persistence
         public DbSet<Inventario> Inventario { get; set; }
         public DbSet<Proyecto> Proyectos { get; set; }
         public DbSet<ProveedorMaterial> ProveedorMateriales { get; set; }
+        
 
         //FLUENT API
 

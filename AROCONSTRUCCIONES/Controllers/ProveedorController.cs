@@ -1,5 +1,6 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient; // <-- Lo mantenemos para el 'catch'
 using Microsoft.EntityFrameworkCore; // <-- Lo mantenemos para el 'catch'
@@ -8,6 +9,8 @@ using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Controllers
 {
+    // Permitir que todos los roles logueados vean el Dashboard
+    [Authorize(Roles = "Administrador,Usuario")]
     public class ProveedorController : Controller
     {
         private readonly IProveedorService _proveedorService;

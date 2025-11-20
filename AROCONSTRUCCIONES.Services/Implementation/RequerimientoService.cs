@@ -104,5 +104,50 @@ namespace AROCONSTRUCCIONES.Services.Implementation
             _logger.LogInformation("[RequerimientoService] Mapeando a RequerimientoDetailsDto.");
             return _mapper.Map<RequerimientoDetailsDto>(requerimiento);
         }
+        public async Task<bool> ApproveAsync(int id)
+        {
+            _logger.LogInformation($"[RequerimientoService] Intentando aprobar Requerimiento ID: {id}");
+
+            // 1. Obtener la entidad (¡Necesitamos tracking para actualizarla!)
+            // Usamos el Contexto del UoW para traer la entidad CON tracking
+            var requerimiento = await _unitOfWork.Context.Requerimientos
+                                     .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (requerimiento == null)
+            {
+                _logger.LogWarning($"[RequerimientoService] Aprobación fallida: ID {id} no encontrado.");
+                return false;
+            }
+
+            // 2. Lógica de Negocio: Solo se puede aprobar si está "Pendiente"
+            if (requerimiento.Estado != "Pendiente")
+            {
+                _logger.LogWarning($"[RequerimientoService] Aprobación fallida: ID {id} ya está en estado '{requerimiento.Estado}'.");
+                // Opcional: podrías lanzar un new ApplicationException("El requerimiento ya fue procesado.");
+                return false;
+            }
+
+            // 3. Actualizar el estado
+            requerimiento.Estado = "Aprobado";
+
+            // 4. Guardar los cambios
+            await _unitOfWork.SaveChangesAsync();
+            _logger.LogInformation($"[RequerimientoService] Requerimiento ID: {id} aprobado exitosamente.");
+
+            return true;
+        }
+        public async Task<IEnumerable<RequerimientoListDto>> GetAllAprobadosAsync()
+        {
+            _logger.LogInformation("[RequerimientoService] Obteniendo requerimientos 'Aprobados'.");
+
+            var requerimientos = await _unitOfWork.Context.Requerimientos
+                .Include(r => r.Proyecto)
+                .Where(r => r.Estado == "Aprobado") // <-- El filtro clave
+                .OrderByDescending(r => r.Fecha)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return _mapper.Map<IEnumerable<RequerimientoListDto>>(requerimientos);
+        }
     }
 }

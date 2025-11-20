@@ -5,6 +5,7 @@ namespace AROCONSTRUCCIONES.Dtos
 {
     public class RequerimientoDetailsDto
     {
+        public int Id { get; set; }
         public string Codigo { get; set; }
         public string ProyectoNombre { get; set; }
         public string Solicitante { get; set; }

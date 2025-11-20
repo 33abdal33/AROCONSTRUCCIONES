@@ -75,31 +75,75 @@ namespace AROCONSTRUCCIONES.Services.Implementation
         public Task<List<string>> GetMaterialCategoriesAsync()
         {
             return Task.FromResult(new List<string> {
-        // Obra Gruesa
-         "Agregados",             // Arena, piedra, hormigón
-         "Acero y Alambres",      // Fierro corrugado, alambre
-         "Cementos y Aditivos",   // Cemento, cal, impermeabilizantes
-         "Albañilería",           // Ladrillos, bloques de concreto
-         "Maderas (Estructura)",  // Vigas, tablas para encofrado
 
-        // Obra Fina (Acabados)
-         "Tabiquería Seca",       // Drywall, perfiles metálicos
-         "Pisos y Revestimientos",// Cerámicos, porcelanatos, vinílicos
-         "Pinturas y Accesorios", // Látex, esmalte, brochas
-         "Carpintería",           // Puertas, ventanas, marcos
-         "Vidrios y Espejos",
+        // -------------------------
+        // OBRA GRUESA
+        // -------------------------
+        "Agregados",                  // Arena, piedra, hormigón
+        "Acero y Alambres",           // Acero corrugado, mallas, alambres
+        "Cementos y Aditivos",        // Cemento, cal, sika, plastificantes
+        "Albañilería",                // Ladrillos, bloques
+        "Maderas (Estructura)",       // Para encofrado y estructuras
+        "Encofrados y Andamios",      // Tablones, puntales, andamios
 
-        // Instalaciones
-         "Inst. Eléctricas",      // Cables, tubería conduit, tomacorrientes
-         "Inst. Sanitarias",      // Tuberías PVC, grifería, sanitarios
-         "Inst. Gasfitería",
+        // -------------------------
+        // OBRA FINA (ACABADOS)
+        // -------------------------
+        "Tabiquería Seca (Drywall)",  // Placas, perfiles, tornillos
+        "Pisos y Revestimientos",     // Cerámicos, porcelanatos, vinílicos
+        "Pinturas y Accesorios",      // Látex, esmalte, selladores
+        "Carpintería Madera",         // Puertas, marcos, zócalos
+        "Carpintería Metálica",       // Rejas, barandas, puertas metálicas
+        "Vidrios y Espejos",
+        "Yeso y Masillas",            // Yeso, pasta muro
 
-        // Otros
-         "Ferretería General",    // Clavos, tornillos, pernos
-         "Seguridad y EPP",       // Cascos, guantes, arneses
-         "Herramientas y Equipos",// Lampas, picos, taladros (si se controlan por stock)
-         "Oficina y Limpieza"     // Útiles de oficina para la obra
-             });
+        // -------------------------
+        // INSTALACIONES
+        // -------------------------
+        "Inst. Eléctricas",           // Cables, interruptores
+        "Inst. Sanitarias",           // PVC, conexiones, válvulas
+        "Inst. Gasfitería",           // Accesorios, grifería
+        "Inst. Mecánicas y HVAC",     // Aire acondicionado, ductería
+        "Inst. Especiales",           // Datos, CCTV, alarmas
+
+        // -------------------------
+        // IMPERMEABILIZACIÓN Y ACÚSTICA
+        // -------------------------
+        "Impermeabilizantes",         // Mantas, sika, membranas
+        "Aislantes Térmicos/Acústicos", // Lana de vidrio, poliestireno
+
+        // -------------------------
+        // FERRETERÍA Y INSUMOS
+        // -------------------------
+        "Ferretería General",         // Clavos, tornillos, discos
+        "Herramientas Manuales",      // Martillos, llaves, planos
+        "Herramientas Eléctricas",    // Taladros, amoladoras
+        "Accesorios de Herramientas", // Brocas, discos, lijas
+
+        // -------------------------
+        // SEGURIDAD
+        // -------------------------
+        "Seguridad y EPP",            // Cascos, guantes, arneses
+        "Señalización y Control",     // Cinta, conos, mallas
+
+        // -------------------------
+        // MAQUINARIA Y EQUIPOS
+        // -------------------------
+        "Alquiler de Equipos",        // Compactadoras, mezcladoras
+        "Consumibles de Maquinaria",  // Aceites, filtros
+
+        // -------------------------
+        // OTROS
+        // -------------------------
+        "Oficina y Limpieza",         // Papelería, detergentes
+        "Misceláneos",                // Todo lo no categorizado
+
+        // OPCIONAL (es real en obras medianas-grandes)
+        "Parrillas y Prefabricados",  // Viguetas, aligerantes
+        "Geotextiles y Geomallas",    // Obras viales
+        "Paisajismo",                 // Jardinería, tierra de chacra
+        "Urbanismo y Vías"            // Sardineles, adoquines
+    });
         }
 
         public Task<List<string>> GetMaterialUnitsAsync()

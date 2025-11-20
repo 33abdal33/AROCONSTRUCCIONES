@@ -1,5 +1,6 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering; // Necesario para SelectList
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Controllers
 {
+    [Authorize(Roles = "Administrador,Usuario")]
     public class MovimientoInventarioController : Controller
     {
         private readonly IMovimientoInventarioServices _movimientoInventarioServices;

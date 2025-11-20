@@ -1,6 +1,9 @@
 ﻿
 using AROCONSTRUCCIONES.Dtos;
+using AROCONSTRUCCIONES.Repository.Interfaces;
 using AROCONSTRUCCIONES.Services.Interface; // ¡Ahora usamos todos los servicios!
+using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
@@ -11,6 +14,8 @@ using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Controllers
 {
+    // Permitir que todos los roles logueados vean el Dashboard
+    [Authorize(Roles = "Administrador,Usuario,Almacenero")]
     public class OrdenCompraController : Controller
     {
         // --- DEPENDENCIAS (SOLO SERVICIOS) ---
@@ -19,19 +24,25 @@ namespace AROCONSTRUCCIONES.Controllers
         private readonly IProveedorService _proveedorService;
         private readonly IMaterialServices _materialService;
         private readonly IAlmacenService _almacenService;
+        private readonly IUnitOfWork _unitOfWork; // <-- 1. AÑADIR
+        private readonly IMapper _mapper; // <-- 2. AÑADIR
 
         public OrdenCompraController(
             IOrdenCompraServices ordenCompraService,
             IRecepcionService recepcionService,
             IProveedorService proveedorService,      // <-- NUEVO
             IMaterialServices materialService,   // <-- NUEVO
-            IAlmacenService almacenService)      // <-- NUEVO
+            IAlmacenService almacenService,
+            IMapper mapper,
+            IUnitOfWork unitOfWork)      // <-- NUEVO
         {
             _ordenCompraService = ordenCompraService;
             _recepcionService = recepcionService;
             _proveedorService = proveedorService;
             _materialService = materialService;
             _almacenService = almacenService;
+            _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
 
         // --- ACCIONES DE LECTURA (UI) ---
@@ -45,12 +56,34 @@ namespace AROCONSTRUCCIONES.Controllers
         }
 
         // GET: /OrdenCompra/CargarFormularioOC
+        [Authorize(Roles = "Administrador,Usuario")]
         [HttpGet]
         public async Task<IActionResult> CargarFormularioOC()
         {
             await CargarViewBagsFormulario();
             // Ahora devuelve el PARCIAL que crearemos en el Paso 3
             return PartialView("_OrdenCompraFormPartial", new OrdenCompraCreateDto());
+        }
+
+        [Authorize(Roles = "Administrador,Usuario")]
+        [HttpGet]
+        public async Task<IActionResult> CargarFormularioOCDesdeRequerimiento(int id)
+        {
+            // 1. Cargar el Requerimiento con sus detalles (Materiales)
+            var requerimiento = await _unitOfWork.Requerimientos.GetByIdWithDetailsAsync(id);
+            if (requerimiento == null || requerimiento.Estado != "Aprobado")
+            {
+                return NotFound("Requerimiento no encontrado o no está aprobado.");
+            }
+
+            // 2. Mapear Requerimiento -> OrdenCompraCreateDto
+            var prefilledDto = _mapper.Map<OrdenCompraCreateDto>(requerimiento);
+
+            // 3. Cargar los ViewBags que el modal necesita
+            await CargarViewBagsFormulario();
+
+            // 4. Devolver el mismo modal, pero ahora con los datos precargados
+            return PartialView("_OrdenCompraFormPartial", prefilledDto);
         }
 
         // GET: /OrdenCompra/AbrirModalRecepcion/5
@@ -86,7 +119,7 @@ namespace AROCONSTRUCCIONES.Controllers
 
         // --- ACCIONES DE ESCRITURA (NEGOCIO) ---
         // (Estas ya estaban perfectas, devuelven JSON)
-
+        [Authorize(Roles = "Administrador,Usuario")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(OrdenCompraCreateDto dto)

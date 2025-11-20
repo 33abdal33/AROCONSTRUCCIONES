@@ -9,10 +9,6 @@
 <!-- 1. Encabezado de estadísticas -->
 <partial name="_ComprasAlmacenHeaderPartial" model="dashboard" />
 
-<!--
-  2. Contenedor de Pestañas (Tabs) con Alpine.js
-     x-data define la pestaña activa inicial.
--->
 <div x-data="{ activeTab: 'inventario' }" class="w-full mt-6">
 
     <!-- 3. La Navegación de Pestañas (ESTILO SHADCN/UI) -->
@@ -29,9 +25,20 @@
             <!-- Pestaña 1: Inventario -->
             <button x-on:click="activeTab = 'inventario'; loadTabContent('@Url.Action("InventarioPartial", "Inventario")', '#tab-content-container')"
                     :class="{ '@activeStyle': activeTab === 'inventario', '@inactiveStyle': activeTab !== 'inventario' }"
-                    class="@baseClasses">
+                    class="@baseClasses"
+                    data-tab-url="@Url.Action("InventarioPartial", "Inventario")">
                 <i class="fas fa-boxes mr-2"></i> Inventario
             </button>
+
+            @if (User.IsInRole("Administrador") || User.IsInRole("Usuario"))
+            {
+                <button x-on:click="activeTab = 'aprobados'; loadTabContent('@Url.Action("ListaRequerimientosAprobadosPartial", "Inventario")', '#tab-content-container')"
+                        :class="{ '@activeStyle': activeTab === 'aprobados', '@inactiveStyle': activeTab !== 'aprobados' }"
+                        class="@baseClasses"
+                        data-tab-url="@Url.Action("ListaRequerimientosAprobadosPartial", "Inventario")">
+                    <i class="fas fa-check-double mr-2 text-green-500"></i> Por Comprar
+                </button>
+            }
 
             <!-- Pestaña 2: Movimientos -->
             <button x-on:click="activeTab = 'movimientos'; loadTabContent('@Url.Action("TablaMovimientosPartial", "MovimientoInventario")', '#tab-content-container')"

@@ -22,7 +22,9 @@
     <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
         <div>
             <p class="text-sm font-medium text-slate-500">Valor Inventario</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.ValorInventario.ToString("C2")</p>
+            <p class="text-3xl font-bold text-slate-800">
+                @Model.ValorInventario.ToString("C2", System.Globalization.CultureInfo.CreateSpecificCulture("es-PE"))
+            </p>
             <p class="text-xs text-slate-400">Valorizado al costo</p>
         </div>
         <div class="text-4xl text-blue-500 opacity-70">

@@ -1,11 +1,14 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Controllers
 {
+    // Solo Admin y Usuario (Back-office) pueden ver Proyectos
+    [Authorize(Roles = "Administrador,Usuario")]
     public class ProyectoController : Controller
     {
         private readonly IProyectoService _proyectoService;

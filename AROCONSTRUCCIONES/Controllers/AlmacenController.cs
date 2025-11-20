@@ -1,6 +1,7 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Persistence;
 using AROCONSTRUCCIONES.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient; // Para el catch de errores SQL
 using Microsoft.EntityFrameworkCore; // Para DbUpdateException
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Controllers
 {
+    [Authorize(Roles = "Administrador,Usuario,Almacenero")]
     public class AlmacenController : Controller
     {
         private readonly IAlmacenService _almacenService;

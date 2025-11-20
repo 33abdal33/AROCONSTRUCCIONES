@@ -1,14 +1,16 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System;
 
 namespace AROCONSTRUCCIONES.Controllers
 {
+    [Authorize(Roles = "Administrador,Usuario,Almacenero")]
     public class InventarioController : Controller
     {
         // 1. INYECCIÓN DE SERVICIOS (El tuyo estaba perfecto)
@@ -19,6 +21,7 @@ namespace AROCONSTRUCCIONES.Controllers
         private readonly IProveedorService _proveedorService;
         private readonly ILogisticaDashboardService _dashboardService;
         private readonly IProyectoService _proyectoService;
+        private readonly IRequerimientoService _requerimientoService; // <-- 1. AÑADIR
 
         public InventarioController(
             IInventarioService inventarioService,
@@ -27,7 +30,8 @@ namespace AROCONSTRUCCIONES.Controllers
             IAlmacenService almacenService,
             IProveedorService proveedorService,
             ILogisticaDashboardService dashboardService,
-            IProyectoService proyectoService)
+            IProyectoService proyectoService,
+            IRequerimientoService requerimientoService) // <-- 2. AÑADIR
         {
             _inventarioService = inventarioService;
             _movimientoInventarioServices = movimientoInventarioServices;
@@ -36,6 +40,7 @@ namespace AROCONSTRUCCIONES.Controllers
             _proveedorService = proveedorService;
             _dashboardService = dashboardService;
             _proyectoService = proyectoService;
+            _requerimientoService = requerimientoService; // <-- 3. AÑADIR
         }
 
         // --- 2. ACCIÓN INDEX (MODIFICADA) ---
@@ -146,6 +151,17 @@ namespace AROCONSTRUCCIONES.Controllers
 
             ViewData["Saldo"] = saldo;
             return View("Details", historial);
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Administrador,Usuario")] // Solo Admin y Usuario (Comprador)
+        public async Task<IActionResult> ListaRequerimientosAprobadosPartial()
+        {
+            // Llama al servicio para obtener solo los aprobados
+            var requerimientos = await _requerimientoService.GetAllAprobadosAsync();
+
+            // Retorna la NUEVA vista parcial
+            return PartialView("_ListaRequerimientosAprobadosPartial", requerimientos);
         }
     }
 }
