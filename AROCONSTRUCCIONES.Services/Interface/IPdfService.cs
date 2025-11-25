@@ -10,6 +10,6 @@ namespace AROCONSTRUCCIONES.Services.Interface
     public interface IPdfService
     {
         Task<string> GenerarPdfOrdenCompra(OrdenCompra ordenCompra);
-
+        Task<string> GenerarPdfSolicitudPago(SolicitudPago solicitudPago);
     }
 }

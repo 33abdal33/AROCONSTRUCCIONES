@@ -93,7 +93,7 @@ function initializeDataTables() {
 
     // --- 6. Tabla de Almacenes ---
     initTable('#dataTableAlmacenes');
-
+    initTable('#dataTableTesoreria', { order: [[1, 'desc']] });
     // --- 7. Tabla de Reporte Kárdex ---
     initTable('#tablaKardexReporte', {
         order: [[0, 'desc']], // Ordenar por fecha

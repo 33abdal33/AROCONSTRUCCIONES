@@ -18,7 +18,7 @@ namespace AROCONSTRUCCIONES.Dtos
 
         public DateTime FechaEmision { get; set; } = DateTime.Now;
         public string? Observaciones { get; set; }
-
+        public int? ProyectoId { get; set; }
         // ¡Clave! Lista de detalles que vendrán desde el formulario (probablemente vía JS)
         public List<DetalleOrdenCompraDto> Detalles { get; set; } = new();
     }

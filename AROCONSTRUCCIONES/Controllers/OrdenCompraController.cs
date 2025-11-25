@@ -1,9 +1,11 @@
 ﻿
 using AROCONSTRUCCIONES.Dtos;
+using AROCONSTRUCCIONES.Models;
 using AROCONSTRUCCIONES.Repository.Interfaces;
 using AROCONSTRUCCIONES.Services.Interface; // ¡Ahora usamos todos los servicios!
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
@@ -26,23 +28,29 @@ namespace AROCONSTRUCCIONES.Controllers
         private readonly IAlmacenService _almacenService;
         private readonly IUnitOfWork _unitOfWork; // <-- 1. AÑADIR
         private readonly IMapper _mapper; // <-- 2. AÑADIR
+        private readonly ITesoreriaService _tesoreriaService; // <-- 3. AÑADIR
+        private readonly UserManager<ApplicationUser> _userManager; // <-- 4. AÑADIR
 
         public OrdenCompraController(
             IOrdenCompraServices ordenCompraService,
             IRecepcionService recepcionService,
             IProveedorService proveedorService,      // <-- NUEVO
-            IMaterialServices materialService,   // <-- NUEVO
+            IMaterialServices materialService,
+            ITesoreriaService tesoreriaService, // <-- 4. INYECTAR// <-- NUEVO
             IAlmacenService almacenService,
             IMapper mapper,
-            IUnitOfWork unitOfWork)      // <-- NUEVO
+            IUnitOfWork unitOfWork,
+            UserManager<ApplicationUser> userManager) // <-- 5. INYECTAR// <-- NUEVO
         {
             _ordenCompraService = ordenCompraService;
             _recepcionService = recepcionService;
+            _tesoreriaService = tesoreriaService; // <-- ASIGNAR
             _proveedorService = proveedorService;
             _materialService = materialService;
             _almacenService = almacenService;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
+            _userManager = userManager;
         }
 
         // --- ACCIONES DE LECTURA (UI) ---
@@ -179,7 +187,39 @@ namespace AROCONSTRUCCIONES.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrador,Usuario")] // Solo jefes pueden solicitar pagos
+        public async Task<IActionResult> GenerarSolicitudPago(int id)
+        {
+            try
+            {
+                // Obtener el ID del usuario logueado
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null) return Json(new { success = false, message = "Usuario no identificado." });
 
+                // Llamar al servicio de Tesorería
+                bool resultado = await _tesoreriaService.GenerarSolicitudPagoDesdeOC(id, user.Id);
+
+                if (resultado)
+                {
+                    TempData["SuccessMessage"] = "Solicitud de Pago (SP) generada y enviada a Tesorería.";
+
+                    // Recargamos la pestaña para ver cambios si hubiera
+                    
+                    TempData["OpenTab"] = "#ordencompra-tab";
+                    return Json(new { success = true, message = "Solicitud enviada a Tesorería." });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Esta OC ya tiene una Solicitud de Pago activa." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al generar SP: " + ex.Message });
+            }
+        }
         // --- HELPER ---
         private async Task CargarViewBagsFormulario()
         {

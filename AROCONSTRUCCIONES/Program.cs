@@ -62,6 +62,7 @@ builder.Services.AddScoped<IProyectoDashboardService, ProyectoDashboardService>(
 builder.Services.AddScoped<IRequerimientoRepository, RequerimientoRepository>();
 builder.Services.AddScoped<IRequerimientoService, RequerimientoService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ITesoreriaService, TesoreriaService>();
 builder.Services.AddHttpContextAccessor();
 //Configure Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

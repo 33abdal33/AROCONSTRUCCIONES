@@ -27,7 +27,9 @@ namespace AROCONSTRUCCIONES.Persistence
         public DbSet<Inventario> Inventario { get; set; }
         public DbSet<Proyecto> Proyectos { get; set; }
         public DbSet<ProveedorMaterial> ProveedorMateriales { get; set; }
-        
+        public DbSet<DetalleSolicitudPago> DetalleSolicitudPagos { get; set; }
+        public DbSet<SolicitudPago> SolicitudesPagos { get; set; }
+
 
         //FLUENT API
 

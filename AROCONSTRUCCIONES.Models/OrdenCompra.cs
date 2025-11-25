@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,7 +18,9 @@ namespace AROCONSTRUCCIONES.Models
         public string? Observaciones { get; set; }
         // --- ¡AÑADE ESTA LÍNEA! ---
         public string? RutaPdf { get; set; } // Guardará algo como "/ordenes_pdf/OC-2025-001.pdf"
-
+        public int? ProyectoId { get; set; } // Puede ser nulo si es una compra de stock general
+        [ForeignKey("ProyectoId")]
+        public Proyecto? Proyecto { get; set; }
         public ICollection<DetalleOrdenCompra>? Detalles { get; set; }
     }
 }

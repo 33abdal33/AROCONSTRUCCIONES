@@ -1,4 +1,5 @@
 ﻿using AROCONSTRUCCIONES.Models;
+using AROCONSTRUCCIONES.Services.Implementation.PdfTemplates;
 using AROCONSTRUCCIONES.Services.Interface;
 using Microsoft.AspNetCore.Hosting; // Para IWebHostEnvironment
 using QuestPDF.Fluent; // <-- AÑADIR
@@ -50,6 +51,33 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
             // 6. Devolver la ruta web (la que usará el <a>)
             return await Task.FromResult($"/ordenes_pdf/{nombreArchivo}");
+        }
+        public async Task<string> GenerarPdfSolicitudPago(SolicitudPago solicitudPago)
+        {
+            string logoPath = Path.Combine(_webHostEnvironment.WebRootPath, "Iconos", "ARO.png");
+
+            var model = new SolicitudPagoPdfModel
+            {
+                Solicitud = solicitudPago,
+                LogoPath = logoPath
+            };
+
+            var document = new SolicitudPagoPdfTemplate(model);
+
+            string nombreArchivo = $"SP-{solicitudPago.Codigo.Replace("/", "-")}.pdf";
+            string carpeta = Path.Combine(_webHostEnvironment.WebRootPath, "solicitudes_pago_pdf");
+
+            if (!Directory.Exists(carpeta))
+            {
+                Directory.CreateDirectory(carpeta);
+            }
+
+            string rutaCompleta = Path.Combine(carpeta, nombreArchivo);
+
+            // Generar PDF
+            document.GeneratePdf(rutaCompleta);
+
+            return await Task.FromResult($"/solicitudes_pago_pdf/{nombreArchivo}");
         }
     }
 }

@@ -1,0 +1,41 @@
+﻿@{
+    ViewData["Title"] = "Tesorería y Finanzas";
+}
+
+<div class="mb-6">
+    <div>
+        <h2 class="text-2xl font-semibold text-slate-800">Tesorería</h2>
+        <p class="text-slate-500">Gestión de Pagos y Flujo de Caja</p>
+    </div>
+</div>
+
+<!-- Contenedor Principal -->
+<div x-data="{ activeTab: 'solicitudes' }" class="w-full mt-6">
+
+    <!-- Navegación (Por ahora solo una pestaña) -->
+    <div class="flex space-x-2 border-b border-gray-200">
+        <button class="py-2 px-4 font-medium text-blue-600 border-b-2 border-blue-600">
+            <i class="fas fa-file-invoice-dollar mr-2"></i> Solicitudes de Pago
+        </button>
+    </div>
+
+    <!-- Contenido -->
+    <div id="tesoreria-content" class="mt-6">
+        <div class="flex justify-center items-center p-10">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    </div>
+
+    <div id="modal-placeholder"></div>
+</div>
+
+@section Scripts {
+    <script src="~/js/logistica-tabs.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        $(document).ready(function () {
+            // Cargamos la lista automáticamente al entrar
+            loadTabContent('@Url.Action("ListaSolicitudesPartial", "Tesoreria")', '#tesoreria-content');
+        });
+    </script>
+}

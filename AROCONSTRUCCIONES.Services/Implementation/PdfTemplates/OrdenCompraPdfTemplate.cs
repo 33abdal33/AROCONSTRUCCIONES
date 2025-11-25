@@ -4,7 +4,7 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System.Globalization;
 
-namespace AROCONSTRUCCIONES.Services.Implementation
+namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
 {
     
 
@@ -46,7 +46,7 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                 // Columna 1: Logo
                 row.RelativeItem(2).Column(col =>
                 {
-                    if (System.IO.File.Exists(_model.LogoPath))
+                    if (File.Exists(_model.LogoPath))
                         col.Item().Image(_model.LogoPath).FitWidth();
                     else
                         col.Item().Height(40).Text(text => text.Span("ARO").Bold().FontSize(18).FontColor(Colors.Red.Medium).LineHeight(0.8f)); 

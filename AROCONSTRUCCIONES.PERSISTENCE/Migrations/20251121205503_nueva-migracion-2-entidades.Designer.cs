@@ -4,6 +4,7 @@ using AROCONSTRUCCIONES.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AROCONSTRUCCIONES.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251121205503_nueva-migracion-2-entidades")]
+    partial class nuevamigracion2entidades
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -197,7 +200,7 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("FechaEmisionDocumento")
+                    b.Property<DateTime>("FechaDocumento")
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("Monto")
@@ -212,25 +215,15 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<int?>("OrdenCompraId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SerieDocumento")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
                     b.Property<int>("SolicitudPagoId")
                         .HasColumnType("int");
 
                     b.Property<string>("TipoDocumento")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("OrdenCompraId");
 
                     b.HasIndex("SolicitudPagoId");
 
@@ -419,9 +412,6 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<int?>("ProyectoId")
-                        .HasColumnType("int");
-
                     b.Property<string>("RutaPdf")
                         .HasColumnType("nvarchar(max)");
 
@@ -437,8 +427,6 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                         .IsUnique();
 
                     b.HasIndex("IdProveedor");
-
-                    b.HasIndex("ProyectoId");
 
                     b.ToTable("OrdenCompra", (string)null);
                 });
@@ -626,65 +614,42 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AutorizadoPorUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Banco")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("BeneficiarioNombre")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("BeneficiarioRUC")
+                    b.Property<string>("Codigo")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("CCI")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Codigo")
+                    b.Property<string>("Descripcion")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Concepto")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Estado")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("FechaAutorizacion")
+                    b.Property<DateTime>("FechaEmision")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("FechaPago")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("FechaSolicitud")
-                        .HasColumnType("datetime2");
-
                     b.Property<decimal>("FondoGarantia")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("IGV")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Moneda")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
-                    b.Property<decimal>("MontoNetoAPagar")
+                    b.Property<decimal>("MontoNetoPagar")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("MontoTotal")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("NumeroCuenta")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int?>("OrdenCompraId")
                         .HasColumnType("int");
@@ -698,20 +663,16 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.Property<decimal>("SaldoAmortizar")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("SolicitadoPorUserId")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<string>("SolicitadoPorId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AutorizadoPorUserId");
 
                     b.HasIndex("OrdenCompraId");
 
                     b.HasIndex("ProveedorId");
 
                     b.HasIndex("ProyectoId");
-
-                    b.HasIndex("SolicitadoPorUserId");
 
                     b.ToTable("SolicitudesPagos");
                 });
@@ -889,17 +850,11 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.DetalleSolicitudPago", b =>
                 {
-                    b.HasOne("AROCONSTRUCCIONES.Models.OrdenCompra", "OrdenCompra")
-                        .WithMany()
-                        .HasForeignKey("OrdenCompraId");
-
                     b.HasOne("AROCONSTRUCCIONES.Models.SolicitudPago", "SolicitudPago")
                         .WithMany("Detalles")
                         .HasForeignKey("SolicitudPagoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("OrdenCompra");
 
                     b.Navigation("SolicitudPago");
                 });
@@ -956,13 +911,7 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AROCONSTRUCCIONES.Models.Proyecto", "Proyecto")
-                        .WithMany()
-                        .HasForeignKey("ProyectoId");
-
                     b.Navigation("Proveedor");
-
-                    b.Navigation("Proyecto");
                 });
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.ProveedorMaterial", b =>
@@ -997,10 +946,6 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.SolicitudPago", b =>
                 {
-                    b.HasOne("AROCONSTRUCCIONES.Models.ApplicationUser", "AutorizadoPorUser")
-                        .WithMany()
-                        .HasForeignKey("AutorizadoPorUserId");
-
                     b.HasOne("AROCONSTRUCCIONES.Models.OrdenCompra", "OrdenCompra")
                         .WithMany()
                         .HasForeignKey("OrdenCompraId");
@@ -1017,19 +962,11 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AROCONSTRUCCIONES.Models.ApplicationUser", "SolicitadoPorUser")
-                        .WithMany()
-                        .HasForeignKey("SolicitadoPorUserId");
-
-                    b.Navigation("AutorizadoPorUser");
-
                     b.Navigation("OrdenCompra");
 
                     b.Navigation("Proveedor");
 
                     b.Navigation("Proyecto");
-
-                    b.Navigation("SolicitadoPorUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

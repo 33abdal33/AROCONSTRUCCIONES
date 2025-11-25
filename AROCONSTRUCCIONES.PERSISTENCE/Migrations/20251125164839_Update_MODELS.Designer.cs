@@ -4,6 +4,7 @@ using AROCONSTRUCCIONES.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AROCONSTRUCCIONES.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251125164839_Update_MODELS")]
+    partial class Update_MODELS
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -647,8 +650,8 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
 
                     b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Concepto")
                         .HasMaxLength(500)
@@ -668,17 +671,6 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.Property<DateTime>("FechaSolicitud")
                         .HasColumnType("datetime2");
 
-                    b.Property<decimal>("FondoGarantia")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Moneda")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<decimal>("MontoNetoAPagar")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<decimal>("MontoTotal")
                         .HasColumnType("decimal(18,2)");
 
@@ -694,9 +686,6 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
 
                     b.Property<int>("ProyectoId")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("SaldoAmortizar")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("SolicitadoPorUserId")
                         .HasColumnType("nvarchar(450)");

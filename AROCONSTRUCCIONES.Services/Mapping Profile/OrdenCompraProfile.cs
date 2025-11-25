@@ -26,9 +26,9 @@ namespace AROCONSTRUCCIONES.Services.Mapping_Profile
             // 3. Mapeo para la Creación (DTO -> Entidad)
             // Este es el mapeo clave que construye el objeto anidado
             CreateMap<OrdenCompraCreateDto, OrdenCompra>()
-                .ForMember(dest => dest.Detalles,
-                           opt => opt.MapFrom(src => src.Detalles)); // Mapea la lista de DTOs a la lista de Entidades
-                                                                     // 1. Mapeo para el detalle del modal
+                .ForMember(dest => dest.Detalles, opt => opt.MapFrom(src => src.Detalles))
+                .ForMember(dest => dest.ProyectoId, opt => opt.MapFrom(src => src.ProyectoId)); // <-- AÑADIR ESTA LÍNEA// Mapea la lista de DTOs a la lista de Entidades
+                                                                                                // 1. Mapeo para el detalle del modal
             CreateMap<DetalleOrdenCompra, RecepcionDetalleDto>()
                 .ForMember(dest => dest.DetalleOrdenCompraId, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.MaterialId, opt => opt.MapFrom(src => src.IdMaterial))
@@ -48,6 +48,7 @@ namespace AROCONSTRUCCIONES.Services.Mapping_Profile
                             opt => opt.MapFrom(src => src.Proveedor != null ? src.Proveedor.RazonSocial : "N/A"))
                 .ForMember(dest => dest.ProveedorId, opt => opt.MapFrom(src => src.IdProveedor))
                 .ForMember(dest => dest.Detalles, opt => opt.MapFrom(src => src.Detalles));
+
         }
     }
 }
