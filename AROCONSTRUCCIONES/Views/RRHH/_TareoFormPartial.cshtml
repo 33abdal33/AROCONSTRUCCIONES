@@ -1,0 +1,140 @@
+﻿@model AROCONSTRUCCIONES.Dtos.TareoDto
+
+<div x-data="{ open: true }" x-show="open" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full flex flex-col max-h-[90vh]">
+
+            <form asp-action="GuardarTareo" asp-controller="RRHH" method="post" data-form-ajax="true" class="flex flex-col h-full">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="ProyectoId" />
+
+                <div class="px-6 py-4 border-b border-gray-200 bg-slate-50 rounded-t-lg flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">
+                            <i class="fas fa-clipboard-list mr-2 text-blue-600"></i>
+                            Tareo Diario
+                        </h3>
+                        <p class="text-sm text-slate-500">Proyecto: <strong>@Model.ProyectoNombre</strong> (ID: @Model.ProyectoId)</p>
+                    </div>
+                    <div class="flex gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase">Fecha</label>
+                            <input asp-for="Fecha" type="date" class="border-slate-300 rounded text-sm py-1" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase">Responsable</label>
+                            <input asp-for="Responsable" class="border-slate-300 rounded text-sm py-1 w-40" placeholder="Capataz / Ing." />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-0">
+                    <table class="min-w-full divide-y divide-slate-200 border-collapse">
+                        <thead class="bg-slate-100 sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase border-r">Trabajador</th>
+                                <th class="px-2 py-3 text-center text-xs font-bold text-slate-600 uppercase w-24 border-r bg-blue-50">Asistencia</th>
+                                <th class="px-2 py-3 text-center text-xs font-bold text-slate-600 uppercase w-24 border-r">H. Normal</th>
+                                <th class="px-2 py-3 text-center text-xs font-bold text-slate-600 uppercase w-24 border-r">H.E. 60%</th>
+                                <th class="px-2 py-3 text-center text-xs font-bold text-slate-600 uppercase w-24">H.E. 100%</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            @if (Model.Detalles != null)
+                            {
+                                for (int i = 0; i < Model.Detalles.Count; i++)
+                                {
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="hidden">
+                                            <input type="hidden" asp-for="Detalles[i].TrabajadorId" />
+                                            <input type="hidden" asp-for="Detalles[i].TrabajadorNombre" />
+                                            <input type="hidden" asp-for="Detalles[i].Cargo" />
+                                        </td>
+
+                                        <td class="px-4 py-2 border-r">
+                                            <div class="text-sm font-medium text-slate-900">@Model.Detalles[i].TrabajadorNombre</div>
+                                            <div class="text-xs text-slate-500">@Model.Detalles[i].Cargo</div>
+                                        </td>
+
+                                        <td class="px-2 py-2 text-center border-r bg-blue-50/50">
+                                            <div class="flex justify-center">
+                                                <input asp-for="Detalles[i].Asistio" type="checkbox"
+                                                       class="check-asistencia h-5 w-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer" />
+                                            </div>
+                                        </td>
+
+                                        <td class="px-2 py-2 border-r">
+                                            <input asp-for="Detalles[i].HorasNormales" type="number" step="0.5" min="0" max="8"
+                                                   class="input-horas w-full text-center border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-semibold text-slate-700" />
+                                        </td>
+                                        <td class="px-2 py-2 border-r">
+                                            <input asp-for="Detalles[i].HorasExtras60" type="number" step="0.5" min="0"
+                                                   class="input-horas w-full text-center border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm text-slate-600" />
+                                        </td>
+                                        <td class="px-2 py-2">
+                                            <input asp-for="Detalles[i].HorasExtras100" type="number" step="0.5" min="0"
+                                                   class="input-horas w-full text-center border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm text-slate-600" />
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+
+                    @if (Model.Detalles == null || !Model.Detalles.Any())
+                    {
+                        <div class="p-10 text-center text-slate-500">
+                            <i class="fas fa-users-slash text-4xl mb-2 opacity-50"></i>
+                            <p>No hay trabajadores activos asignados a este proyecto.</p>
+                        </div>
+                    }
+                </div>
+
+                <div class="bg-slate-50 px-6 py-4 border-t border-gray-200 rounded-b-lg flex justify-between items-center">
+                    <div class="text-xs text-slate-500">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Desmarque "Asistencia" para poner Falta. Las horas se pondrán a cero automáticamente.
+                    </div>
+                    <div class="flex space-x-3">
+                        <button type="button" x-on:click="open = false" class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 font-medium text-sm">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 shadow-sm font-medium text-sm flex items-center">
+                            <i class="fas fa-save mr-2"></i> Guardar Tareo
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Pequeña lógica de UI para el grid
+    $(document).ready(function() {
+        // Activar validación de MS
+        const $form = $('#formOrdenCompra').closest('.relative').find('form'); // Ajuste selector si es necesario
+        if ($.validator && $.validator.unobtrusive) {
+            $.validator.unobtrusive.parse($('form'));
+        }
+
+        // Cuando desmarcas "Asistió", las horas se van a 0 y se bloquean
+        $('.check-asistencia').on('change', function() {
+            const $row = $(this).closest('tr');
+            const $inputs = $row.find('input[type="number"]');
+
+            if (!this.checked) {
+                $inputs.val(0).prop('readonly', true).addClass('bg-slate-100 text-slate-400');
+            } else {
+                // Restaurar valor por defecto (8 hrs) si estaba en 0
+                const $normal = $row.find('input[name$="HorasNormales"]');
+                if ($normal.val() == 0) $normal.val(8);
+
+                $inputs.prop('readonly', false).removeClass('bg-slate-100 text-slate-400');
+            }
+        });
+    });
+</script>

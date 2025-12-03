@@ -29,7 +29,15 @@ namespace AROCONSTRUCCIONES.Persistence
         public DbSet<ProveedorMaterial> ProveedorMateriales { get; set; }
         public DbSet<DetalleSolicitudPago> DetalleSolicitudPagos { get; set; }
         public DbSet<SolicitudPago> SolicitudesPagos { get; set; }
-
+        public DbSet<ComprobantePago> ComprobantesPago { get; set; }
+        public DbSet<CuentaBancaria> CuentasBancarias { get; set; }
+        public DbSet<Cargo> Cargos { get; set; }
+        public DbSet<Trabajador> Trabajadores { get; set; }
+        public DbSet<Tareo> Tareos { get; set; }
+        public DbSet<DetalleTareo> DetalleTareos { get; set; }
+        public DbSet<PlanillaSemanal> PlanillasSemanales { get; set; }
+        public DbSet<DetallePlanilla> DetallePlanillas { get; set; }
+        public DbSet<MovimientoBancario> MovimientosBancarios { get; set; }
 
         //FLUENT API
 
@@ -40,7 +48,7 @@ namespace AROCONSTRUCCIONES.Persistence
             modelBuilder.Entity<ProveedorMaterial>()
                .HasKey(pm => new { pm.ProveedorId, pm.MaterialId });
 
-            // Configura la relación Proveedor -> ProveedorMaterial
+            // Configura la relación Proveedor -> ProveedorMaterial 
             modelBuilder.Entity<ProveedorMaterial>()
                 .HasOne(pm => pm.Proveedor)
                 .WithMany(p => p.ProveedorMateriales)

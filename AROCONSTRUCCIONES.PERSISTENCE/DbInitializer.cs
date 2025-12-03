@@ -73,6 +73,24 @@ namespace AROCONSTRUCCIONES.Persistence
             {
                 logger.LogError(ex, "Ocurrió un error durante la siembra de datos de Identity.");
             }
+
+            // --- 3. SEMBRAR CARGOS DE CONSTRUCCIÓN CIVIL ---
+            var context = services.GetRequiredService<ApplicationDbContext>();
+
+            if (!context.Cargos.Any())
+            {
+                context.Cargos.AddRange(
+                    // Valores referenciales de la Federación de Construcción Civil
+                    new Cargo { Nombre = "Operario", JornalBasico = 84.70m, BUC = 32.00m },
+                    new Cargo { Nombre = "Oficial", JornalBasico = 66.50m, BUC = 30.00m },
+                    new Cargo { Nombre = "Peón", JornalBasico = 59.80m, BUC = 30.00m },
+                    new Cargo { Nombre = "Capataz", JornalBasico = 100.00m, BUC = 32.00m }
+                );
+                await context.SaveChangesAsync();
+                logger.LogInformation("Cargos de construcción civil sembrados.");
+            }
         }
+
+
     }
 }

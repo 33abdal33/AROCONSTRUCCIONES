@@ -11,5 +11,6 @@ namespace AROCONSTRUCCIONES.Services.Interface
     {
         Task<string> GenerarPdfOrdenCompra(OrdenCompra ordenCompra);
         Task<string> GenerarPdfSolicitudPago(SolicitudPago solicitudPago);
+        Task<string> GenerarBoletaPago(DetallePlanilla detalle);
     }
 }

@@ -1,4 +1,5 @@
-﻿using AROCONSTRUCCIONES.Models;
+﻿using AROCONSTRUCCIONES.Dtos;
+using AROCONSTRUCCIONES.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,5 +18,7 @@ namespace AROCONSTRUCCIONES.Services.Interface
 
         // --- NUEVO MÉTODO (Para el PDF después) ---
         Task<SolicitudPago?> GetSolicitudByIdAsync(int id);
+        Task RegistrarPagoAsync(PagarSolicitudDto dto, string userId);
+        Task<string> ObtenerUrlPdfSolicitud(int id);
     }
 }

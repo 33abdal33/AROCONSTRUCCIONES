@@ -1,0 +1,68 @@
+﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.PlanillaSemanalDto>
+
+<div class="space-y-4">
+    @if (!Model.Any())
+    {
+        <div class="text-center text-slate-500 py-10">No hay planillas aprobadas para este proyecto.</div>
+    }
+
+    @foreach (var planilla in Model)
+    {
+        <div x-data="{ open: false }" class="bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
+            <div x-on:click="open = !open" class="p-4 bg-slate-50 cursor-pointer flex justify-between items-center hover:bg-slate-100 transition">
+                <div>
+                    <h4 class="font-bold text-slate-800">
+                        <i class="fas fa-calendar-week text-blue-600 mr-2"></i>
+                        Semana: @planilla.FechaInicio.ToString("dd/MM") - @planilla.FechaFin.ToString("dd/MM/yyyy")
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-1">Código: @planilla.Codigo</p>
+                </div>
+                <div class="text-right flex items-center justify-end space-x-3">
+
+                    <div class="text-right mr-2">
+                        <p class="text-sm font-bold text-slate-700">S/ @planilla.TotalNeto.ToString("N2")</p>
+                        <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 font-bold">@planilla.Estado</span>
+                    </div>
+
+                    <a href="@Url.Action("ExportarPlanillaCsv", "RRHH", new { id = planilla.Id })"
+                       target="_blank"
+                       class="px-3 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition shadow-sm flex items-center"
+                       onclick="event.stopPropagation();">
+                        <i class="fas fa-file-excel mr-1"></i> Excel
+                    </a>
+
+                    <i class="fas fa-chevron-down ml-2 text-slate-400 transition-transform" :class="{'rotate-180': open}"></i>
+                </div>
+            </div>
+
+            <div x-show="open" class="border-t border-slate-200">
+                <table class="min-w-full divide-y divide-slate-100">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-slate-500">Trabajador</th>
+                            <th class="px-4 py-2 text-center text-xs font-bold text-slate-500">Días</th>
+                            <th class="px-4 py-2 text-right text-xs font-bold text-slate-500">Neto</th>
+                            <th class="px-4 py-2 text-center text-xs font-bold text-slate-500">Boleta</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var det in planilla.Detalles) // Asegúrate de que el DTO traiga los detalles
+                        {
+                            <tr>
+                                <td class="px-4 py-2 text-sm text-slate-700">@det.TrabajadorNombre</td>
+                                <td class="px-4 py-2 text-center text-sm text-slate-600">@det.DiasTrabajados</td>
+                                <td class="px-4 py-2 text-right text-sm font-bold text-slate-700">@det.NetoAPagar.ToString("N2")</td>
+                                <td class="px-4 py-2 text-center">
+                                    <a href="@Url.Action("DescargarBoleta", "RRHH", new { id = det.Id })" target="_blank"
+                                       class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center">
+                                        <i class="fas fa-file-pdf mr-1"></i> Descargar
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

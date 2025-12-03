@@ -1,0 +1,44 @@
+﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.TareoDto>
+
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Fecha</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Responsable</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Personal</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Estado</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Acción</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-200">
+            @if (!Model.Any())
+            {
+                <tr><td colspan="5" class="px-6 py-4 text-center text-slate-500">No hay tareos registrados para este proyecto.</td></tr>
+            }
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                        @item.Fecha.ToString("dd/MM/yyyy") <span class="text-slate-400 text-xs">(@item.Fecha.ToString("dddd"))</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@item.Responsable</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-slate-500">
+                        <span class="bg-slate-100 px-2 py-1 rounded text-xs font-bold">@item.Detalles.Count() Obreros</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @(item.Estado == "Cerrado" ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800")">
+                            @item.Estado
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="text-blue-600 hover:text-blue-900"
+                                data-modal-url="@Url.Action("GetTareoForm", "RRHH", new { id = item.Id, proyectoId = item.ProyectoId })">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

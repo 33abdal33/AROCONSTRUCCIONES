@@ -1,4 +1,5 @@
-﻿using AROCONSTRUCCIONES.Models;
+﻿using AROCONSTRUCCIONES.Dtos;
+using AROCONSTRUCCIONES.Models;
 using AROCONSTRUCCIONES.Repository.Interfaces;
 using AROCONSTRUCCIONES.Services.Interface;
 using Microsoft.EntityFrameworkCore;
@@ -13,48 +14,67 @@ namespace AROCONSTRUCCIONES.Services.Implementation
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<TesoreriaService> _logger;
+        private readonly IPdfService _pdfService;
 
-        public TesoreriaService(IUnitOfWork unitOfWork, ILogger<TesoreriaService> logger)
+        public TesoreriaService(IUnitOfWork unitOfWork, ILogger<TesoreriaService> logger, IPdfService pdfService)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _pdfService = pdfService;
         }
 
         public async Task<bool> GenerarSolicitudPagoDesdeOC(int ordenCompraId, string userId)
         {
             try
             {
-                // 1. Obtener la OC con todos sus datos (Proveedor y Detalles)
+                // 1. Obtener la OC
                 var oc = await _unitOfWork.OrdenesCompra.GetByIdWithDetailsAsync(ordenCompraId);
 
                 if (oc == null) throw new Exception("Orden de Compra no encontrada.");
-                if (!oc.ProyectoId.HasValue) throw new Exception("La OC no tiene un proyecto asignado, no se puede generar SP.");
+                if (oc.Estado == "Pendiente" || oc.Estado == "Cancelado")
+                {
+                    throw new ApplicationException($"No se puede generar pago. La OC está en estado '{oc.Estado}'.");
+                }
+                if (!oc.ProyectoId.HasValue)
+                {
+                    throw new ApplicationException("La OC no tiene un proyecto vinculado.");
+                }
 
-                // 2. Verificar si ya existe una SP para esta OC (Evitar duplicados)
+                // 2. Verificar duplicados
                 var existeSP = await _unitOfWork.Context.Set<SolicitudPago>()
                     .AnyAsync(sp => sp.OrdenCompraId == ordenCompraId && sp.Estado != "Anulado");
+                if (existeSP) return false;
 
-                if (existeSP) return false; // Ya se generó
+                // --- 3. GENERACIÓN DE CORRELATIVO (SOLUCIÓN AL PROBLEMA) ---
+                // Contamos cuántas SP existen para calcular el siguiente número
+                // Ej: Si hay 5, el nuevo será 6 -> "SP-0006"
+                int cantidadActual = await _unitOfWork.Context.Set<SolicitudPago>().CountAsync();
+                int siguienteNumero = cantidadActual + 1;
+                string codigoCorrelativo = $"SP-{siguienteNumero:D4}"; // D4 = Rellena con ceros (0001, 0015, etc.)
 
-                // 3. Crear la Cabecera de la SP
+                // Validación de seguridad para NumeroDocumento (OC)
+                // Si el código de la OC es muy largo (ej. por el error de duplicado REQ-REQ), lo cortamos a 20 chars.
+                string numeroDocCorto = oc.Codigo.Length > 20
+                    ? oc.Codigo.Substring(0, 20)
+                    : oc.Codigo;
+
+                // -----------------------------------------------------------
+
                 var nuevaSP = new SolicitudPago
                 {
-                    Codigo = $"SP-{DateTime.Now.Year}-{oc.Codigo}", // Ej: SP-2025-OC-001
+                    Codigo = codigoCorrelativo, // Usamos el nuevo código corto
                     FechaSolicitud = DateTime.Now,
                     Estado = "Pendiente",
-                    Moneda = "NUEVOS SOLES", // <-- AÑADIR ESTA LÍNEA
-
-                    // Vinculaciones
+                    Moneda = "NUEVOS SOLES",
                     OrdenCompraId = oc.Id,
-                    ProyectoId = oc.ProyectoId.Value, // ¡Aquí usamos el dato que añadimos!
+                    ProyectoId = oc.ProyectoId.Value,
                     ProveedorId = oc.IdProveedor,
                     SolicitadoPorUserId = userId,
-
-                    // Datos Financieros (Copia fiel de la OC)
                     MontoTotal = oc.Total,
-                    Concepto = $"Pago por OC {oc.Codigo} - {oc.Observaciones}",
+                    MontoNetoAPagar = oc.Total,
+                    Concepto = $"Pago OC {numeroDocCorto}", // Concepto más corto
 
-                    // Datos del Beneficiario (Instantánea del momento)
+                    // Snapshot de datos
                     BeneficiarioNombre = oc.Proveedor.RazonSocial,
                     BeneficiarioRUC = oc.Proveedor.RUC,
                     Banco = oc.Proveedor.Banco,
@@ -62,29 +82,23 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                     CCI = oc.Proveedor.CCI
                 };
 
-                // 4. Crear el Detalle de la SP (La línea que referencia a la OC)
                 var detalleSP = new DetalleSolicitudPago
                 {
-                    SolicitudPago = nuevaSP, // EF Core enlazará esto automáticamente
+                    SolicitudPago = nuevaSP,
                     TipoDocumento = "OC",
                     SerieDocumento = "GEN",
-                    NumeroDocumento = oc.Codigo,
+                    NumeroDocumento = numeroDocCorto, // ¡AQUÍ USAMOS EL CÓDIGO SEGURO!
                     FechaEmisionDocumento = oc.FechaEmision,
                     Monto = oc.Total,
                     OrdenCompraId = oc.Id,
-                    Observacion = "Generado automáticamente desde Logística"
+                    Observacion = "Generado desde Logística"
                 };
 
-                // 5. Guardar en Base de Datos
                 await _unitOfWork.Context.Set<SolicitudPago>().AddAsync(nuevaSP);
                 await _unitOfWork.Context.Set<DetalleSolicitudPago>().AddAsync(detalleSP);
-
-                // Opcional: Actualizar estado de OC para indicar que está en proceso de pago
-                // oc.Estado = "En Proceso de Pago"; 
-
                 await _unitOfWork.SaveChangesAsync();
-                _logger.LogInformation($"Solicitud de Pago {nuevaSP.Codigo} generada exitosamente.");
 
+                _logger.LogInformation($"Solicitud de Pago {nuevaSP.Codigo} generada exitosamente.");
                 return true;
             }
             catch (Exception ex)
@@ -112,5 +126,71 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                .Include(sp => sp.Detalles) // Para ver qué facturas están adjuntas
                .FirstOrDefaultAsync(sp => sp.Id == id);
         }
+        public async Task RegistrarPagoAsync(PagarSolicitudDto dto, string userId)
+        {
+            using var transaction = await _unitOfWork.Context.Database.BeginTransactionAsync();
+            try
+            {
+                // 1. Obtener la Solicitud
+                var solicitud = await _unitOfWork.Context.Set<SolicitudPago>()
+                    .FirstOrDefaultAsync(s => s.Id == dto.SolicitudId);
+
+                if (solicitud == null) throw new Exception("Solicitud no encontrada");
+                if (solicitud.Estado == "Pagado") throw new Exception("Esta solicitud ya fue pagada.");
+
+                // 2. Obtener la Cuenta Bancaria (y bloquearla para concurrencia si fuera necesario)
+                var cuenta = await _unitOfWork.Context.CuentasBancarias.FindAsync(dto.CuentaBancariaId);
+                if (cuenta == null) throw new Exception("Cuenta bancaria no encontrada.");
+
+                // 3. Validar Saldo (Opcional: permitir negativos si es cuenta corriente con crédito)
+                if (cuenta.SaldoActual < solicitud.MontoNetoAPagar)
+                {
+                    throw new Exception($"Saldo insuficiente en {cuenta.BancoNombre}. Saldo: {cuenta.SaldoActual:N2}, Requerido: {solicitud.MontoNetoAPagar:N2}");
+                }
+
+                // 4. Descontar Saldo
+                cuenta.SaldoActual -= solicitud.MontoNetoAPagar;
+
+                // 5. Registrar Movimiento Bancario
+                var movimiento = new MovimientoBancario
+                {
+                    CuentaBancariaId = cuenta.Id,
+                    FechaMovimiento = dto.FechaPago,
+                    TipoMovimiento = "EGRESO",
+                    Monto = solicitud.MontoNetoAPagar,
+                    SaldoDespues = cuenta.SaldoActual,
+                    Descripcion = $"PAGO SP-{solicitud.Codigo} - {solicitud.BeneficiarioNombre}",
+                    NumeroOperacion = dto.NumeroOperacion,
+                    SolicitudPagoId = solicitud.Id
+                };
+                await _unitOfWork.Context.MovimientosBancarios.AddAsync(movimiento);
+
+                // 6. Actualizar Solicitud
+                solicitud.Estado = "Pagado";
+                solicitud.FechaPago = dto.FechaPago;
+                solicitud.AutorizadoPorUserId = userId;
+                solicitud.Concepto += $" || PAGADO CON {cuenta.BancoNombre} OP: {dto.NumeroOperacion}";
+                solicitud.Banco = cuenta.BancoNombre; // Guardamos histórico de con qué se pagó
+
+                // Guardar todo
+                await _unitOfWork.Context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<string> ObtenerUrlPdfSolicitud(int id)
+        {
+            var solicitud = await GetSolicitudByIdAsync(id);
+            if (solicitud == null) throw new Exception("Solicitud no encontrada");
+
+            // Llama a tu servicio PDF existente
+            return await _pdfService.GenerarPdfSolicitudPago(solicitud);
+        }
     }
+
 }

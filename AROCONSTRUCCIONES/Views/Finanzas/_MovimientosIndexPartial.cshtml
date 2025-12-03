@@ -1,0 +1,79 @@
+﻿<div class="pt-4">
+    <div class="mb-4">
+        <h3 class="text-xl font-semibold text-slate-700">
+            <i class="fas fa-list-ul mr-2 text-blue-600"></i>
+            Kárdex de Movimientos Bancarios
+        </h3>
+        <p class="text-sm text-slate-500">Consulte los ingresos y egresos de sus cuentas.</p>
+    </div>
+
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6">
+        <form id="formFiltrosBanco" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase">Cuenta Bancaria</label>
+                <select id="filtroCuentaId" name="cuentaId" class="form-select w-full border-slate-300 rounded-md" asp-items="ViewBag.Cuentas">
+                    <option value="">-- Todas las Cuentas --</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase">Fecha Inicio</label>
+                <input type="date" id="filtroFecIni" name="fechaInicio" class="form-input w-full border-slate-300 rounded-md"
+                       value="@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase">Fecha Fin</label>
+                <input type="date" id="filtroFecFin" name="fechaFin" class="form-input w-full border-slate-300 rounded-md"
+                       value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="flex space-x-2">
+                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium shadow-sm transition">
+                    <i class="fas fa-search mr-2"></i> Buscar
+                </button>
+
+                <button type="button" id="btnExportarExcel" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium shadow-sm transition" title="Descargar en Excel">
+                    <i class="fas fa-file-excel"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div id="contenedorMovimientos">
+        <div class="text-center text-slate-400 py-10 border border-dashed rounded bg-slate-50">
+            <i class="fas fa-search mb-2"></i>
+            <p>Haga clic en "Buscar" para ver los movimientos.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+
+        // Lógica de búsqueda (existente)
+        $('#formFiltrosBanco').on('submit', function(e) {
+            e.preventDefault();
+            const data = $(this).serialize();
+            const $cont = $('#contenedorMovimientos');
+            $cont.html('<div class="text-center p-10"><i class="fas fa-spinner fa-spin text-blue-600 text-2xl"></i> Cargando...</div>');
+            $.get('@Url.Action("ListaMovimientosPartial", "Finanzas")', data, function(html) {
+                $cont.html(html);
+            });
+        });
+
+        // Lógica de Exportación (NUEVA)
+        $('#btnExportarExcel').on('click', function() {
+            // Capturamos los valores actuales del formulario
+            const cuentaId = $('#filtroCuentaId').val();
+            const fecIni = $('#filtroFecIni').val();
+            const fecFin = $('#filtroFecFin').val();
+
+            // Construimos la URL de descarga
+            let url = '@Url.Action("ExportarMovimientosCsv", "Finanzas")' +
+                      '?cuentaId=' + cuentaId +
+                      '&fechaInicio=' + fecIni +
+                      '&fechaFin=' + fecFin;
+
+            // Redirigimos el navegador para iniciar la descarga
+            window.location.href = url;
+        });
+    });
+</script>   

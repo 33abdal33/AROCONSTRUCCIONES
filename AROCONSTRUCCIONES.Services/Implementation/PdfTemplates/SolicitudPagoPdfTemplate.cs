@@ -10,12 +10,23 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
     {
         private readonly SolicitudPagoPdfModel _model;
         private readonly SolicitudPago _sp;
-        private readonly CultureInfo culture = CultureInfo.CreateSpecificCulture("es-PE");
+        private readonly CultureInfo _culture;
+
+        // --- ESTILOS DE FUENTE (Ajustados a la imagen) ---
+        static TextStyle HeaderTitleStyle => TextStyle.Default.FontSize(16).Bold().FontColor(Colors.Black);
+        static TextStyle CompanyStyle => TextStyle.Default.FontSize(8).Bold();
+        static TextStyle ProjectStyle => TextStyle.Default.FontSize(6).Bold(); // Letra pequeña para el nombre largo del proyecto
+        static TextStyle LabelStyle => TextStyle.Default.FontSize(7).FontColor(Colors.Black);
+        static TextStyle ValueStyle => TextStyle.Default.FontSize(8).FontColor(Colors.Black).Bold();
+        static TextStyle BigNumberStyle => TextStyle.Default.FontSize(22).Bold().FontColor(Colors.Black);
+        static TextStyle TableHeaderStyle => TextStyle.Default.FontSize(6).Bold();
+        static TextStyle SmallTextStyle => TextStyle.Default.FontSize(6);
 
         public SolicitudPagoPdfTemplate(SolicitudPagoPdfModel model)
         {
             _model = model;
             _sp = model.Solicitud;
+            _culture = CultureInfo.CreateSpecificCulture("es-PE");
         }
 
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
@@ -24,207 +35,415 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
         {
             container.Page(page =>
             {
-                page.Margin(30);
+                page.Margin(25);
                 page.Size(PageSizes.A4);
+                page.DefaultTextStyle(x => x.FontFamily(Fonts.Arial));
+
+                // Todo el contenido va dentro de un borde principal como en la imagen
                 page.Content().Element(ComposeContent);
+
+                // Footer simple
+                page.Footer().AlignCenter().Text(x =>
+                {
+                    x.Span("Página ");
+                    x.CurrentPageNumber();
+                });
             });
         }
 
         void ComposeContent(IContainer container)
         {
+            // Borde exterior grueso (1.5f)
+            container.Border(1.5f).BorderColor(Colors.Black).Column(col =>
+            {
+                // 1. TÍTULO GLOBAL
+                col.Item().BorderBottom(1).PaddingVertical(4).AlignCenter().Text("SOLICITUD DE PAGO").Style(HeaderTitleStyle);
+
+                // 2. CABECERA (Consorcio - Obra - Correlativo)
+                col.Item().Element(ComposeCabeceraSuperior);
+
+                // 3. DATOS (Emisión - Monto - Cargar A)
+                col.Item().Element(ComposeBloqueDatos);
+
+                // 4. DESCRIPCIÓN (Tabla Central)
+                col.Item().Element(ComposeTablaDescripcion);
+
+                // 5. TABLA INFERIOR (Documentos, Resumen, Bancos)
+                col.Item().Element(ComposeTablaInferior);
+
+                // 6. PIE (Notas, Neto, Firmas)
+                col.Item().Element(ComposePieDatos);
+            });
+        }
+
+        void ComposeCabeceraSuperior(IContainer container)
+        {
+            container.BorderBottom(1).Row(row =>
+            {
+                // [IZQUIERDA] Consorcio
+                row.RelativeItem(2.5f).BorderRight(1).Padding(5).AlignCenter().AlignMiddle().Column(c =>
+                {
+                    c.Item().AlignCenter().Text("CONSORCIO EJECUTOR").FontSize(7).Bold();
+                    // Aquí ponemos el nombre de tu empresa
+                    c.Item().AlignCenter().Text("ARO CONSTRUCTORA Y MINEROS E.I.R.L.").Style(CompanyStyle);
+                });
+
+                // [CENTRO] Nombre del Proyecto / Obra
+                row.RelativeItem(6f).BorderRight(1).Padding(5).AlignCenter().AlignMiddle().Column(c =>
+                {
+                    // Usamos comillas y mayúsculas como en el ejemplo
+                    var nombreProyecto = _sp.Proyecto?.NombreProyecto?.ToUpper() ?? "SIN PROYECTO ASIGNADO";
+                    c.Item().Text($"\"{nombreProyecto}\"").Style(ProjectStyle).AlignCenter();
+
+                    // CUI
+                    c.Item().PaddingTop(2).Text("CUI N° 2644941").Style(ProjectStyle).AlignCenter();
+                });
+
+                // [DERECHA] Número Correlativo (0006)
+                row.RelativeItem(1.5f).Padding(5).AlignCenter().AlignMiddle().Text(t =>
+                {
+                    // Extraemos solo el número del código (ej: SP-0006 -> 0006)
+                    var correlativo = _sp.Codigo.Contains("-") ? _sp.Codigo.Split('-').Last() : _sp.Codigo;
+                    t.Span(correlativo).Style(BigNumberStyle);
+                });
+            });
+        }
+
+        void ComposeBloqueDatos(IContainer container)
+        {
             container.Column(col =>
             {
-                // 1. ENCABEZADO PRINCIPAL (Título y Proyecto)
-                col.Item().Element(ComposeHeader);
+                // Fila 1: Emisión | Fecha | MONEDA | TC
+                col.Item().BorderBottom(1).Row(row =>
+                {
+                    row.RelativeItem(2).BorderRight(1).PaddingHorizontal(4).AlignMiddle().Text("Emisión").Style(LabelStyle);
+                    row.RelativeItem(5).BorderRight(1).PaddingHorizontal(4).AlignMiddle()
+                        .Text(_sp.FechaSolicitud.ToString("dddd dd de MMMM de yyyy", _culture)).Style(LabelStyle); // Fecha normal, no negrita en el ejemplo
 
-                col.Spacing(5);
+                    row.RelativeItem(2).BorderRight(1).PaddingHorizontal(4).AlignMiddle().AlignCenter().Text("MONEDA").Style(LabelStyle);
+                    row.RelativeItem(1).PaddingHorizontal(4).AlignMiddle().AlignCenter().Text("TC").Style(LabelStyle);
+                });
 
-                // 2. DATOS GENERALES (Emisión, Moneda, Beneficiario)
-                col.Item().Element(ComposeDatosGenerales);
+                // Fila 2: LA CANTIDAD DE | S/. | Monto | NUEVOS SOLES
+                col.Item().BorderBottom(1).Row(row =>
+                {
+                    row.RelativeItem(2).BorderRight(1).PaddingHorizontal(4).AlignMiddle().Text("LA CANTIDAD DE").Style(LabelStyle);
 
-                // 3. DESCRIPCIÓN (Tabla central)
-                col.Item().Element(ComposeDescripcionTable);
+                    row.RelativeItem(1).PaddingHorizontal(4).AlignMiddle().AlignCenter().Text("S/.").FontSize(10).Bold();
+                    row.RelativeItem(4).BorderRight(1).PaddingHorizontal(4).AlignMiddle().AlignRight()
+                        .Text(_sp.MontoTotal.ToString("N2", _culture)).FontSize(12).Bold();
 
-                // 4. DETALLE DE DOCUMENTOS (Tabla inferior)
-                col.Item().Element(ComposeDocumentosTable);
+                    row.RelativeItem(2).BorderRight(1).PaddingHorizontal(4).AlignMiddle().AlignCenter().Text("NUEVOS SOLES").Style(LabelStyle);
+                    row.RelativeItem(1).PaddingHorizontal(4).AlignMiddle().Text("");
+                });
 
-                // 5. PIE DE PÁGINA (Bancos, Neto a Pagar, Firmas)
-                col.Item().Element(ComposePiePagina);
+                // Fila 3: CARGAR A | Beneficiario | Fecha Pago
+                col.Item().BorderBottom(1).Row(row =>
+                {
+                    // Izquierda
+                    row.RelativeItem(8).Row(r =>
+                    {
+                        r.RelativeItem(2).BorderRight(1).Padding(4).AlignMiddle().Text("CARGAR A").Style(LabelStyle);
+                        r.RelativeItem(6).Padding(4).AlignMiddle().Text(_sp.BeneficiarioNombre?.ToUpper()).FontSize(9).ExtraBold();
+                    });
+
+                    // Derecha (Caja Fecha Pago)
+                    row.RelativeItem(2).BorderLeft(1).Column(c =>
+                    {
+                        c.Item().BorderBottom(1).Padding(2).AlignCenter().Text("Fecha de Pago").Style(LabelStyle);
+                        // Si está pagado, mostramos fecha, sino vacío o pendiente
+                        var fechaPago = _sp.FechaPago.HasValue ? _sp.FechaPago.Value.ToString("dd 'de' MMMM 'de' yyyy", _culture) : "";
+                        c.Item().Padding(2).AlignCenter().Text(fechaPago).FontSize(7);
+                    });
+                });
             });
         }
 
-        void ComposeHeader(IContainer container)
+        void ComposeTablaDescripcion(IContainer container)
         {
-            container.Table(table =>
+            decimal total = _sp.MontoTotal;
+            decimal baseImponible = total / 1.18m;
+            decimal igv = total - baseImponible;
+
+            container.Column(col =>
             {
-                table.ColumnsDefinition(columns =>
+                // Header "DESCRIPCIÓN"
+                col.Item().BorderBottom(1).Background(Colors.Grey.Lighten4).PaddingVertical(2).AlignCenter().Text("DESCRIPCIÓN").Style(TableHeaderStyle).FontColor(Colors.Black);
+
+                // Sub-header (Gastos Generales | PARCIAL)
+                col.Item().BorderBottom(1).Row(row =>
                 {
-                    columns.RelativeColumn(2); // Consorcio/Empresa
-                    columns.RelativeColumn(5); // Proyecto (Recuadro Rojo)
-                    columns.RelativeColumn(2); // Código
+                    row.RelativeItem(8).BorderRight(1).PaddingHorizontal(4).Text("Gastos Generales").FontSize(7).Bold();
+                    row.RelativeItem(2).PaddingHorizontal(4).AlignCenter().Text("PARCIAL").FontSize(7).Bold();
                 });
 
-                // Celda 1: Empresa
-                table.Cell().Border(1).AlignCenter().AlignMiddle().Padding(5).Column(col =>
+                // Fila Concepto Principal
+                string conceptoCorto = _sp.Concepto.Split('-').FirstOrDefault()?.ToUpper() ?? "VARIOS";
+                col.Item().BorderBottom(1).PaddingHorizontal(4).Text(conceptoCorto).FontSize(7).Bold();
+
+                // Tabla Interna
+                col.Item().Table(table =>
                 {
-                    col.Item().Text("CONSORCIO EJECUTOR").Bold().FontSize(9).AlignCenter();
-                    col.Item().Text("DISAMART").Bold().FontSize(10).AlignCenter();
-                    // (O puedes poner "ARO CONSTRUCCIONES" aquí si prefieres)
+                    table.ColumnsDefinition(c =>
+                    {
+                        c.RelativeColumn(6); // Descripción Larga
+                        c.RelativeColumn(1); // Metrado
+                        c.RelativeColumn(1); // P.U.
+                        c.RelativeColumn(2); // Parcial (Columna derecha)
+                    });
+
+                    // 1. Descripción Detallada
+                    table.Cell().PaddingHorizontal(4).PaddingVertical(4).Text(_sp.Concepto).FontSize(7);
+
+                    // 2. Metrado y PU (Subrayados en la imagen)
+                    table.Cell().BorderBottom(1).AlignCenter().Text("Metrado").FontSize(6).Underline();
+                    table.Cell().BorderBottom(1).AlignCenter().Text("P.U.").FontSize(6).Underline();
+
+                    // 3. Columna Derecha (Totales)
+                    table.Cell().RowSpan(2).BorderLeft(1).Column(c =>
+                    {
+                        // Parcial (Arriba)
+                        c.Item().BorderBottom(1).AlignRight().PaddingHorizontal(4).Text(baseImponible.ToString("N2", _culture)).FontSize(7);
+
+                        // PARCIAL Label y Valor
+                        c.Item().BorderBottom(1).Row(r =>
+                        {
+                            r.RelativeItem().Text("PARCIAL").FontSize(6).Bold().AlignRight();
+                            r.ConstantItem(5);
+                            r.AutoItem().Text(baseImponible.ToString("N2", _culture)).FontSize(7).Bold().AlignRight();
+                            r.ConstantItem(4);
+                        });
+
+                        // IGV Label y Valor
+                        c.Item().Row(r =>
+                        {
+                            r.RelativeItem().Text("IGV").FontSize(6).Bold().AlignRight();
+                            r.ConstantItem(5);
+                            r.AutoItem().Text(igv.ToString("N2", _culture)).FontSize(7).Bold().AlignRight();
+                            r.ConstantItem(4);
+                        });
+                    });
+
+                    // Segunda fila de la izquierda (Valores numéricos)
+                    table.Cell().Text(""); // Espacio bajo descripción
+                    table.Cell().AlignCenter().Text("1.00").FontSize(7);
+                    table.Cell().AlignCenter().Text(baseImponible.ToString("N2", _culture)).FontSize(7);
                 });
 
-                // Celda 2: PROYECTO (RECUADRO ROJO #1)
-                table.Cell().Border(2).BorderColor(Colors.Red.Medium).Padding(5).AlignCenter().AlignMiddle().Column(col =>
-                {
-                    col.Item().Text("SOLICITUD DE PAGO").Bold().FontSize(14).AlignCenter();
-                    col.Item().PaddingTop(5).Text(_sp.Proyecto?.NombreProyecto.ToUpper() ?? "SIN PROYECTO").Bold().FontSize(8).AlignCenter();
-                });
-
-                // Celda 3: Código
-                table.Cell().Border(1).AlignCenter().AlignMiddle().Padding(5).Text(_sp.Codigo).FontSize(16).Bold();
+                col.Item().LineHorizontal(1);
             });
         }
 
-        void ComposeDatosGenerales(IContainer container)
+        void ComposeTablaInferior(IContainer container)
         {
-            container.Table(table =>
+            container.Row(row =>
             {
-                table.ColumnsDefinition(columns =>
+                // [IZQUIERDA] Documentos
+                row.RelativeItem(4).BorderRight(1).Column(c =>
                 {
-                    columns.ConstantColumn(80); // Label
-                    columns.RelativeColumn();   // Value
-                    columns.ConstantColumn(60); // Label Moneda
-                    columns.ConstantColumn(40); // TC
+                    c.Item().Table(table =>
+                    {
+                        table.ColumnsDefinition(cols => { cols.RelativeColumn(2); cols.RelativeColumn(1); cols.RelativeColumn(2); cols.RelativeColumn(2); });
+
+                        // Headers extraños de la imagen (Sin Orden N | 5-2024)
+                        table.Cell().ColumnSpan(2).BorderBottom(1).BorderRight(1).AlignCenter().Text("Sin Orden N°").Style(SmallTextStyle).FontColor(Colors.Grey.Medium);
+                        table.Cell().ColumnSpan(2).BorderBottom(1).AlignCenter().Text("5 - 2024").Style(SmallTextStyle);
+
+                        // Filas de Documentos
+                        foreach (var doc in _sp.Detalles)
+                        {
+                            table.Cell().BorderBottom(1).BorderRight(1).Padding(2).Text(doc.TipoDocumento).Style(SmallTextStyle);
+                            table.Cell().BorderBottom(1).BorderRight(1).Padding(2).Text("-").Style(SmallTextStyle);
+                            table.Cell().BorderBottom(1).BorderRight(1).Padding(2).Text(doc.FechaEmisionDocumento.ToString("dd/MM/yyyy")).Style(SmallTextStyle);
+                            table.Cell().BorderBottom(1).Padding(2).AlignRight().Text(doc.Monto.ToString("N2", _culture)).Style(SmallTextStyle);
+                        }
+
+                        // CORRECCIÓN DEL ERROR: Filas vacías sin .Text("")
+                        for (int i = 0; i < 4; i++)
+                        {
+                            table.Cell().BorderBottom(1).BorderRight(1).Height(12); // Solo altura
+                            table.Cell().BorderBottom(1).BorderRight(1).Height(12);
+                            table.Cell().BorderBottom(1).BorderRight(1).Height(12);
+                            table.Cell().BorderBottom(1).Height(12);
+                        }
+                    });
                 });
 
-                // Fila 1: Emisión
-                table.Cell().Border(1).Padding(2).Text("Emisión").FontSize(8);
-                table.Cell().Border(1).Padding(2).Text(_sp.FechaSolicitud.ToString("dddd dd de MMMM de yyyy", culture)).FontSize(9).Bold();
-                table.Cell().Border(1).Padding(2).Text("MONEDA").FontSize(8).AlignCenter();
-                table.Cell().Border(1).Padding(2).Text("TC").FontSize(8).AlignCenter();
+                // [CENTRO] Resumen Saldos
+                row.RelativeItem(4).BorderRight(1).Column(c =>
+                {
+                    c.Item().Table(t => {
+                        t.ColumnsDefinition(cols => { cols.RelativeColumn(3); cols.RelativeColumn(3); cols.RelativeColumn(2); cols.RelativeColumn(2); });
 
-                // Fila 2: Cantidad
-                table.Cell().Border(1).Padding(2).Text("LA CANTIDAD DE").FontSize(8);
-                table.Cell().Border(1).Padding(2).Text($"S/. {_sp.MontoTotal.ToString("N2", culture)}").FontSize(11).Bold();
-                table.Cell().Border(1).Padding(2).Text("NUEVOS SOLES").FontSize(7).AlignCenter();
-                table.Cell().Border(1).Padding(2).Text("").FontSize(8);
+                        t.Cell().ColumnSpan(4).BorderBottom(1).AlignCenter().Text("Total de Pagos (SD) por SO").Style(SmallTextStyle).FontColor(Colors.Grey.Medium);
 
-                // Fila 3: Cargar A (Beneficiario)
-                table.Cell().Border(1).Padding(2).Text("CARGAR A").FontSize(8);
-                // Ocupa 3 columnas
-                table.Cell().ColumnSpan(3).Border(1).Padding(2).Text(_sp.BeneficiarioNombre?.ToUpper()).FontSize(10).Bold();
+                        // Contratado
+                        t.Cell().BorderBottom(1).BorderRight(1).Padding(2).Text("Contratado").Style(SmallTextStyle);
+                        t.Cell().BorderBottom(1).BorderRight(1).Padding(2).Text("").Style(SmallTextStyle);
+                        t.Cell().BorderBottom(1).Padding(2).Text("S/.").Style(SmallTextStyle);
+                        t.Cell().BorderBottom(1).Padding(2).AlignRight().Text(_sp.MontoTotal.ToString("N2", _culture)).Style(SmallTextStyle);
+
+                        // Pagado a cuenta (0.00 placeholder)
+                        t.Cell().BorderBottom(1).BorderRight(1).Padding(2).Text("Pagado a cuenta").Style(SmallTextStyle);
+                        t.Cell().BorderBottom(1).BorderRight(1).Padding(2).Text("Saldo a Amortizar (C.D.)").FontSize(5).FontColor(Colors.Grey.Medium);
+                        t.Cell().BorderBottom(1).Padding(2).Text("S/.").Style(SmallTextStyle);
+                        t.Cell().BorderBottom(1).Padding(2).AlignRight().Text("0.00").Style(SmallTextStyle);
+
+                        // Saldo a Pagar
+                        t.Cell().BorderBottom(1).BorderRight(1).Padding(2).Text("Saldo a Pagar").Style(SmallTextStyle);
+                        t.Cell().BorderBottom(1).BorderRight(1).Padding(2).Text("Fondo de Garantia (C.D.)").FontSize(5).FontColor(Colors.Grey.Medium);
+                        t.Cell().BorderBottom(1).Padding(2).Text("S/.").Style(SmallTextStyle);
+                        t.Cell().BorderBottom(1).Padding(2).AlignRight().Text(_sp.MontoNetoAPagar.ToString("N2", _culture)).FontSize(7).Bold();
+
+                        // REEMBOLSAR A
+                        string nombreCorto = _sp.BeneficiarioNombre?.Split(' ').FirstOrDefault() ?? "BENEFICIARIO";
+                        t.Cell().ColumnSpan(4).Height(24).AlignMiddle().AlignCenter().Text($"REEMBOLSAR A {nombreCorto.ToUpper()}").FontSize(8).Bold();
+                    });
+                });
+
+                // [DERECHA] Avance
+                row.RelativeItem(2).Column(c =>
+                {
+                    c.Item().BorderBottom(1).AlignCenter().Text("Avance SO").Style(SmallTextStyle).FontColor(Colors.Grey.Medium);
+                    c.Item().Background(Colors.Grey.Lighten2).BorderBottom(1).PaddingVertical(2).AlignCenter().Text("100.00%").FontSize(7).Bold();
+                    c.Item().PaddingVertical(2).AlignCenter().Text("0.00%").Style(SmallTextStyle);
+                });
             });
         }
 
-        void ComposeDescripcionTable(IContainer container)
+        void ComposePieDatos(IContainer container)
         {
-            container.Table(table =>
+            container.Column(col =>
             {
-                table.ColumnsDefinition(columns =>
+                // 1. Tabla de Bancos (Simulada)
+                col.Item().Table(table =>
                 {
-                    columns.RelativeColumn(6); // Descripción
-                    columns.RelativeColumn(1); // Metrado
-                    columns.RelativeColumn(1); // P.U.
-                    columns.RelativeColumn(1); // Parcial
+                    table.ColumnsDefinition(c => { c.RelativeColumn(); c.RelativeColumn(); c.RelativeColumn(); c.RelativeColumn(); c.RelativeColumn(); c.RelativeColumn(); });
+
+                    // Headers
+                    table.Cell().ColumnSpan(2).BorderRight(1).BorderBottom(1).AlignCenter().Text("INGRESO ACUMULADO").Style(SmallTextStyle).FontColor(Colors.Grey.Darken2);
+                    table.Cell().ColumnSpan(2).BorderRight(1).BorderBottom(1).AlignCenter().Text("GASTO ACUMULADO").Style(SmallTextStyle).FontColor(Colors.Grey.Darken2);
+                    table.Cell().ColumnSpan(2).BorderBottom(1).AlignCenter().Text("SALDO EN BANCO").Style(SmallTextStyle).FontColor(Colors.Grey.Darken2);
+
+                    // Sub-headers (Nacion / Banbif)
+                    for (int i = 0; i < 3; i++)
+                    {
+                        table.Cell().BorderRight(1).BorderBottom(1).AlignCenter().Text("NACION ARO").FontSize(5).FontColor(Colors.Grey.Medium);
+                        table.Cell().BorderRight(i < 2 ? 1 : 0).BorderBottom(1).AlignCenter().Text("BANBIF ARO").FontSize(5).FontColor(Colors.Grey.Medium);
+                    }
+
+                    // Valores Vacíos
+                    for (int i = 0; i < 6; i++)
+                    {
+                        string txt = (i == 4 || i == 5) ? "#N/D" : "-"; // Simula el error de excel de la imagen xD
+                        table.Cell().BorderRight(i < 5 ? 1 : 0).BorderBottom(1).AlignCenter().Text(txt).FontSize(6);
+                    }
                 });
 
-                // Header
-                table.Cell().ColumnSpan(4).Border(1).Background(Colors.Grey.Lighten3).Padding(2).Text("DESCRIPCIÓN").FontSize(9).Bold().AlignCenter();
+                // 2. Notas y Neto a Pagar
+                col.Item().Row(row =>
+                {
+                    // Izquierda: Notas y SON
+                    row.RelativeItem(7).BorderRight(1).Column(c =>
+                    {
+                        c.Item().Padding(4).Row(r =>
+                        {
+                            r.ConstantItem(35).Text("NOTAS:").Style(LabelStyle);
+                            string infoBanco = $"{_sp.Banco ?? "BANCO"}: {_sp.NumeroCuenta ?? "-"} // CCI: {_sp.CCI ?? "-"}";
+                            r.RelativeItem().Text(infoBanco).FontSize(7).Bold();
+                        });
 
-                // Sub-header
-                table.Cell().ColumnSpan(4).Border(1).Padding(2).Text("Gastos Generales").FontSize(8).Bold();
+                        c.Item().BorderTop(1).Padding(4).Text(t => {
+                            t.Span("SON: ").Style(LabelStyle);
+                            t.Span(NumeroALetras.Convertir(_sp.MontoNetoAPagar)).FontSize(7).Bold();
+                        });
+                    });
 
-                // Concepto Principal
-                table.Cell().ColumnSpan(4).Border(1).Padding(2).Text(_sp.Concepto).FontSize(8).Bold();
+                    // Derecha: NETO A PAGAR
+                    row.RelativeItem(3).Padding(4).Row(r =>
+                    {
+                        r.RelativeItem().Column(tc => {
+                            tc.Item().Text("NETO A").FontSize(8).Bold();
+                            tc.Item().Text("PAGAR").FontSize(8).Bold();
+                        });
+                        r.AutoItem().PaddingRight(4).Text("S/").FontSize(8).Bold();
+                        r.AutoItem().Text(_sp.MontoNetoAPagar.ToString("N2", _culture)).FontSize(12).Bold();
+                    });
+                });
 
-                // Detalle Row (Simulado con el total, ya que SP agrupa)
-                table.Cell().Border(1).Padding(2).Text(_sp.Concepto).FontSize(8);
-                table.Cell().Border(1).Padding(2).AlignRight().Text("1.00").FontSize(8);
-                table.Cell().Border(1).Padding(2).AlignRight().Text(_sp.MontoNetoAPagar.ToString("N2")).FontSize(8);
-                table.Cell().Border(1).Padding(2).AlignRight().Text(_sp.MontoNetoAPagar.ToString("N2")).FontSize(8);
+                col.Item().LineHorizontal(1);
 
-                // Total Parcial
-                table.Cell().ColumnSpan(3).Border(0).AlignRight().PaddingRight(5).Text("PARCIAL").FontSize(8).Bold();
-                table.Cell().Border(1).Padding(2).AlignRight().Text(_sp.MontoNetoAPagar.ToString("N2")).FontSize(8).Bold();
-
-                // IGV (Si aplica, aquí simplificamos asumiendo incluido o calculado)
-                // Para tu caso, si el monto es neto:
-                // table.Cell().ColumnSpan(3).AlignRight().PaddingRight(5).Text("IGV").FontSize(8).Bold();
-                // table.Cell().Border(1).Padding(2).AlignRight().Text("...").FontSize(8);
+                // 3. Firmas
+                col.Item().PaddingTop(40).PaddingBottom(10).Row(row =>
+                {
+                    row.RelativeItem().AlignCenter().Column(c => { c.Item().Width(100).BorderBottom(1); c.Item().AlignCenter().Text("V°B° DPTO TECNICO").FontSize(6); });
+                    row.RelativeItem().AlignCenter().Column(c => { c.Item().Width(100).BorderBottom(1); c.Item().AlignCenter().Text("V°B° CONTABILIDAD").FontSize(6); });
+                    row.RelativeItem().AlignCenter().Column(c => { c.Item().Width(100).BorderBottom(1); c.Item().AlignCenter().Text("ADMINISTRACION").FontSize(6); });
+                });
             });
         }
+    }
 
-        void ComposeDocumentosTable(IContainer container)
+    // --- HELPER DE CONVERSIÓN ---
+    public static class NumeroALetras
+    {
+        public static string Convertir(decimal numero)
         {
-            container.PaddingTop(10).Table(table =>
-            {
-                table.ColumnsDefinition(columns =>
-                {
-                    columns.RelativeColumn(2); // Doc
-                    columns.RelativeColumn(2); // Fecha
-                    columns.RelativeColumn(2); // Monto
-                    columns.RelativeColumn(2); // Label
-                    columns.RelativeColumn(2); // Monto2
-                    columns.RelativeColumn(2); // Avance
-                });
-
-                // Headers de la tabla interna del PDF
-                table.Cell().Border(1).Background(Colors.Grey.Lighten4).Padding(2).Text("Documento").FontSize(7).AlignCenter();
-                table.Cell().Border(1).Background(Colors.Grey.Lighten4).Padding(2).Text("Fecha").FontSize(7).AlignCenter();
-                table.Cell().Border(1).Background(Colors.Grey.Lighten4).Padding(2).Text("Monto").FontSize(7).AlignCenter();
-                table.Cell().Border(1).Background(Colors.Grey.Lighten4).Padding(2).Text("Concepto").FontSize(7).AlignCenter();
-                table.Cell().Border(1).Background(Colors.Grey.Lighten4).Padding(2).Text("S/.").FontSize(7).AlignCenter();
-                table.Cell().Border(1).Background(Colors.Grey.Lighten4).Padding(2).Text("%").FontSize(7).AlignCenter();
-
-                // Filas (Detalles de la SP)
-                foreach (var det in _sp.Detalles)
-                {
-                    table.Cell().Border(1).Padding(2).Text($"{det.TipoDocumento} {det.NumeroDocumento}").FontSize(7);
-                    table.Cell().Border(1).Padding(2).Text(det.FechaEmisionDocumento.ToString("dd/MM/yyyy")).FontSize(7);
-                    table.Cell().Border(1).Padding(2).AlignRight().Text(det.Monto.ToString("N2")).FontSize(7);
-
-                    // Columnas de resumen a la derecha (Estáticas por ahora o calculadas)
-                    table.Cell().Border(1).Padding(2).Text("Contratado").FontSize(7);
-                    table.Cell().Border(1).Padding(2).AlignRight().Text(det.Monto.ToString("N2")).FontSize(7);
-                    table.Cell().Border(1).Padding(2).AlignRight().Text("100%").FontSize(7);
-                }
-            });
+            int entero = (int)numero;
+            int decimales = (int)((numero - entero) * 100);
+            string letras = ConvertirEntero(entero);
+            return $"{letras} CON {decimales:00}/100 SOLES";
         }
 
-        void ComposePiePagina(IContainer container)
+        private static string ConvertirEntero(int n)
         {
-            container.PaddingTop(10).Table(table =>
+            if (n == 0) return "CERO";
+            if (n < 0) return "MENOS " + ConvertirEntero(Math.Abs(n));
+
+            if (n < 10) return Unidades[n];
+            if (n < 20) return Decenas[n - 10];
+            if (n < 100) return Centenas(n);
+            if (n < 1000) return ConvertirCientos(n);
+            if (n < 1000000) return ConvertirMiles(n);
+            return "NÚMERO MUY GRANDE";
+        }
+
+        private static string[] Unidades = { "CERO", "UNO", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE" };
+        private static string[] Decenas = { "DIEZ", "ONCE", "DOCE", "TRECE", "CATORCE", "QUINCE", "DIECISÉIS", "DIECISIETE", "DIECIOCHO", "DIECINUEVE" };
+
+        private static string Centenas(int n)
+        {
+            int unidad = n % 10;
+            int decena = n / 10;
+            string[] DecenasDiez = { "", "DIEZ", "VEINTE", "TREINTA", "CUARENTA", "CINCUENTA", "SESENTA", "SETENTA", "OCHENTA", "NOVENTA" };
+
+            if (n < 30) return Decenas[n - 10];
+            return DecenasDiez[decena] + (unidad > 0 ? " Y " + Unidades[unidad] : "");
+        }
+
+        private static string ConvertirCientos(int n)
+        {
+            if (n == 100) return "CIEN";
+            int centena = n / 100;
+            int resto = n % 100;
+            string txtCentena = "";
+            switch (centena)
             {
-                table.ColumnsDefinition(columns =>
-                {
-                    columns.RelativeColumn(7); // Notas y Bancos
-                    columns.RelativeColumn(3); // Neto a Pagar
-                });
+                case 1: txtCentena = "CIENTO"; break;
+                case 5: txtCentena = "QUINIENTOS"; break;
+                case 7: txtCentena = "SETECIENTOS"; break;
+                case 9: txtCentena = "NOVECIENTOS"; break;
+                default: txtCentena = Unidades[centena] + "CIENTOS"; break;
+            }
+            return txtCentena + (resto > 0 ? " " + ConvertirEntero(resto) : "");
+        }
 
-                // Columna Izquierda: Bancos y Notas
-                table.Cell().Border(1).Padding(5).Column(col =>
-                {
-                    col.Item().Text("NOTAS:").Bold().FontSize(8);
-                    col.Item().Text($"{_sp.Banco}: {_sp.NumeroCuenta} // CCI: {_sp.CCI}").FontSize(8);
-                    col.Item().PaddingTop(5).Text($"SON: [MONTO EN LETRAS] {_sp.Moneda}").Bold().FontSize(8);
-                });
-
-                // Columna Derecha: Neto a Pagar
-                table.Cell().Border(1).Padding(5).AlignMiddle().Column(col =>
-                {
-                    col.Item().Text("NETO A PAGAR").Bold().FontSize(10).AlignCenter();
-                    col.Item().Text($"S/ {_sp.MontoNetoAPagar.ToString("N2", culture)}").Bold().FontSize(14).AlignCenter();
-                });
-
-                // FIRMAS (Fila inferior)
-                table.Cell().ColumnSpan(2).PaddingTop(30).Row(row =>
-                {
-                    row.RelativeItem().Column(c => { c.Item().BorderBottom(1).Height(1); c.Item().PaddingTop(2).Text("V°B° DPTO TECNICO").FontSize(7).AlignCenter(); });
-                    row.RelativeItem().Text(""); // Espacio
-                    row.RelativeItem().Column(c => { c.Item().BorderBottom(1).Height(1); c.Item().PaddingTop(2).Text("V°B° CONTABILIDAD").FontSize(7).AlignCenter(); });
-                    row.RelativeItem().Text(""); // Espacio
-                    row.RelativeItem().Column(c => { c.Item().BorderBottom(1).Height(1); c.Item().PaddingTop(2).Text("ADMINISTRACION").FontSize(7).AlignCenter(); });
-                });
-            });
+        private static string ConvertirMiles(int n)
+        {
+            int miles = n / 1000;
+            int resto = n % 1000;
+            string txtMiles = (miles == 1) ? "MIL" : ConvertirEntero(miles) + " MIL";
+            return txtMiles + (resto > 0 ? " " + ConvertirEntero(resto) : "");
         }
     }
 }

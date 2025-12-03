@@ -6,31 +6,39 @@ using System.Globalization;
 
 namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
 {
-    
-
-    // La plantilla del PDF
     public class OrdenCompraPdfTemplate : IDocument
     {
         private readonly OrdenCompraPdfModel _model;
         private readonly OrdenCompra _oc;
-        private readonly CultureInfo culture;
+        private readonly CultureInfo _culture;
+
+        // --- ESTILOS ---
+        static TextStyle TitleStyle => TextStyle.Default.FontSize(11).Bold().FontColor(Colors.Black);
+        static TextStyle SubTitleStyle => TextStyle.Default.FontSize(8).FontColor(Colors.Black);
+
+        static TextStyle SectionHeaderStyle => TextStyle.Default.FontSize(8).Bold().FontColor(Colors.White);
+        static TextStyle LabelStyle => TextStyle.Default.FontSize(7).Bold();
+        static TextStyle ValueStyle => TextStyle.Default.FontSize(7);
+
+        static TextStyle TableHeaderStyle => TextStyle.Default.FontSize(7).Bold();
+        static TextStyle TableContentStyle => TextStyle.Default.FontSize(7);
 
         public OrdenCompraPdfTemplate(OrdenCompraPdfModel model)
         {
             _model = model;
             _oc = model.OrdenCompra;
-            culture = CultureInfo.CreateSpecificCulture("es-PE");
+            _culture = CultureInfo.CreateSpecificCulture("es-PE");
         }
 
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
 
-        // Define la estructura: Header, Content, Footer
         public void Compose(IDocumentContainer container)
         {
             container.Page(page =>
             {
-                page.Margin(30); // 30 puntos de margen
+                page.Margin(30);
                 page.Size(PageSizes.A4);
+                page.DefaultTextStyle(x => x.FontFamily(Fonts.Arial));
 
                 page.Header().Element(ComposeHeader);
                 page.Content().Element(ComposeContent);
@@ -43,185 +51,300 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
         {
             container.Row(row =>
             {
-                // Columna 1: Logo
-                row.RelativeItem(2).Column(col =>
+                // IZQUIERDA
+                row.RelativeItem(7).Row(r =>
                 {
-                    if (File.Exists(_model.LogoPath))
-                        col.Item().Image(_model.LogoPath).FitWidth();
-                    else
-                        col.Item().Height(40).Text(text => text.Span("ARO").Bold().FontSize(18).FontColor(Colors.Red.Medium).LineHeight(0.8f)); 
+                    r.AutoItem().Width(80).Height(50).Column(c =>
+                    {
+                        if (File.Exists(_model.LogoPath))
+                            c.Item().Image(_model.LogoPath).FitArea();
+                        else
+                            c.Item().Text("LOGO").FontSize(20).Bold();
+                    });
+
+                    r.RelativeItem().PaddingLeft(10).Column(col =>
+                    {
+                        col.Item().Text("ARO CONSTRUCTORA Y MINEROS E.I.R.L.").Style(TitleStyle);
+                        col.Item().Text("RUC: 20547282559").Style(SubTitleStyle);
+                        col.Item().Text("Av. Jose Galvez N° 1146 Lima - Lima - Lima").Style(SubTitleStyle);
+                    });
                 });
 
-                // Columna 2: Datos Empresa
-                row.RelativeItem(5).AlignCenter().Column(col =>
+                // DERECHA
+                row.RelativeItem(3).Border(2).BorderColor(Colors.Black).Column(col =>
                 {
-                    col.Item().Text(text => text.Span("ARO CONSTRUCTORA Y MINEROS E.I.R.L.").Bold().FontSize(10));
-                    col.Item().Text(text => text.Span("RUC: 20547282559").FontSize(7));
-                    col.Item().Text(text => text.Span("Av. Jose Galvez N° 1146 Lima - Lima - Lima").FontSize(7));
-                });
+                    col.Item().Background(Colors.Grey.Lighten3).Padding(4).AlignCenter()
+                        .Text("ORDEN DE COMPRA / SERVICIO").FontSize(8).Bold();
 
-                // Columna 3: Nro de Orden (OC Box)
-                row.RelativeItem(3).Border(2).BorderColor(Colors.Black).Padding(5).Column(col =>
-                {
-                    // Encabezado
-                    col.Item().Background(Colors.Grey.Lighten3).AlignCenter()
-                        .Text(text => text.Span("ORDEN DE COMPRA / SERVICIO").Bold().FontSize(9));
-                    
-                    // Código de OC (Se elimina la restricción Height(10))
-                    col.Item().AlignCenter() 
-                        .Text(text => text.Span(_oc.Codigo).Bold().FontSize(12).FontColor(Colors.Red.Medium));
+                    col.Item().PaddingVertical(10).AlignCenter()
+                        .Text(_oc.Codigo).FontSize(11).Bold().FontColor(Colors.Red.Medium);
                 });
             });
         }
 
-        // --- 2. CONTENT (Proveedor y Detalles) ---
+        // --- 2. CONTENT ---
         void ComposeContent(IContainer container)
         {
-            container.Column(col =>
+            container.PaddingVertical(10).Column(col =>
             {
-                // --- CORRECCIÓN DE MARGIN: Reemplazado por Spacing ---
-                col.Item().Element(ComposeProveedor);
-                col.Spacing(10); // <-- CAMBIO: Añade espacio DESPUÉS del proveedor
-                col.Item().Element(ComposeDetalles);
-                col.Spacing(10); // <-- CAMBIO: Añade espacio DESPUÉS de los detalles
-                col.Item().Element(ComposeTotales);
+                col.Item().Element(ComposeDatosObra);
+                col.Spacing(10);
+                col.Item().Element(ComposeDatosProveedor);
+                col.Spacing(10);
+                col.Item().Element(ComposeTable);
+                col.Spacing(10);
+                col.Item().Element(ComposeTotalesSection);
             });
         }
 
-        void ComposeProveedor(IContainer container)
+        // --- SECCIÓN OBRA (ACTUALIZADA CON DATOS REALES) ---
+        void ComposeDatosObra(IContainer container)
         {
-            // --- CORRECCIÓN DE MARGIN: Se eliminó .MarginTop(10) de aquí ---
-            container.Border(1).Column(col =>
+            container.Border(1).BorderColor(Colors.Black).Column(col =>
             {
-                col.Item().Background(Colors.Grey.Darken3).Padding(3)
-                    .Text(text =>
-                    {
-                        text.Span("DATOS DEL PROVEEDOR").Bold().FontSize(9).FontColor(Colors.White);
+                col.Item().Background(Colors.Black).Padding(2).PaddingLeft(5)
+                    .Text("DATOS DE LA OBRA / SERVICIO").Style(SectionHeaderStyle);
+
+                col.Item().Padding(4).Table(table =>
+                {
+                    table.ColumnsDefinition(c => {
+                        c.ConstantColumn(40); // Etiqueta
+                        c.RelativeColumn();   // Valor
+                        c.ConstantColumn(40); // Etiqueta
+                        c.ConstantColumn(100); // Valor
                     });
 
-                col.Item().Padding(5).Column(inner =>
-                {
-                    inner.Item().Row(row =>
-                    {
-                        row.RelativeItem().Text(txt => { txt.Span("PROVEEDOR: ").Bold().FontSize(8); txt.Span(_oc.Proveedor?.RazonSocial).FontSize(8); });
-                        row.RelativeItem().Text(txt => { txt.Span("RUC: ").Bold().FontSize(8); txt.Span(_oc.Proveedor?.RUC).FontSize(8); });
-                    });
-                    inner.Item().Row(row =>
-                    {
-                        row.RelativeItem().Text(txt => { txt.Span("DIRECCIÓN: ").Bold().FontSize(8); txt.Span(_oc.Proveedor?.Direccion).FontSize(8); });
-                        row.RelativeItem().Text(txt => { txt.Span("TELÉFONO: ").Bold().FontSize(8); txt.Span(_oc.Proveedor?.Telefono).FontSize(8); });
-                    });
-                    inner.Item().Row(row =>
-                    {
-                        row.RelativeItem().Text(txt => { txt.Span("FECHA EMISIÓN: ").Bold().FontSize(8); txt.Span(_oc.FechaEmision.ToString("dd/MM/yyyy")).FontSize(8); });
-                        row.RelativeItem().Text(txt => { txt.Span("EMAIL: ").Bold().FontSize(8); txt.Span(_oc.Proveedor?.Email).FontSize(8); });
-                    });
+                    // Variables para datos seguros
+                    var nombreObra = _oc.Proyecto?.NombreProyecto ?? "---";
+                    var ubicacionObra = _oc.Proyecto?.Ubicacion ?? "---";
+                    var residente = _oc.Proyecto?.Responsable ?? "---";
+
+                    // Fila 1
+                    table.Cell().Text("OBRA:").Style(LabelStyle);
+                    table.Cell().Text(nombreObra).Style(ValueStyle); // <-- DATO REAL
+
+                    table.Cell().Text("FECHA:").Style(LabelStyle);
+                    table.Cell().Text(_oc.FechaEmision.ToString("dd/MM/yyyy")).Style(ValueStyle);
+
+                    // Fila 2
+                    table.Cell().Text("EMPRESA:").Style(LabelStyle);
+                    table.Cell().Text(" ARO CONSTRUCTORA Y MINEROS E.I.R.L.").Style(ValueStyle);
+
+                    table.Cell().Text("RESP:").Style(LabelStyle);
+                    table.Cell().Text(residente).Style(ValueStyle); // <-- DATO REAL
+
+                    // Fila 3 (Ubicación ocupando todo el ancho restante)
+                    table.Cell().Text("UBICACIÓN:").Style(LabelStyle);
+                    table.Cell().ColumnSpan(3).Text(ubicacionObra).Style(ValueStyle); // <-- DATO REAL
                 });
             });
         }
 
-        void ComposeDetalles(IContainer container)
+        // --- SECCIÓN PROVEEDOR (ACTUALIZADA CON DATOS REALES) ---
+        void ComposeDatosProveedor(IContainer container)
         {
-            // --- CORRECCIÓN DE MARGIN: Se eliminó .MarginTop(10) de aquí ---
+            container.Border(1).BorderColor(Colors.Black).Column(col =>
+            {
+                col.Item().Background(Colors.Black).Padding(2).PaddingLeft(5)
+                    .Text("DATOS DEL PROVEEDOR").Style(SectionHeaderStyle);
+
+                col.Item().Padding(4).Table(table =>
+                {
+                    table.ColumnsDefinition(c => {
+                        c.ConstantColumn(60); // Etiqueta
+                        c.RelativeColumn();   // Valor
+                        c.ConstantColumn(70); // Etiqueta
+                        c.RelativeColumn();   // Valor
+                    });
+
+                    // Variables seguras
+                    var contacto = _oc.Proveedor?.NombreContacto ?? "---";
+                    var telefono = _oc.Proveedor?.Telefono ?? "---";
+
+                    // Fila 1
+                    table.Cell().Text("PROVEEDOR:").Style(LabelStyle);
+                    table.Cell().Text(_oc.Proveedor?.RazonSocial).Style(ValueStyle);
+
+                    table.Cell().Text("FORMA PAGO:").Style(LabelStyle);
+                    table.Cell().Text("Crédito 30 Días").Style(ValueStyle); // <-- Dato Estático (No hay campo en BD)
+
+                    // Fila 2
+                    table.Cell().Text("RUC:").Style(LabelStyle);
+                    table.Cell().Text(_oc.Proveedor?.RUC).Style(ValueStyle);
+
+                    table.Cell().Text("ENTREGA EN:").Style(LabelStyle);
+                    table.Cell().Text("ALMACEN OBRA").Style(ValueStyle);
+
+                    // Fila 3
+                    table.Cell().Text("DIRECCIÓN:").Style(LabelStyle);
+                    table.Cell().Text(_oc.Proveedor?.Direccion).Style(ValueStyle);
+
+                    table.Cell().Text("MONEDA:").Style(LabelStyle);
+                    table.Cell().Text("SOLES").Style(ValueStyle);
+
+                    // Fila 4 (NUEVOS CAMPOS SOLICITADOS)
+                    table.Cell().Text("CONTACTO:").Style(LabelStyle);
+                    table.Cell().Text(contacto).Style(ValueStyle); // <-- DATO REAL
+
+                    table.Cell().Text("TELÉFONO:").Style(LabelStyle);
+                    table.Cell().Text(telefono).Style(ValueStyle); // <-- DATO REAL
+                });
+            });
+        }
+
+        // --- TABLA ---
+        void ComposeTable(IContainer container)
+        {
             container.Table(table =>
             {
-                // Columnas
                 table.ColumnsDefinition(columns =>
                 {
-                    columns.RelativeColumn(3); // Codigo
-                    columns.RelativeColumn(7); // Nombre
-                    columns.RelativeColumn(2); // Unidad
-                    columns.RelativeColumn(2); // Cantidad
-                    columns.RelativeColumn(3); // P.U.
-                    columns.RelativeColumn(3); // Subtotal
+                    columns.ConstantColumn(25); // N°
+                    columns.RelativeColumn(4);  // Producto
+                    columns.RelativeColumn(1);  // Marca
+                    columns.ConstantColumn(30); // Und
+                    columns.ConstantColumn(40); // Cant
+                    columns.ConstantColumn(50); // P.U
+                    columns.ConstantColumn(40); // Dscto
+                    columns.ConstantColumn(60); // Parcial
                 });
 
-                // Header de la tabla
+                // Header
                 table.Header(header =>
                 {
-                    header.Cell().Element(HeaderCellStyle).Text("CÓDIGO");
-                    header.Cell().Element(HeaderCellStyle).Text("PRODUCTO");
-                    header.Cell().Element(HeaderCellStyle).AlignRight().Text("UND");
-                    header.Cell().Element(HeaderCellStyle).AlignRight().Text("CANT.");
-                    header.Cell().Element(HeaderCellStyle).AlignRight().Text("P. UNITARIO");
-                    header.Cell().Element(HeaderCellStyle).AlignRight().Text("SUBTOTAL");
+                    HeaderStyle(header.Cell()).Text("N°");
+                    HeaderStyle(header.Cell()).Text("PRODUCTO");
+                    HeaderStyle(header.Cell()).Text("MARCA");
+                    HeaderStyle(header.Cell()).AlignCenter().Text("UND");
+                    HeaderStyle(header.Cell()).AlignCenter().Text("CANT");
+                    HeaderStyle(header.Cell()).AlignRight().Text("P.U");
+                    HeaderStyle(header.Cell()).AlignRight().Text("DSCTO %");
+                    HeaderStyle(header.Cell()).AlignRight().Text("PARCIAL");
                 });
 
-                // Items
+                // Filas
+                int index = 1;
                 foreach (var item in _oc.Detalles)
                 {
-                    table.Cell().Element(BodyCellStyle).Text(item.Material?.Codigo);
-                    table.Cell().Element(BodyCellStyle).Text(item.Material?.Nombre);
-                    table.Cell().Element(BodyCellStyle).AlignRight().Text(item.Material?.UnidadMedida);
-                    table.Cell().Element(BodyCellStyle).AlignRight().Text(item.Cantidad.ToString("N2"));
-                    table.Cell().Element(BodyCellStyle).AlignRight().Text(item.PrecioUnitario.ToString("C2")); // Formato Moneda
-                    table.Cell().Element(BodyCellStyle).AlignRight().Text(item.Subtotal.ToString("C2"));
+                    BodyStyle(table.Cell()).AlignCenter().Text($"{index++}");
+                    BodyStyle(table.Cell()).Text(item.Material?.Nombre);
+                    BodyStyle(table.Cell()).Text(""); // Marca
+                    BodyStyle(table.Cell()).AlignCenter().Text(item.Material?.UnidadMedida);
+                    BodyStyle(table.Cell()).AlignRight().Text(item.Cantidad.ToString("N2", _culture));
+                    BodyStyle(table.Cell()).AlignRight().Text(item.PrecioUnitario.ToString("N2", _culture));
+                    BodyStyle(table.Cell()).AlignRight().Text("0.00%");
+                    BodyStyle(table.Cell()).AlignRight().Text(item.Subtotal.ToString("N2", _culture));
+                }
+
+                // Relleno
+                for (int i = 0; i < (15 - _oc.Detalles.Count); i++)
+                {
+                    BodyStyle(table.Cell()).Text("");
+                    BodyStyle(table.Cell()).Text("");
+                    BodyStyle(table.Cell()).Text("");
+                    BodyStyle(table.Cell()).Text("");
+                    BodyStyle(table.Cell()).Text("");
+                    BodyStyle(table.Cell()).Text("");
+                    BodyStyle(table.Cell()).Text("");
+                    BodyStyle(table.Cell()).Text("");
                 }
             });
         }
 
-        void ComposeTotales(IContainer container)
+        // Helpers de Estilo
+        IContainer HeaderStyle(IContainer container)
         {
-            // Cálculos
-            decimal subtotal = _oc.Total;
-            decimal igv = subtotal * 0.18m; // Asumiendo 18%
-            decimal totalFinal = subtotal + igv;
+            return container
+                .Background("#cfe2f3")
+                .Border(1).BorderColor(Colors.Black)
+                .Padding(2)
+                .DefaultTextStyle(TableHeaderStyle);
+        }
 
-            // --- CORRECCIÓN DE MARGIN: Se eliminó .MarginTop(10) de aquí ---
+        IContainer BodyStyle(IContainer container)
+        {
+            return container
+                .Border(1).BorderColor(Colors.Grey.Lighten1)
+                .Padding(2)
+                .DefaultTextStyle(TableContentStyle);
+        }
+
+        // --- TOTALES ---
+        void ComposeTotalesSection(IContainer container)
+        {
+            decimal subtotal = _oc.Total;
+            decimal igv = subtotal * 0.18m;
+            decimal total = subtotal + igv;
+
             container.Row(row =>
             {
-                // Columna Izquierda: Observaciones
-                row.RelativeItem(6).Column(col =>
+                // Izquierda
+                row.RelativeItem(6).PaddingRight(10).Column(col =>
                 {
-                    col.Item().Text("OBSERVACIONES:").Bold().FontSize(9);
-                    col.Item().Border(1).Padding(5).MinHeight(50).Text(_oc.Observaciones ?? "Sin observaciones.").FontSize(8);
+                    col.Item().Border(1).BorderColor(Colors.Black).Padding(4).Text(t => {
+                        t.Span("SON: ").Bold().FontSize(7);
+                        t.Span("[IMPORTE TOTAL EN LETRAS PENDIENTE]").FontSize(7);
+                    });
+
+                    col.Spacing(5);
+
+                    col.Item().Text("OBSERVACIONES GENERALES:").FontSize(7).Bold();
+                    col.Item().Border(1).BorderColor(Colors.Black).Padding(4).MinHeight(40).Column(c => {
+                        c.Item().Text("NOTA: Condiciones comerciales: 1. El proveedor entregará los materiales...").FontSize(6);
+                        c.Item().Text($"Comentarios de esta OC: {_oc.Observaciones}").FontSize(6);
+                    });
                 });
 
-                row.RelativeItem(1).Text(""); // Espaciador
-
-                // Columna Derecha: Totales
-                row.RelativeItem(3).Column(col =>
+                // Derecha
+                row.RelativeItem(4).Table(table =>
                 {
-                    // --- CORRECCIÓN DE FONTSIZE: Usando la sintaxis lambda (más segura) ---
-                    col.Item().Row(r => {
-                        r.RelativeItem().Text(text => text.Span("SUBTOTAL:").FontSize(9));
-                        r.RelativeItem().AlignRight().Text(text => text.Span(subtotal.ToString("C2")).FontSize(9));
-                    });
-                    col.Item().Row(r => {
-                        r.RelativeItem().Text(text => text.Span("IGV (18%):").FontSize(9));
-                        r.RelativeItem().AlignRight().Text(text => text.Span(igv.ToString("C2")).FontSize(9));
-                    });
-                    col.Item().Row(r => {
-                        r.RelativeItem().Text(text => text.Span("TOTAL:").Bold().FontSize(10));
-                        r.RelativeItem().AlignRight().Text(text => text.Span(totalFinal.ToString("C2")).Bold().FontSize(10));
-                    });
-                    // --- FIN DE CORRECCIÓN ---
+                    table.ColumnsDefinition(c => { c.RelativeColumn(); c.RelativeColumn(); });
+
+                    table.Cell().Border(1).BorderColor(Colors.Black).Padding(3).Text("Sub Total").Style(LabelStyle);
+                    table.Cell().Border(1).BorderColor(Colors.Black).Padding(3).AlignRight().Text(subtotal.ToString("N2", _culture)).Style(ValueStyle);
+
+                    table.Cell().Border(1).BorderColor(Colors.Black).Padding(3).Text("IGV (18.00%)").Style(LabelStyle);
+                    table.Cell().Border(1).BorderColor(Colors.Black).Padding(3).AlignRight().Text(igv.ToString("N2", _culture)).Style(ValueStyle);
+
+                    table.Cell().Background("#cfe2f3").Border(1).BorderColor(Colors.Black).Padding(3).Text("Total a Pagar").FontSize(8).Bold();
+                    table.Cell().Background("#cfe2f3").Border(1).BorderColor(Colors.Black).Padding(3).AlignRight().Text($"S/ {total.ToString("N2", _culture)}").FontSize(8).Bold();
                 });
             });
         }
 
-        // --- 3. FOOTER ---
+        // --- FOOTER ---
         void ComposeFooter(IContainer container)
         {
-            container.AlignCenter().Text(text =>
+            container.Column(col =>
             {
-                text.Span("Generado por AROCONSTRUCCIONES ERP - Página ").FontSize(8);
-                text.CurrentPageNumber().FontSize(8);
+                col.Item().PaddingTop(40).Row(row =>
+                {
+                    row.RelativeItem().Column(c =>
+                    {
+                        c.Item().BorderBottom(2).BorderColor(Colors.Black).Width(100);
+                        c.Item().PaddingTop(2).Text("JEFE DE LOGISTICA").FontSize(7).Bold();
+                    });
+
+                    row.RelativeItem().AlignCenter().Column(c =>
+                    {
+                        c.Item().AlignCenter().BorderBottom(2).BorderColor(Colors.Black).Width(100);
+                        c.Item().AlignCenter().PaddingTop(2).Text("V°B° PROVEEDOR").FontSize(7).Bold();
+                    });
+
+                    row.RelativeItem().AlignRight().Column(c =>
+                    {
+                        c.Item().AlignRight().BorderBottom(2).BorderColor(Colors.Black).Width(100);
+                        c.Item().AlignRight().PaddingTop(2).Text("V°B° GERENCIA DE PROYECTOS").FontSize(7).Bold();
+                    });
+                });
+
+                col.Item().PaddingTop(10).AlignCenter().Text(text => {
+                    text.Span("Generado por AROCONSTRUCCIONES ERP - Página ").FontSize(6);
+                    text.CurrentPageNumber().FontSize(6);
+                    text.Span(" de ").FontSize(6);
+                    text.TotalPages().FontSize(6);
+                });
             });
-        }
-
-        // --- Métodos de Estilo ---
-        static IContainer HeaderCellStyle(IContainer container)
-        {
-            // Este método AHORA solo define el estilo del CONTENEDOR (la celda)
-            return container.BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Background(Colors.Grey.Lighten4).Padding(3);
-        }
-
-        // --- CORRECCIÓN: Se quita .FontSize() ---
-        static IContainer BodyCellStyle(IContainer container)
-        {
-            // Este método AHORA solo define el estilo del CONTENEDOR (la celda)
-            return container.BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(3);
         }
     }
 }

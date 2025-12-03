@@ -30,6 +30,9 @@
 </div>
 
 @section Scripts {
+    @* 1. ¡ESTA LÍNEA ES LA QUE FALTA! Carga jquery.validate y unobtrusive *@
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+
     <script src="~/js/logistica-tabs.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>

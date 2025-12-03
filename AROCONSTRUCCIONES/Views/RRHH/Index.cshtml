@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "Recursos Humanos";
+}
+
+<div class="mb-6">
+    <h2 class="text-2xl font-semibold text-slate-800">Gestión de Personal</h2>
+    <p class="text-slate-500">Control de obreros, asistencia y planillas.</p>
+</div>
+
+<div x-data="{ activeTab: 'trabajadores' }" class="w-full mt-6">
+    <div class="flex space-x-2 border-b border-gray-200">
+
+        <button x-on:click="activeTab = 'trabajadores'; loadTabContent('@Url.Action("ListaTrabajadoresPartial", "RRHH")', '#rrhh-content')"
+                :class="{ 'border-blue-600 text-blue-600': activeTab === 'trabajadores', 'border-transparent text-gray-500': activeTab !== 'trabajadores' }"
+                class="py-2 px-4 font-medium border-b-2 transition-colors"
+                data-tab-url="@Url.Action("ListaTrabajadoresPartial", "RRHH")">
+            <i class="fas fa-hard-hat mr-2"></i> Trabajadores
+        </button>
+
+        <button x-on:click="activeTab = 'tareo'; loadTabContent('@Url.Action("TareoIndex", "RRHH")', '#rrhh-content')"
+                :class="{ 'border-blue-600 text-blue-600': activeTab === 'tareo', 'border-transparent text-gray-500': activeTab !== 'tareo' }"
+                class="py-2 px-4 font-medium border-b-2 transition-colors"
+                data-tab-url="@Url.Action("TareoIndex", "RRHH")">
+            <i class="fas fa-calendar-check mr-2"></i> Control de Asistencia (Tareo)
+        </button>
+        <button x-on:click="activeTab = 'planilla'; loadTabContent('@Url.Action("PlanillaIndex", "RRHH")', '#rrhh-content')"
+                :class="{ 'border-blue-600 text-blue-600': activeTab === 'planilla', 'border-transparent text-gray-500': activeTab !== 'planilla' }"
+                class="py-2 px-4 font-medium border-b-2 transition-colors"
+                data-tab-url="@Url.Action("PlanillaIndex", "RRHH")">
+            <i class="fas fa-file-invoice-dollar mr-2"></i> Planillas
+        </button>
+        <button x-on:click="activeTab = 'historial'; loadTabContent('@Url.Action("HistorialIndex", "RRHH")', '#rrhh-content')"
+                :class="{ 'border-blue-600 text-blue-600': activeTab === 'historial', 'border-transparent text-gray-500': activeTab !== 'historial' }"
+                class="py-2 px-4 font-medium border-b-2 transition-colors whitespace-nowrap">
+            <i class="fas fa-file-pdf mr-2"></i> Historial y Boletas
+        </button>
+
+    </div>
+
+    <div id="rrhh-content" class="mt-6">
+        <div class="flex justify-center items-center p-10">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    </div>
+
+    <div id="modal-placeholder"></div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script src="~/js/logistica-tabs.js"></script>
+    <script src="~/js/site.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Carga la pestaña inicial por defecto
+            loadTabContent('@Url.Action("ListaTrabajadoresPartial", "RRHH")', '#rrhh-content');
+        });
+    </script>
+}

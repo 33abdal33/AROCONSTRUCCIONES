@@ -1,0 +1,73 @@
+﻿@model AROCONSTRUCCIONES.Dtos.PagarSolicitudDto
+
+<div x-data="{ open: true }"
+     x-show="open"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     style="display: none;">
+
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div x-on:click.away="open = false" class="relative bg-white rounded-lg shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full">
+
+            <form asp-action="RegistrarPago" asp-controller="Tesoreria" method="post" data-form-ajax="true">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="SolicitudId" />
+
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 border-b border-gray-200 rounded-t-lg">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        <i class="fas fa-money-bill-wave text-green-600 mr-2"></i>
+                        Registrar Pago de Solicitud
+                    </h3>
+                    <div class="mt-2 bg-green-50 border border-green-200 rounded p-2">
+                        <p class="text-sm text-green-800">
+                            <strong>Código:</strong> @ViewBag.CodigoSP <br />
+                            <strong>Importe a Pagar:</strong> S/ @(((decimal)ViewBag.Monto).ToString("N2"))
+                        </p>
+                    </div>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label asp-for="FechaPago" class="block text-sm font-medium text-gray-700">Fecha de Pago *</label>
+                        <input asp-for="FechaPago" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required />
+                    </div>
+
+                    <div>
+                        <label asp-for="CuentaBancariaId" class="block text-sm font-medium text-gray-700">Banco de Salida / Caja *</label>
+
+                        <select asp-for="CuentaBancariaId"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                asp-items="ViewBag.CuentasBancarias"
+                                required>
+                            <option value="">-- Seleccione Cuenta --</option>
+                        </select>
+
+                        <span asp-validation-for="CuentaBancariaId" class="text-red-500 text-xs"></span>
+                        <p class="text-xs text-slate-400 mt-1">Seleccione la cuenta de donde saldrá el dinero.</p>
+                    </div>
+
+                    <div>
+                        <label asp-for="NumeroOperacion" class="block text-sm font-medium text-gray-700">Nro. Operación / Voucher *</label>
+                        <input asp-for="NumeroOperacion" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ej: 12345678" required />
+                        <span asp-validation-for="NumeroOperacion" class="text-red-500 text-xs"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Comentario" class="block text-sm font-medium text-gray-700">Comentario (Opcional)</label>
+                        <textarea asp-for="Comentario" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-3 sm:flex sm:flex-row-reverse rounded-b-lg">
+                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        <i class="fas fa-check mr-2"></i> Confirmar Pago
+                    </button>
+                    <button type="button" x-on:click="open = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

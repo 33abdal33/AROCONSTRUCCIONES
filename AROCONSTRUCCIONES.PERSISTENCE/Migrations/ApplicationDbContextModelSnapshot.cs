@@ -122,6 +122,179 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.Cargo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("BUC")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Descripcion")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("JornalBasico")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Cargos");
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.ComprobantePago", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("EstadoPago")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("FechaContable")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaEmision")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaPagoDetraccion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaVencimiento")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Glosa")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("IGV")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Moneda")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("MontoDetraccion")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MontoRetencion")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("NoGravado")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("NumeroConstanciaDetraccion")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("OrdenCompraId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PorcentajeDetraccion")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ProveedorId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SaldoPendiente")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Serie")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal>("SubTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("TieneDetraccion")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("TipoCambio")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TipoComprobante")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("Total")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrdenCompraId");
+
+                    b.HasIndex("ProveedorId");
+
+                    b.ToTable("ComprobantesPago");
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.CuentaBancaria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("BancoNombre")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CCI")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Descripcion")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Moneda")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("NumeroCuenta")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("SaldoActual")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SaldoInicial")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Titular")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CuentasBancarias");
+                });
+
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.DetalleOrdenCompra", b =>
                 {
                     b.Property<int>("Id")
@@ -154,6 +327,75 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.HasIndex("IdOrdenCompra");
 
                     b.ToTable("DetalleOrdenCompra", (string)null);
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.DetallePlanilla", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("AportePension")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BonificacionBUC")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Conafovicer")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("DiasTrabajados")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("JornalPromedio")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Movilidad")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("NetoAPagar")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PagoHorasExtras")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("PlanillaSemanalId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SistemaPension")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("SueldoBasico")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalBruto")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalDescuentos")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalHorasExtras100")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalHorasExtras60")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalHorasNormales")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TrabajadorId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanillaSemanalId");
+
+                    b.HasIndex("TrabajadorId");
+
+                    b.ToTable("DetallePlanillas");
                 });
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.DetalleRequerimiento", b =>
@@ -235,6 +477,48 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.HasIndex("SolicitudPagoId");
 
                     b.ToTable("DetalleSolicitudPagos");
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.DetalleTareo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Asistio")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("CargoDia")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("HorasExtras100")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("HorasExtras60")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("HorasNormales")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("JornalBasicoDiario")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TareoId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TrabajadorId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TareoId");
+
+                    b.HasIndex("TrabajadorId");
+
+                    b.ToTable("DetalleTareos");
                 });
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.Inventario", b =>
@@ -322,6 +606,51 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Material", (string)null);
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.MovimientoBancario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CuentaBancariaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("FechaMovimiento")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("NumeroOperacion")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("SaldoDespues")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("SolicitudPagoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TipoMovimiento")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CuentaBancariaId");
+
+                    b.HasIndex("SolicitudPagoId");
+
+                    b.ToTable("MovimientosBancarios");
                 });
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.MovimientoInventario", b =>
@@ -441,6 +770,49 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.HasIndex("ProyectoId");
 
                     b.ToTable("OrdenCompra", (string)null);
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.PlanillaSemanal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("FechaFin")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaInicio")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ProyectoId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalBruto")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalDescuentos")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalNetoAPagar")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProyectoId");
+
+                    b.ToTable("PlanillasSemanales");
                 });
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.Proveedor", b =>
@@ -716,6 +1088,104 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.ToTable("SolicitudesPagos");
                 });
 
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.Tareo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ProyectoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Responsable")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProyectoId");
+
+                    b.ToTable("Tareos");
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.Trabajador", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Apellidos")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Banco")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("CargoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Cuspp")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("Estado")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("FechaCese")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaIngreso")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Nombres")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NumeroCuenta")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NumeroDocumento")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)");
+
+                    b.Property<int?>("ProyectoActualId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SistemaPension")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Telefono")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CargoId");
+
+                    b.HasIndex("ProyectoActualId");
+
+                    b.ToTable("Trabajadores");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -849,6 +1319,23 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.ComprobantePago", b =>
+                {
+                    b.HasOne("AROCONSTRUCCIONES.Models.OrdenCompra", "OrdenCompra")
+                        .WithMany()
+                        .HasForeignKey("OrdenCompraId");
+
+                    b.HasOne("AROCONSTRUCCIONES.Models.Proveedor", "Proveedor")
+                        .WithMany()
+                        .HasForeignKey("ProveedorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OrdenCompra");
+
+                    b.Navigation("Proveedor");
+                });
+
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.DetalleOrdenCompra", b =>
                 {
                     b.HasOne("AROCONSTRUCCIONES.Models.Material", "Material")
@@ -866,6 +1353,25 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.Navigation("Material");
 
                     b.Navigation("OrdenCompra");
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.DetallePlanilla", b =>
+                {
+                    b.HasOne("AROCONSTRUCCIONES.Models.PlanillaSemanal", "PlanillaSemanal")
+                        .WithMany("Detalles")
+                        .HasForeignKey("PlanillaSemanalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AROCONSTRUCCIONES.Models.Trabajador", "Trabajador")
+                        .WithMany()
+                        .HasForeignKey("TrabajadorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PlanillaSemanal");
+
+                    b.Navigation("Trabajador");
                 });
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.DetalleRequerimiento", b =>
@@ -904,6 +1410,25 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.Navigation("SolicitudPago");
                 });
 
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.DetalleTareo", b =>
+                {
+                    b.HasOne("AROCONSTRUCCIONES.Models.Tareo", "Tareo")
+                        .WithMany("Detalles")
+                        .HasForeignKey("TareoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AROCONSTRUCCIONES.Models.Trabajador", "Trabajador")
+                        .WithMany()
+                        .HasForeignKey("TrabajadorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tareo");
+
+                    b.Navigation("Trabajador");
+                });
+
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.Inventario", b =>
                 {
                     b.HasOne("AROCONSTRUCCIONES.Models.Almacen", "Almacen")
@@ -921,6 +1446,23 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.Navigation("Almacen");
 
                     b.Navigation("Material");
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.MovimientoBancario", b =>
+                {
+                    b.HasOne("AROCONSTRUCCIONES.Models.CuentaBancaria", "CuentaBancaria")
+                        .WithMany()
+                        .HasForeignKey("CuentaBancariaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AROCONSTRUCCIONES.Models.SolicitudPago", "SolicitudPago")
+                        .WithMany()
+                        .HasForeignKey("SolicitudPagoId");
+
+                    b.Navigation("CuentaBancaria");
+
+                    b.Navigation("SolicitudPago");
                 });
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.MovimientoInventario", b =>
@@ -961,6 +1503,17 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                         .HasForeignKey("ProyectoId");
 
                     b.Navigation("Proveedor");
+
+                    b.Navigation("Proyecto");
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.PlanillaSemanal", b =>
+                {
+                    b.HasOne("AROCONSTRUCCIONES.Models.Proyecto", "Proyecto")
+                        .WithMany()
+                        .HasForeignKey("ProyectoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Proyecto");
                 });
@@ -1030,6 +1583,34 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.Navigation("Proyecto");
 
                     b.Navigation("SolicitadoPorUser");
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.Tareo", b =>
+                {
+                    b.HasOne("AROCONSTRUCCIONES.Models.Proyecto", "Proyecto")
+                        .WithMany()
+                        .HasForeignKey("ProyectoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Proyecto");
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.Trabajador", b =>
+                {
+                    b.HasOne("AROCONSTRUCCIONES.Models.Cargo", "Cargo")
+                        .WithMany()
+                        .HasForeignKey("CargoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AROCONSTRUCCIONES.Models.Proyecto", "ProyectoActual")
+                        .WithMany()
+                        .HasForeignKey("ProyectoActualId");
+
+                    b.Navigation("Cargo");
+
+                    b.Navigation("ProyectoActual");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -1104,6 +1685,11 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                     b.Navigation("Detalles");
                 });
 
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.PlanillaSemanal", b =>
+                {
+                    b.Navigation("Detalles");
+                });
+
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.Proveedor", b =>
                 {
                     b.Navigation("OrdenesCompra");
@@ -1122,6 +1708,11 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                 });
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.SolicitudPago", b =>
+                {
+                    b.Navigation("Detalles");
+                });
+
+            modelBuilder.Entity("AROCONSTRUCCIONES.Models.Tareo", b =>
                 {
                     b.Navigation("Detalles");
                 });

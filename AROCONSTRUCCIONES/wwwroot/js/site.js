@@ -36,37 +36,42 @@ $(document).ready(function () {
         $submitButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...');
 
         $.post(url, data, function (response) {
-            if (response.success) {
-                // ¡Éxito! Cierra el modal
+            // CASO A: Éxito (JSON success = true)
+            if (response.success === true) {
                 modalPlaceholder.html('');
                 Swal.fire({ icon: 'success', title: '¡Guardado!', text: response.message, timer: 1500, showConfirmButton: false });
-                // Recarga la pestaña activa
+
                 if (typeof loadTabContent === 'function') {
-                    // Busca el botón de la pestaña activa (la que tiene el borde azul)
-                    const $activeTabButton = $('button[class*="border-blue-500"]');
+                    const $activeTabButton = $('button[class*="border-blue-600"]'); // Ajustado a tu clase active
                     if ($activeTabButton.length) {
                         loadTabContent($activeTabButton.data('tab-url'), '#tab-content-container');
+                        // También recargamos contenedores específicos si existen (ej: Tesorería)
+                        if ($('#tesoreria-content').length) loadTabContent('@Url.Action("ListaSolicitudesPartial", "Tesoreria")', '#tesoreria-content');
                     } else {
-                        location.reload(); // Fallback
+                        location.reload();
                     }
                 } else {
-                    location.reload(); // Fallback
+                    location.reload();
                 }
 
-            } else {
-                // Validación fallida o error de negocio
-                // El 'response' es el HTML del formulario con los mensajes de error
+            }
+            // CASO B: Error de Lógica/Excepción (JSON success = false)
+            // ¡ESTO ES LO QUE FALTABA!
+            else if (response.success === false) {
+                Swal.fire('Error', response.message, 'error');
+                $submitButton.prop('disabled', false).html('Confirmar'); // Restaurar botón
+            }
+            // CASO C: Error de Validación (HTML)
+            else {
                 modalPlaceholder.html(response);
-
-                // Volvemos a activar la validación en el formulario que se recargó
                 const $formRecargado = modalPlaceholder.find('form');
                 if ($formRecargado.length && $.validator && $.validator.unobtrusive) {
                     $.validator.unobtrusive.parse($formRecargado);
                 }
             }
         }).fail(function () {
-            Swal.fire({ icon: 'error', title: 'Error de Red', text: 'No se pudo conectar con el servidor.' });
-            $submitButton.prop('disabled', false).html('Guardar'); // (Restaura el texto original)
+            Swal.fire({ icon: 'error', title: 'Error de Servidor', text: 'Ocurrió un error interno (500). Revise la consola.' });
+            $submitButton.prop('disabled', false).html('Reintentar');
         });
     });
 });

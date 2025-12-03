@@ -31,13 +31,11 @@ namespace AROCONSTRUCCIONES.Repository.Repositories
         // ==========================================================
         public async Task<OrdenCompra?> GetByIdWithDetailsAsync(int id)
         {
-            // Usamos .AsTracking() porque este método se usa para ACTUALIZAR
-            // la OC (cambiar su estado), por lo que necesitamos que EF Core
-            // rastree la entidad.
             return await _context.OrdenesCompra
                 .Include(oc => oc.Proveedor)
+                .Include(oc => oc.Proyecto) // <--- ¡ESTA LÍNEA ES LA QUE FALTABA!
                 .Include(oc => oc.Detalles)
-                    .ThenInclude(d => d.Material) // Incluimos el material de cada detalle
+                    .ThenInclude(d => d.Material)
                 .FirstOrDefaultAsync(oc => oc.Id == id);
         }
     }

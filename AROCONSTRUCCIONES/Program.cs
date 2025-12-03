@@ -39,6 +39,8 @@ builder.Services.AddAutoMapper(config =>
     config.AddProfile<OrdenCompraProfile>();
     config.AddProfile<ProyectoProfile>();
     config.AddProfile<RequerimientoProfile>();
+    config.AddProfile<FinanzasProfile>();
+    config.AddProfile<RRHHProfile>();
 });
 
 builder.Services.AddScoped<IMaterialServices, MaterialService>();
@@ -61,8 +63,12 @@ builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IProyectoDashboardService, ProyectoDashboardService>();
 builder.Services.AddScoped<IRequerimientoRepository, RequerimientoRepository>();
 builder.Services.AddScoped<IRequerimientoService, RequerimientoService>();
+
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITesoreriaService, TesoreriaService>();
+builder.Services.AddScoped<IRecursosHumanosService, RecursosHumanosService>();
+builder.Services.AddScoped<IFinanzasService, FinanzasService>();
+
 builder.Services.AddHttpContextAccessor();
 //Configure Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
