@@ -38,7 +38,7 @@ namespace AROCONSTRUCCIONES.Persistence
         public DbSet<PlanillaSemanal> PlanillasSemanales { get; set; }
         public DbSet<DetallePlanilla> DetallePlanillas { get; set; }
         public DbSet<MovimientoBancario> MovimientosBancarios { get; set; }
-
+        public DbSet<Partida> Partidas { get; set; }
         //FLUENT API
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

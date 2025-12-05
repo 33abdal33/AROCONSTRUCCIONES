@@ -1,0 +1,65 @@
+﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.PartidaDto>
+
+@{
+    decimal totalPresupuesto = Model.Where(x => !x.EsTitulo).Sum(x => x.Parcial);
+}
+
+<div class="bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
+
+    <div class="bg-slate-50 px-6 py-3 border-b border-slate-200 flex justify-between items-center">
+        <span class="text-sm text-slate-500 font-medium">Total Partidas: @Model.Count()</span>
+        <div class="text-right">
+            <span class="text-xs text-slate-400 uppercase font-bold">Costo Directo Total</span>
+            <p class="text-xl font-bold text-slate-800">S/ @totalPresupuesto.ToString("N2")</p>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+            <thead class="text-xs text-slate-500 uppercase bg-slate-100 border-b">
+                <tr>
+                    <th class="px-4 py-3 w-24">Item</th>
+                    <th class="px-4 py-3">Descripción</th>
+                    <th class="px-4 py-3 w-20 text-center">Und</th>
+                    <th class="px-4 py-3 w-24 text-right">Metrado</th>
+                    <th class="px-4 py-3 w-28 text-right">Precio (S/)</th>
+                    <th class="px-4 py-3 w-32 text-right">Parcial (S/)</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="6" class="p-8 text-center text-slate-400">No hay partidas cargadas. Use el botón "Importar Excel".</td></tr>
+                }
+
+                @foreach (var item in Model)
+                {
+                    // Lógica simple de indentación: contamos los puntos en el Item (01.01.01)
+                    int nivel = item.Item.Count(c => c == '.');
+                    string paddingClass = nivel switch
+                    {
+                        0 => "pl-4 font-bold bg-slate-50", // Título Principal
+                        1 => "pl-8 font-semibold",          // Subtítulo
+                        2 => "pl-12",                       // Partida
+                        _ => "pl-16 text-slate-600"         // Sub-partida
+                    };
+
+                    // Estilo visual para Títulos vs Partidas
+                    string rowClass = item.EsTitulo ? "bg-slate-50/50 text-slate-800" : "hover:bg-blue-50 transition-colors";
+
+                    <tr class="@rowClass">
+                        <td class="px-4 py-2 font-mono text-slate-500">@item.Item</td>
+                        <td class="py-2 pr-4 @paddingClass">@item.Descripcion</td>
+                        <td class="px-4 py-2 text-center text-slate-500">@(item.EsTitulo ? "" : item.Unidad)</td>
+                        <td class="px-4 py-2 text-right text-slate-700">@(item.EsTitulo ? "" : item.Metrado.ToString("N2"))</td>
+                        <td class="px-4 py-2 text-right text-slate-700">@(item.EsTitulo ? "" : item.PrecioUnitario.ToString("N2"))</td>
+                        <td class="px-4 py-2 text-right font-medium text-slate-900">
+                            @* Si es título, podríamos sumar sus hijos, pero por ahora mostramos vacío o 0 *@
+                            @(item.EsTitulo ? "" : item.Parcial.ToString("N2"))
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
