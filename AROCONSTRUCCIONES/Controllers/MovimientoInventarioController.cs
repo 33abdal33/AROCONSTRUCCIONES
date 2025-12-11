@@ -14,14 +14,17 @@ namespace AROCONSTRUCCIONES.Controllers
         private readonly IMovimientoInventarioServices _movimientoInventarioServices;
         // 🔹 Inyección del servicio de Almacén
         private readonly IAlmacenService _almacenService;
+        private readonly IPresupuestoService _presupuestoService;
 
         public MovimientoInventarioController(
                 IMovimientoInventarioServices movimientoInventarioServices,
-                IAlmacenService almacenService) // 🔹 Recibimos el servicio aquí
+                IAlmacenService almacenService,
+                IPresupuestoService presupuestoService)
         {
             _movimientoInventarioServices = movimientoInventarioServices;
             _almacenService = almacenService; // 🔹 Inicializamos el servicio
-        }
+            _presupuestoService = presupuestoService;
+        }
 
         // ⭐ ACCIÓN RENOMBRADA Y VISTA ACTUALIZADA:
         // El nombre de la acción debe coincidir con el 'data-url' de la pestaña en Inventario/Index.
@@ -49,6 +52,25 @@ namespace AROCONSTRUCCIONES.Controllers
                 // Devolver la vista parcial con un modelo vacío para que se cargue la estructura HTML
                 return PartialView("TablaMovimientosPartial", new List<MovimientoInventarioDto>());
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPartidasPorProyecto(int proyectoId)
+        {
+            var partidas = await _presupuestoService.GetPartidasPorProyectoAsync(proyectoId);
+
+            // Filtramos solo las que NO son títulos (porque no puedes gastar en un título)
+
+            var items = partidas
+                .Where(p => !p.EsTitulo)
+                .Select(p => new
+                {
+                    value = p.Id,
+                    text = $"{p.Item} - {p.Descripcion}"
+                })
+                .ToList();
+
+            return Json(items);
         }
 
         [HttpPost]

@@ -140,14 +140,29 @@
                         </div>
                     </div>
 
-                    <div x-show="motivo === 'CONSUMO_PROYECTO'" x-transition>
-                        <label asp-for="IdProyecto" class="block text-sm font-medium text-gray-700">Asignar a Proyecto *</label>
-                        <select asp-for="IdProyecto" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                asp-items="proyectos"
-                                x-bind:required="motivo === 'CONSUMO_PROYECTO'">
-                            <option value="">Seleccione el proyecto...</option>
-                        </select>
-                        <span asp-validation-for="IdProyecto" class="text-sm text-red-600"></span>
+                    <div x-show="motivo === 'CONSUMO_PROYECTO'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <div>
+                            <label asp-for="IdProyecto" class="block text-sm font-medium text-gray-700">Asignar a Proyecto *</label>
+                            <select asp-for="IdProyecto"
+                                    id="selectProyectoMovimiento"
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    asp-items="proyectos"
+                                    x-bind:required="motivo === 'CONSUMO_PROYECTO'">
+                                <option value="">Seleccione el proyecto...</option>
+                            </select>
+                            <span asp-validation-for="IdProyecto" class="text-sm text-red-600"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="PartidaId" class="block text-sm font-medium text-gray-700">Partida Presupuestaria</label>
+                            <select asp-for="PartidaId"
+                                    id="selectPartidaMovimiento"
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <option value="">(Opcional) Seleccione partida...</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">El costo se sumará a esta partida.</p>
+                        </div>
                     </div>
                     <div>
                         <label asp-for="FechaMovimiento" class="block text-sm font-medium text-gray-700">Fecha del Movimiento</label>
@@ -177,3 +192,34 @@
         </div>
     </div>
 </div>
+<script>
+    $(document).ready(function() {
+        // Lógica de Dropdown en Cascada (Proyecto -> Partidas)
+        $('#selectProyectoMovimiento').on('change', function() {
+            const proyectoId = $(this).val();
+            const $comboPartidas = $('#selectPartidaMovimiento');
+
+            $comboPartidas.empty().append('<option value="">Cargando partidas...</option>');
+
+            if (proyectoId) {
+                $.get('@Url.Action("GetPartidasPorProyecto", "MovimientoInventario")', { proyectoId: proyectoId }, function(data) {
+                    $comboPartidas.empty();
+                    $comboPartidas.append('<option value="">-- Seleccione Partida (Opcional) --</option>');
+
+                    if (data.length > 0) {
+                        $.each(data, function(i, item) {
+                            $comboPartidas.append($('<option>', {
+                                value: item.value,
+                                text: item.text
+                            }));
+                        });
+                    } else {
+                        $comboPartidas.append('<option value="">Este proyecto no tiene presupuesto cargado</option>');
+                    }
+                });
+            } else {
+                $comboPartidas.empty().append('<option value="">Seleccione un proyecto primero</option>');
+            }
+        });
+    });
+</script>

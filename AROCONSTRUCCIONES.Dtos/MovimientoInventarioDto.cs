@@ -16,6 +16,9 @@ namespace AROCONSTRUCCIONES.Dtos
         [DisplayName("Proyecto")]
         public int? IdProyecto { get; set; } // Nullable, por si es una salida que no es de proyecto
 
+        [DisplayName("Partida Presupuestaria")]
+        public int? PartidaId { get; set; }
+
         [Required(ErrorMessage = "Debe seleccionar el material.")]
         [DisplayName("Material")]
         public int MaterialId { get; set; }

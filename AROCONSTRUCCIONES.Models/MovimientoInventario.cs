@@ -9,28 +9,22 @@ namespace AROCONSTRUCCIONES.Models
 {
     public class MovimientoInventario : EntityBase
     {
-        // =========================================================
-        // RELACIONES OBLIGATORIAS
-        // =========================================================
+        public int? ProyectoId { get; set; } // (Esto ya lo tenías implícito o explícito, asegúrate de tenerlo
+        [ForeignKey("ProyectoId")]
+        public Proyecto? Proyecto { get; set; }
+
+        // --- NUEVO: Relación con Partida ---
+        public int? PartidaId { get; set; }
+        [ForeignKey("PartidaId")]
+        public Partida? Partida { get; set; }
         public int MaterialId { get; set; }
-        public Material? Material { get; set; } // Asegúrate de tener la clase Material
-
+        public Material? Material { get; set; }
         public int AlmacenId { get; set; }
-        public Almacen? Almacen { get; set; } // Asegúrate de tener la clase Almacen
-
-        // =========================================================
-        // ⭐ PROPIEDAD DE RESPONSABLE (SIMPLE STRING) ⭐
-        // =========================================================
-        public string? Responsable { get; set; } // Guarda el nombre del responsable (Ej: "Juan Pérez")
-
-        // =========================================================
-        // DATOS DE TRANSACCIÓN
-        // =========================================================
-        public string TipoMovimiento { get; set; } // "INGRESO" o "SALIDA"
+        public Almacen? Almacen { get; set; }
+        public string? Responsable { get; set; }
+        public string TipoMovimiento { get; set; }
         public decimal Cantidad { get; set; }
         public DateTime FechaMovimiento { get; set; } = DateTime.Now;
-
-        // ⭐ CAMPO AÑADIDO: MOTIVO (Clasificación, Ej: COMPRA, CONSUMO, AJUSTE) ⭐
         public string? Motivo { get; set; }
 
         public string? Notas { get; set; } // Usado para el campo de Notas Adicionales/Referencia
