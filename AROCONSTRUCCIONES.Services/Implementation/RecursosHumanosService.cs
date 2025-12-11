@@ -156,6 +156,7 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
         public async Task<PlanillaSemanalDto> GenerarPrePlanillaAsync(int proyectoId, DateTime inicio, DateTime fin)
         {
+            // 1. Obtener tareos (Asistencia Diaria)
             var tareos = await _unitOfWork.Context.Tareos
                 .Include(t => t.Detalles)
                 .ThenInclude(d => d.Trabajador)
@@ -165,17 +166,19 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                             && t.Fecha.Date <= fin.Date)
                 .ToListAsync();
 
-            if (!tareos.Any()) throw new ApplicationException("No hay tareos registrados en este rango de fechas.");
+            if (!tareos.Any()) throw new ApplicationException("No hay tareos registrados en este rango.");
 
             var planillaDto = new PlanillaSemanalDto
             {
-                ProyectoId = proyectoId, // <-- ID ASEGURADO
+                ProyectoId = proyectoId,
                 FechaInicio = inicio,
                 FechaFin = fin,
-                Codigo = $"PL-{inicio:yyyy}WK{System.Globalization.ISOWeek.GetWeekOfYear(inicio)}-{proyectoId}",
+                // Generamos un código legible: PL-2025-SEM05
+                Codigo = $"PL-{inicio:yyyy}-SEM{System.Globalization.ISOWeek.GetWeekOfYear(inicio)}",
                 Detalles = new List<DetallePlanillaDto>()
             };
 
+            // 2. Agrupar por Trabajador (De Diario a Semanal)
             var detallesPlanos = tareos.SelectMany(t => t.Detalles).Where(d => d.Asistio);
             var gruposTrabajador = detallesPlanos.GroupBy(d => d.TrabajadorId);
 
@@ -184,48 +187,115 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                 var trabajador = grupo.First().Trabajador;
                 var cargo = trabajador.Cargo;
 
+                // --- A. ACUMULAR TIEMPO ---
+                // Sumamos lo que registró el ingeniero día a día
                 decimal horasNormales = grupo.Sum(d => d.HorasNormales);
                 decimal horas60 = grupo.Sum(d => d.HorasExtras60);
                 decimal horas100 = grupo.Sum(d => d.HorasExtras100);
-                int diasTrabajados = grupo.Count();
+                int diasTrabajados = grupo.Count(); // Días efectivos de asistencia
 
-                decimal valorHora = cargo.JornalBasico / 8m;
-                decimal sueldoBasico = horasNormales * valorHora;
+                // --- B. VALORES UNITARIOS (Tabla 2024-2025) ---
+                decimal jornalDiario = cargo.JornalBasico; // Ej: 87.30, 68.50, 61.65
+                decimal valorHora = jornalDiario / 8m;
+
+                // --- C. CÁLCULO DE INGRESOS ---
+
+                // 1. Remuneración Básica Semanal (Incluye Dominical)
+                // Regla: Si trabaja 6 días, se pagan 7 jornales. Si no, proporcional.
+                decimal pagoDominical = 0;
+                if (diasTrabajados == 6) // Semana completa
+                {
+                    pagoDominical = jornalDiario; // 1 día entero
+                }
+                else
+                {
+                    // Proporcional: (Jornal / 6) * Días trabajados
+                    pagoDominical = (jornalDiario / 6m) * diasTrabajados;
+                }
+
+                decimal basicoPorDias = jornalDiario * diasTrabajados;
+                decimal sueldoBasicoTotal = basicoPorDias + pagoDominical;
+                // Ejemplo Peón PDF: 61.65 * 6 = 369.90 + 61.65 (Dom) = 431.55 (Exacto al PDF)
+
+                // 2. Horas Extras
                 decimal pagoExtras = (horas60 * valorHora * 1.60m) + (horas100 * valorHora * 2.00m);
 
-                decimal porcentajeBUC = (cargo.Nombre.Contains("Operario") || cargo.Nombre.Contains("Capataz")) ? 0.32m : 0.30m;
-                decimal buc = (cargo.JornalBasico * diasTrabajados) * porcentajeBUC;
+                // 3. BUC (Bonificación Unificada)
+                // Regla PDF: Operario 32%, Oficial 30%, Peón 30%
+                decimal tasaBUC = 0.30m; // Default Peón/Oficial
+                if (cargo.Nombre.ToUpper().Contains("OPERARIO")) tasaBUC = 0.32m;
 
+                // El BUC se paga sobre el jornal básico SIN dominical
+                decimal buc = (jornalDiario * diasTrabajados) * tasaBUC;
+                // Ejemplo Operario PDF: 87.30 * 6 * 0.32 = 167.616 -> 167.62 (Exacto al PDF)
+
+                // 4. Movilidad
+                // Regla PDF: S/ 8.00 por día trabajado
                 decimal movilidad = diasTrabajados * 8.00m;
-                decimal totalBruto = sueldoBasico + pagoExtras + buc + movilidad;
 
-                decimal aportePension = (sueldoBasico + pagoExtras + buc) * 0.13m;
-                decimal conafovicer = sueldoBasico * 0.02m;
+                // === TOTAL BRUTO ===
+                decimal totalBruto = sueldoBasicoTotal + pagoExtras + buc + movilidad;
+
+                // --- D. CÁLCULO DE DESCUENTOS ---
+
+                // 5. Conafovicer (2% del Básico + Dominical)
+                // OJO: No incluye BUC ni Movilidad
+                decimal conafovicer = sueldoBasicoTotal * 0.02m;
+                // Ejemplo Peón PDF: 431.55 * 0.02 = 8.63 (Exacto al PDF)
+
+                // 6. Pensiones (AFP / ONP)
+                decimal tasaPension = 0.13m; // Default ONP 13%
+                string sistema = trabajador.SistemaPension?.ToUpper() ?? "ONP";
+
+                // Ajuste de tasas reales (Referencial, lo ideal es tener tabla de AFPs)
+                if (sistema.Contains("INTEGRA")) tasaPension = 0.1354m; // Ejemplo real
+                else if (sistema.Contains("HABITAT")) tasaPension = 0.138m;
+                else if (sistema.Contains("PRIMA")) tasaPension = 0.136m;
+                else if (sistema.Contains("PROFUTURO")) tasaPension = 0.137m;
+
+                // Base Imponible Pensión = Bruto - Conceptos No Remunerativos (Movilidad)
+                decimal basePension = totalBruto - movilidad;
+                decimal aportePension = basePension * tasaPension;
+
+                // Validación ONP Peón PDF:
+                // Bruto (590.52) - Movilidad (48.00) = 542.52
+                // 542.52 * 0.13 = 70.527 -> 70.53 (Exacto al PDF)
+
                 decimal totalDescuentos = aportePension + conafovicer;
+
+                // === NETO A PAGAR ===
                 decimal neto = totalBruto - totalDescuentos;
 
+                // --- E. LLENADO DEL DTO ---
                 planillaDto.Detalles.Add(new DetallePlanillaDto
                 {
                     TrabajadorId = trabajador.Id,
                     TrabajadorNombre = trabajador.NombreCompleto,
                     Cargo = cargo.Nombre,
-                    SistemaPension = trabajador.SistemaPension,
+                    SistemaPension = sistema,
+
                     DiasTrabajados = diasTrabajados,
                     HorasNormales = horasNormales,
                     HorasExtras60 = horas60,
                     HorasExtras100 = horas100,
-                    JornalBasico = cargo.JornalBasico,
-                    SueldoBasico = sueldoBasico,
+
+                    JornalBasico = jornalDiario, // Informativo unitario
+                    SueldoBasico = sueldoBasicoTotal, // El acumulado semanal con dominical
+
                     PagoExtras = pagoExtras,
                     BUC = buc,
                     Movilidad = movilidad,
+
                     TotalBruto = totalBruto,
+
                     AportePension = aportePension,
                     Conafovicer = conafovicer,
                     TotalDescuentos = totalDescuentos,
+
                     NetoAPagar = neto
                 });
             }
+
             return planillaDto;
         }
 

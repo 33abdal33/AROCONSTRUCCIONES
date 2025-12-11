@@ -81,9 +81,9 @@ namespace AROCONSTRUCCIONES.Persistence
             {
                 context.Cargos.AddRange(
                     // Valores referenciales de la Federación de Construcción Civil
-                    new Cargo { Nombre = "Operario", JornalBasico = 84.70m, BUC = 32.00m },
-                    new Cargo { Nombre = "Oficial", JornalBasico = 66.50m, BUC = 30.00m },
-                    new Cargo { Nombre = "Peón", JornalBasico = 59.80m, BUC = 30.00m },
+                    new Cargo { Nombre = "Operario", JornalBasico = 87.30m, BUC = 32.00m },
+                    new Cargo { Nombre = "Oficial", JornalBasico = 68.50m, BUC = 30.00m },
+                    new Cargo { Nombre = "Peón", JornalBasico = 61.65m, BUC = 30.00m },
                     new Cargo { Nombre = "Capataz", JornalBasico = 100.00m, BUC = 32.00m }
                 );
                 await context.SaveChangesAsync();
