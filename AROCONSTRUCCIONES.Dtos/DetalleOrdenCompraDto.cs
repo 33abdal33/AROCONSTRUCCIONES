@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,18 +8,20 @@ namespace AROCONSTRUCCIONES.Dtos
 {
     public class DetalleOrdenCompraDto
     {
-        [Required]
+        public int Id { get; set; } // Útil si necesitas editar/borrar líneas luego
         public int IdMaterial { get; set; }
 
-        [Required]
-        [Range(0.01, double.MaxValue, ErrorMessage = "La cantidad debe ser mayor a 0")]
-        public decimal Cantidad { get; set; }
+        // --- CAMPOS NUEVOS (Solucionan el error) ---
+        // Estos campos recibirán el texto desde la Base de Datos para mostrarlo
+        public string? Material { get; set; }      // El nombre del material
+        public string? UnidadMedida { get; set; }  // La unidad (UND, BLS, KG)
+        // ------------------------------------------
 
-        [Required]
-        [Range(0.01, double.MaxValue, ErrorMessage = "El precio debe ser mayor a 0")]
+        public decimal Cantidad { get; set; }
         public decimal PrecioUnitario { get; set; }
 
-        // Propiedad de solo lectura para el DTO
-        public decimal Subtotal => Cantidad * PrecioUnitario;
+        // Cambiamos la propiedad calculada por la real de la BD
+        // para asegurar que coincida con lo que se guardó financieramente
+        public decimal ImporteTotal { get; set; }
     }
 }

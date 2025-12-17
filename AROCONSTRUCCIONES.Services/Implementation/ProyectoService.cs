@@ -1,6 +1,6 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Models;
-using AROCONSTRUCCIONES.Repository.Interfaces; // <-- CAMBIO
+using AROCONSTRUCCIONES.Repository.Interfaces;
 using AROCONSTRUCCIONES.Services.Interface;
 using AutoMapper;
 using System.Collections.Generic;
@@ -10,12 +10,12 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 {
     public class ProyectoService : IProyectoService
     {
-        private readonly IUnitOfWork _unitOfWork; // <-- CAMBIO
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public ProyectoService(IUnitOfWork unitOfWork, IMapper mapper) // <-- CAMBIO
+        public ProyectoService(IUnitOfWork unitOfWork, IMapper mapper)
         {
-            _unitOfWork = unitOfWork; // <-- CAMBIO
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
@@ -24,6 +24,15 @@ namespace AROCONSTRUCCIONES.Services.Implementation
             var proyectos = await _unitOfWork.Proyectos.GetAllAsync();
             return _mapper.Map<IEnumerable<ProyectoDto>>(proyectos);
         }
+
+        // <--- IMPLEMENTACIÓN AGREGADA ---
+        public async Task<IEnumerable<ProyectoDto>> GetAllProyectosAsync()
+        {
+            // Hacemos exactamente lo mismo que GetAllAsync
+            var proyectos = await _unitOfWork.Proyectos.GetAllAsync();
+            return _mapper.Map<IEnumerable<ProyectoDto>>(proyectos);
+        }
+        // --------------------------------
 
         public async Task<ProyectoDto?> GetByIdAsync(int id)
         {
@@ -40,21 +49,18 @@ namespace AROCONSTRUCCIONES.Services.Implementation
             entity.CostoEjecutado = 0;
 
             await _unitOfWork.Proyectos.AddAsync(entity);
-            await _unitOfWork.SaveChangesAsync(); // <-- AHORA GUARDA EL SERVICIO
+            await _unitOfWork.SaveChangesAsync();
         }
 
         public async Task<Proyecto> UpdateAsync(int id, ProyectoDto dto)
         {
-            // Usamos GetByIdAsync (que es NoTracking)
             var entity = await _unitOfWork.Proyectos.GetByIdAsync(id);
             if (entity == null) return null;
 
-            // Mapeamos los cambios del DTO a la entidad desconectada
             _mapper.Map(dto, entity);
 
-            // Usamos el UpdateAsync del Repositorio (que adjunta y marca como Modificado)
             await _unitOfWork.Proyectos.UpdateAsync(entity);
-            await _unitOfWork.SaveChangesAsync(); // <-- AHORA GUARDA EL SERVICIO
+            await _unitOfWork.SaveChangesAsync();
             return entity;
         }
     }

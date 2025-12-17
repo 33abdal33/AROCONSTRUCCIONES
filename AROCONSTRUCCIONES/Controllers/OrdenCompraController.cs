@@ -1,8 +1,7 @@
-﻿
-using AROCONSTRUCCIONES.Dtos;
+﻿using AROCONSTRUCCIONES.Dtos;
 using AROCONSTRUCCIONES.Models;
 using AROCONSTRUCCIONES.Repository.Interfaces;
-using AROCONSTRUCCIONES.Services.Interface; // ¡Ahora usamos todos los servicios!
+using AROCONSTRUCCIONES.Services.Interface; 
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -16,38 +15,40 @@ using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Controllers
 {
-    // Permitir que todos los roles logueados vean el Dashboard
     [Authorize(Roles = "Administrador,Usuario,Almacenero")]
     public class OrdenCompraController : Controller
     {
-        // --- DEPENDENCIAS (SOLO SERVICIOS) ---
+        // --- DEPENDENCIAS ---
         private readonly IOrdenCompraServices _ordenCompraService;
         private readonly IRecepcionService _recepcionService;
         private readonly IProveedorService _proveedorService;
         private readonly IMaterialServices _materialService;
         private readonly IAlmacenService _almacenService;
-        private readonly IUnitOfWork _unitOfWork; // <-- 1. AÑADIR
-        private readonly IMapper _mapper; // <-- 2. AÑADIR
-        private readonly ITesoreriaService _tesoreriaService; // <-- 3. AÑADIR
-        private readonly UserManager<ApplicationUser> _userManager; // <-- 4. AÑADIR
+        private readonly IProyectoService _proyectoService; // <-- 1. NUEVO (Para asignar OC a Proyecto)
+        private readonly ITesoreriaService _tesoreriaService;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public OrdenCompraController(
             IOrdenCompraServices ordenCompraService,
             IRecepcionService recepcionService,
-            IProveedorService proveedorService,      // <-- NUEVO
+            IProveedorService proveedorService,
             IMaterialServices materialService,
-            ITesoreriaService tesoreriaService, // <-- 4. INYECTAR// <-- NUEVO
+            ITesoreriaService tesoreriaService,
             IAlmacenService almacenService,
+            IProyectoService proyectoService, // <-- INYECTAR
             IMapper mapper,
             IUnitOfWork unitOfWork,
-            UserManager<ApplicationUser> userManager) // <-- 5. INYECTAR// <-- NUEVO
+            UserManager<ApplicationUser> userManager)
         {
             _ordenCompraService = ordenCompraService;
             _recepcionService = recepcionService;
-            _tesoreriaService = tesoreriaService; // <-- ASIGNAR
+            _tesoreriaService = tesoreriaService;
             _proveedorService = proveedorService;
             _materialService = materialService;
             _almacenService = almacenService;
+            _proyectoService = proyectoService; // <-- ASIGNAR
             _mapper = mapper;
             _unitOfWork = unitOfWork;
             _userManager = userManager;
@@ -55,7 +56,6 @@ namespace AROCONSTRUCCIONES.Controllers
 
         // --- ACCIONES DE LECTURA (UI) ---
 
-        // GET: /OrdenCompra/ListaOrdenes
         [HttpGet]
         public async Task<IActionResult> ListaOrdenes()
         {
@@ -63,70 +63,99 @@ namespace AROCONSTRUCCIONES.Controllers
             return PartialView("_ListaOrdenesPartial", ordenes);
         }
 
-        // GET: /OrdenCompra/CargarFormularioOC
         [Authorize(Roles = "Administrador,Usuario")]
         [HttpGet]
         public async Task<IActionResult> CargarFormularioOC()
         {
             await CargarViewBagsFormulario();
-            // Ahora devuelve el PARCIAL que crearemos en el Paso 3
-            return PartialView("_OrdenCompraFormPartial", new OrdenCompraCreateDto());
+            // Inicializamos fecha hoy por defecto
+            return PartialView("_OrdenCompraFormPartial", new OrdenCompraCreateDto { FechaEmision = DateTime.Now });
         }
 
+        // --- MÉTODO CLAVE PARA LA TRAZABILIDAD ---
         [Authorize(Roles = "Administrador,Usuario")]
         [HttpGet]
         public async Task<IActionResult> CargarFormularioOCDesdeRequerimiento(int id)
         {
-            // 1. Cargar el Requerimiento con sus detalles (Materiales)
+            // 1. Cargar Requerimiento
             var requerimiento = await _unitOfWork.Requerimientos.GetByIdWithDetailsAsync(id);
+            
             if (requerimiento == null || requerimiento.Estado != "Aprobado")
             {
-                return NotFound("Requerimiento no encontrado o no está aprobado.");
+                return NotFound("Requerimiento no encontrado o no está aprobado."); // Mejor respuesta que string plano
             }
 
-            // 2. Mapear Requerimiento -> OrdenCompraCreateDto
-            var prefilledDto = _mapper.Map<OrdenCompraCreateDto>(requerimiento);
+            // 2. MAPEO MANUAL (CRÍTICO PARA TRAZABILIDAD)
+            // Hacemos esto manual para asegurar que el ID pase correctamente y calcular saldos.
+            var prefilledDto = new OrdenCompraCreateDto
+            {
+                ProyectoId = requerimiento.IdProyecto, // Heredamos el proyecto
+                Observaciones = $"Atención al Requerimiento {requerimiento.Codigo}",
+                FechaEmision = DateTime.Now,
+                Moneda = "PEN",
+                Detalles = new List<DetalleOrdenCompraCreateDto>()
+            };
 
-            // 3. Cargar los ViewBags que el modal necesita
+            if (requerimiento.Detalles != null)
+            {
+                foreach (var det in requerimiento.Detalles)
+                {
+                    // Solo agregamos si falta por atender
+                    decimal saldoPendiente = det.CantidadSolicitada - det.CantidadAtendida;
+
+                    if (saldoPendiente > 0)
+                    {
+                        prefilledDto.Detalles.Add(new DetalleOrdenCompraCreateDto
+                        {
+                            IdMaterial = det.IdMaterial,
+                            // Sugerimos comprar solo lo que falta
+                            Cantidad = saldoPendiente, 
+                            // Buscamos el precio actual del sistema (Opcional, si tienes lista de precios)
+                            PrecioUnitario = 0, 
+                            // ¡ESTO ES LO MÁS IMPORTANTE! Vinculamos con el ID original
+                            IdDetalleRequerimiento = det.Id 
+                        });
+                    }
+                }
+            }
+
+            if (!prefilledDto.Detalles.Any())
+            {
+                 // Caso borde: El requerimiento existe pero ya todo fue comprado.
+                 return Content("Este requerimiento ya fue atendido totalmente.");
+            }
+
+            // 3. Cargar ViewBags
             await CargarViewBagsFormulario();
 
-            // 4. Devolver el mismo modal, pero ahora con los datos precargados
+            // 4. Retornar Vista
             return PartialView("_OrdenCompraFormPartial", prefilledDto);
         }
 
-        // GET: /OrdenCompra/AbrirModalRecepcion/5
         [HttpGet]
         public async Task<IActionResult> AbrirModalRecepcion(int id)
         {
-            // La lógica de "GetById" y "Map" se mueve al servicio.
-            var dto = await _recepcionService.GetDatosParaModalRecepcionAsync(id); // <-- Lógica movida al servicio
-            if (dto == null)
-                return NotFound();
+            var dto = await _recepcionService.GetDatosParaModalRecepcionAsync(id);
+            if (dto == null) return NotFound();
 
-            // La carga del ViewBag también se mueve al servicio o se llama desde aquí
             ViewBag.Almacenes = new SelectList(await _almacenService.GetAllActiveAsync(), "Id", "Nombre");
-
             return PartialView("_RecepcionOrdenModal", dto);
         }
 
-        // GET: /OrdenCompra/GetMaterialesPorProveedor?proveedorId=5
         [HttpGet]
         public async Task<IActionResult> GetMaterialesPorProveedor(int proveedorId)
         {
-            // Esta lógica le pertenece al MaterialService, no al controlador
             var materiales = await _materialService.GetMaterialesPorProveedorAsync(proveedorId);
-
             var items = materiales.Select(m => new SelectListItem
             {
                 Value = m.Id.ToString(),
                 Text = $"{m.Codigo} - {m.Nombre} ({m.UnidadMedida})"
             }).ToList();
-
             return Json(items);
         }
 
-        // --- ACCIONES DE ESCRITURA (NEGOCIO) ---
-        // (Estas ya estaban perfectas, devuelven JSON)
+        // --- ACCIONES DE ESCRITURA ---
+
         [Authorize(Roles = "Administrador,Usuario")]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -134,35 +163,34 @@ namespace AROCONSTRUCCIONES.Controllers
         {
             if (!ModelState.IsValid)
             {
-                // Si la validación falla, recargamos los dropdowns y devolvemos
-                // el formulario parcial para que el modal muestre los errores.
                 await CargarViewBagsFormulario();
                 return PartialView("_OrdenCompraFormPartial", dto);
             }
             try
             {
                 await _ordenCompraService.CreateOrdenCompraAsync(dto);
+                
                 TempData["Exito"] = "¡Orden de Compra creada exitosamente!";
-                TempData["OpenTab"] = "#ordencompra-tab";
-                var redirectUrl = Url.Action("Index", "Inventario");
+                TempData["OpenTab"] = "#ordencompra-tab"; // Mantiene al usuario en la pestaña
+                
+                // Redirigir a Inventory/Index suele ser seguro, o al dashboard de compras
+                var redirectUrl = Url.Action("Index", "Inventario"); 
                 return Json(new { success = true, redirectUrl = redirectUrl, message = "¡Orden de Compra creada!" });
             }
-            catch (DbUpdateException ex) // Captura errores de EF Core
-            {
-                // Revisa si la "InnerException" es un error de SQL
+            catch (DbUpdateException ex)
+            {
                 if (ex.InnerException is SqlException sqlEx && sqlEx.Number == 2601)
                 {
-                    // 2601 es el código de error para VIOLACIÓN DE ÍNDICE ÚNICO (UNIQUE INDEX)
-                    return Json(new { success = false, message = $"Error: Ya existe una Orden de Compra con el código '{dto.Codigo}'. No se puede duplicar." });
+                    return Json(new { success = false, message = $"Error: Código duplicado." });
                 }
-                return Json(new { success = false, message = "Error de base de datos: " + ex.InnerException?.Message ?? ex.Message });
+                return Json(new { success = false, message = "Error BD: " + (ex.InnerException?.Message ?? ex.Message) });
             }
-            catch (ApplicationException appEx) // Errores de negocio (lanzados por el servicio)
-            {
-                return Json(new { success = false, message = appEx.InnerException?.Message ?? appEx.Message });
+            catch (ApplicationException appEx)
+            {
+                return Json(new { success = false, message = appEx.Message }); // Mensajes controlados por nuestro Servicio
             }
-            catch (Exception ex) // Errores inesperados
-            {
+            catch (Exception ex)
+            {
                 return Json(new { success = false, message = "Error inesperado: " + ex.Message });
             }
         }
@@ -171,7 +199,6 @@ namespace AROCONSTRUCCIONES.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RegistrarRecepcion(RecepcionMaestroDto dto)
         {
-            // (Esta acción ya era "pura" y está perfecta, no se toca)
             try
             {
                 if (!ModelState.IsValid)
@@ -187,26 +214,22 @@ namespace AROCONSTRUCCIONES.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Administrador,Usuario")] // Solo jefes pueden solicitar pagos
+        [Authorize(Roles = "Administrador,Usuario")]
         public async Task<IActionResult> GenerarSolicitudPago(int id)
         {
             try
             {
-                // Obtener el ID del usuario logueado
                 var user = await _userManager.GetUserAsync(User);
                 if (user == null) return Json(new { success = false, message = "Usuario no identificado." });
 
-                // Llamar al servicio de Tesorería
                 bool resultado = await _tesoreriaService.GenerarSolicitudPagoDesdeOC(id, user.Id);
 
                 if (resultado)
                 {
-                    TempData["SuccessMessage"] = "Solicitud de Pago (SP) generada y enviada a Tesorería.";
-
-                    // Recargamos la pestaña para ver cambios si hubiera
-                    
+                    TempData["SuccessMessage"] = "Solicitud de Pago generada.";
                     TempData["OpenTab"] = "#ordencompra-tab";
                     return Json(new { success = true, message = "Solicitud enviada a Tesorería." });
                 }
@@ -217,18 +240,25 @@ namespace AROCONSTRUCCIONES.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error al generar SP: " + ex.Message });
+                return Json(new { success = false, message = "Error: " + ex.Message });
             }
         }
-        // --- HELPER ---
+
+        // --- HELPER ACTUALIZADO ---
         private async Task CargarViewBagsFormulario()
         {
-            // El helper ahora llama a los SERVICIOS, no a los Repositorios.
+            // 1. Proveedores
             ViewBag.Proveedores = new SelectList(
                 await _proveedorService.GetAllActiveAsync(), "Id", "RazonSocial");
 
+            // 2. Materiales
             ViewBag.Materiales = new SelectList(
                 await _materialService.GetAllActiveAsync(), "Id", "Nombre");
+
+            // 3. Proyectos (¡IMPORTANTE! Agregado)
+            // Necesitamos saber para qué obra es la compra
+            ViewBag.Proyectos = new SelectList(
+                await _proyectoService.GetAllProyectosAsync(), "Id", "NombreProyecto");
         }
     }
 }

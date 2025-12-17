@@ -1,12 +1,14 @@
 ﻿using AROCONSTRUCCIONES.Models;
 using AROCONSTRUCCIONES.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System; // Agregado
+using System.Collections.Generic; // Agregado
+using System.Linq; // Agregado
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Repository.Repositories
 {
-    // Ahora, RepositoryBase SOLO ENCOLA operaciones
     public abstract class RepositoryBase<TEntity> : IRepositoryBase<TEntity> where TEntity : EntityBase
     {
         private readonly DbContext context;
@@ -16,11 +18,9 @@ namespace AROCONSTRUCCIONES.Repository.Repositories
             this.context = context;
         }
 
-        // 1. CORREGIDO: SE ELIMINA SaveChangesAsync. Solo encola la adición.
         public virtual async Task<TEntity> AddAsync(TEntity entity)
         {
             await context.Set<TEntity>().AddAsync(entity);
-            // 🚨 ELIMINADO: await context.SaveChangesAsync();
             return entity;
         }
 
@@ -30,9 +30,8 @@ namespace AROCONSTRUCCIONES.Repository.Repositories
             if (item is not null)
             {
                 context.Set<TEntity>().Remove(item);
-                // 💡 NOTA: Si este método se usa fuera de una transacción, se necesita SaveChangesAsync.
-                // Como este método no forma parte del proceso actual, lo dejaremos.
-                await context.SaveChangesAsync();
+                // Si borras fuera de transacción, considera reactivar el SaveChanges aquí o manejarlo en el servicio.
+                // await context.SaveChangesAsync(); 
             }
         }
 
@@ -55,19 +54,25 @@ namespace AROCONSTRUCCIONES.Repository.Repositories
         public virtual async Task<TEntity?> GetByIdAsync(int id)
         {
             return await context.Set<TEntity>()
-            .AsNoTracking() // Recomendado para lecturas
-            .FirstOrDefaultAsync(e => e.Id == id); // Mejor si quieres incluir navegación
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id);
         }
 
-        // 2. CORREGIDO: SE ELIMINA SaveChangesAsync. Solo encola la actualización.
+        // Tu método Async existente (está bien mantenerlo)
         public virtual async Task UpdateAsync(TEntity entity)
         {
-            // context.Set<TEntity>().Update(entity); <-- Esta línea es peligrosa
-            // Mejor manera de garantizar que se marque como Modified si no está trackeado:
             context.Entry(entity).State = EntityState.Modified;
+            await Task.CompletedTask;
+        }
 
-            // 🚨 ELIMINADO: await context.SaveChangesAsync();
-            await Task.CompletedTask; // Para mantener la firma asíncrona
+        // --- AGREGA ESTE MÉTODO (SOLUCIÓN AL ERROR) ---
+        public virtual void Update(TEntity entity)
+        {
+            // Opción A: Usando el método Update del DbSet (Recomendado, maneja Attach automático)
+            context.Set<TEntity>().Update(entity);
+
+            // Opción B: Forzando el estado (Como lo tenías en el Async)
+            // context.Entry(entity).State = EntityState.Modified;
         }
     }
 }

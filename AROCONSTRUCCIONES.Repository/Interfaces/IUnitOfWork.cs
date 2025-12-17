@@ -14,14 +14,21 @@ namespace AROCONSTRUCCIONES.Repository.Interfaces
         IMaterialRepository Materiales { get; }
         IProveedorRepository Proveedores { get; }
         IOrdenCompraRepository OrdenesCompra { get; }
+
+        // --- AGREGA ESTO ---
+        IDetalleOrdenCompraRepository DetalleOrdenCompra { get; } // Útil para validaciones
+        // -------------------
+
         IInventarioRepository Inventario { get; }
         IMovimientoInventarioRepository MovimientosInventario { get; }
         IProyectoRepository Proyectos { get; }
         IRequerimientoRepository Requerimientos { get; }
-        // ... y cualquier otro repositorio que tengas ...
-        ApplicationDbContext Context { get; } // Para acceder a tablas sin repo (ej. ProveedorMateriales)
 
-        // Este es el método clave que guardará todos los cambios
+        // --- AGREGA ESTO (SOLUCIONA EL ERROR) ---
+        IDetalleRequerimientoRepository DetalleRequerimiento { get; }
+        // ----------------------------------------
+
+        ApplicationDbContext Context { get; }
         Task<int> SaveChangesAsync();
     }
 }

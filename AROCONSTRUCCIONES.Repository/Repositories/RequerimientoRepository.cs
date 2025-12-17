@@ -18,12 +18,14 @@ namespace AROCONSTRUCCIONES.Repository.Repositories
         {
             _context = context;
         }
-
         public async Task<IEnumerable<Requerimiento>> GetRequerimientosPorProyectoAsync(int proyectoId)
         {
             return await _context.Requerimientos
                 .Where(r => r.IdProyecto == proyectoId)
-                .OrderByDescending(r => r.Fecha)
+                // --- CORRECCIÓN AQUÍ ---
+                // Antes: .OrderByDescending(r => r.Fecha)
+                // Ahora usamos FechaSolicitud (que es como se llama ahora en el Modelo)
+                .OrderByDescending(r => r.FechaSolicitud)
                 .AsNoTracking()
                 .ToListAsync();
         }

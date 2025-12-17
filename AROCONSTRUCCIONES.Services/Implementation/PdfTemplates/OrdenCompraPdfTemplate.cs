@@ -199,14 +199,14 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
             {
                 table.ColumnsDefinition(columns =>
                 {
-                    columns.ConstantColumn(25); // N°
-                    columns.RelativeColumn(4);  // Producto
-                    columns.RelativeColumn(1);  // Marca
-                    columns.ConstantColumn(30); // Und
-                    columns.ConstantColumn(40); // Cant
-                    columns.ConstantColumn(50); // P.U
-                    columns.ConstantColumn(40); // Dscto
-                    columns.ConstantColumn(60); // Parcial
+                    columns.ConstantColumn(25);
+                    columns.RelativeColumn(4);
+                    columns.RelativeColumn(1);
+                    columns.ConstantColumn(30);
+                    columns.ConstantColumn(40);
+                    columns.ConstantColumn(50);
+                    columns.ConstantColumn(40);
+                    columns.ConstantColumn(60);
                 });
 
                 // Header
@@ -224,20 +224,29 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
 
                 // Filas
                 int index = 1;
-                foreach (var item in _oc.Detalles)
+                if (_oc.Detalles != null) // Pequeña validación de seguridad
                 {
-                    BodyStyle(table.Cell()).AlignCenter().Text($"{index++}");
-                    BodyStyle(table.Cell()).Text(item.Material?.Nombre);
-                    BodyStyle(table.Cell()).Text(""); // Marca
-                    BodyStyle(table.Cell()).AlignCenter().Text(item.Material?.UnidadMedida);
-                    BodyStyle(table.Cell()).AlignRight().Text(item.Cantidad.ToString("N2", _culture));
-                    BodyStyle(table.Cell()).AlignRight().Text(item.PrecioUnitario.ToString("N2", _culture));
-                    BodyStyle(table.Cell()).AlignRight().Text("0.00%");
-                    BodyStyle(table.Cell()).AlignRight().Text(item.Subtotal.ToString("N2", _culture));
+                    foreach (var item in _oc.Detalles)
+                    {
+                        BodyStyle(table.Cell()).AlignCenter().Text($"{index++}");
+                        BodyStyle(table.Cell()).Text(item.Material?.Nombre ?? "---");
+                        BodyStyle(table.Cell()).Text(""); // Marca
+                        BodyStyle(table.Cell()).AlignCenter().Text(item.Material?.UnidadMedida ?? "UND");
+                        BodyStyle(table.Cell()).AlignRight().Text(item.Cantidad.ToString("N2", _culture));
+                        BodyStyle(table.Cell()).AlignRight().Text(item.PrecioUnitario.ToString("N2", _culture));
+
+                        // Mostrar descuento real si existe
+                        var dsctoTexto = item.PorcentajeDescuento > 0 ? $"{item.PorcentajeDescuento:N0}%" : "0%";
+                        BodyStyle(table.Cell()).AlignRight().Text(dsctoTexto);
+
+                        // --- CORRECCIÓN AQUÍ: Usar ImporteTotal en vez de Subtotal ---
+                        BodyStyle(table.Cell()).AlignRight().Text(item.ImporteTotal.ToString("N2", _culture));
+                    }
                 }
 
-                // Relleno
-                for (int i = 0; i < (15 - _oc.Detalles.Count); i++)
+                // Relleno (Visual)
+                int itemsCount = _oc.Detalles?.Count ?? 0;
+                for (int i = 0; i < (15 - itemsCount); i++)
                 {
                     BodyStyle(table.Cell()).Text("");
                     BodyStyle(table.Cell()).Text("");
@@ -250,7 +259,6 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
                 }
             });
         }
-
         // Helpers de Estilo
         IContainer HeaderStyle(IContainer container)
         {
@@ -270,32 +278,43 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
         }
 
         // --- TOTALES ---
+        // --- TOTALES ---
         void ComposeTotalesSection(IContainer container)
         {
-            decimal subtotal = _oc.Total;
-            decimal igv = subtotal * 0.18m;
-            decimal total = subtotal + igv;
+            // --- CORRECCIÓN LÓGICA ---
+            // Usamos las propiedades que agregamos al modelo OrdenCompra.
+            // Si tu modelo OrdenCompra aún no tiene 'SubTotal' e 'Impuesto', avísame.
+            // Asumiendo que aceptaste los cambios del modelo sugeridos:
+
+            decimal subtotal = _oc.SubTotal;
+            decimal igv = _oc.Impuesto;
+            decimal total = _oc.Total;
+
+            // NOTA: Si te da error en .SubTotal o .Impuesto, es porque no actualizaste 
+            // la clase OrdenCompra.cs. Si es así, avísame para darte el código alternativo.
 
             container.Row(row =>
             {
-                // Izquierda
+                // Izquierda (Texto y Observaciones)
                 row.RelativeItem(6).PaddingRight(10).Column(col =>
                 {
                     col.Item().Border(1).BorderColor(Colors.Black).Padding(4).Text(t => {
                         t.Span("SON: ").Bold().FontSize(7);
-                        t.Span("[IMPORTE TOTAL EN LETRAS PENDIENTE]").FontSize(7);
+                        // Aquí podrías usar una librería externa como 'Humanizer' para convertir números a letras
+                        t.Span($"[Monto en letras pendiente de implementar]").FontSize(7);
                     });
 
                     col.Spacing(5);
 
                     col.Item().Text("OBSERVACIONES GENERALES:").FontSize(7).Bold();
                     col.Item().Border(1).BorderColor(Colors.Black).Padding(4).MinHeight(40).Column(c => {
-                        c.Item().Text("NOTA: Condiciones comerciales: 1. El proveedor entregará los materiales...").FontSize(6);
-                        c.Item().Text($"Comentarios de esta OC: {_oc.Observaciones}").FontSize(6);
+                        c.Item().Text("NOTA: Condiciones comerciales según acuerdo...").FontSize(6);
+                        if (!string.IsNullOrEmpty(_oc.Observaciones))
+                            c.Item().Text($"OBS: {_oc.Observaciones}").FontSize(6);
                     });
                 });
 
-                // Derecha
+                // Derecha (Cuadro numérico)
                 row.RelativeItem(4).Table(table =>
                 {
                     table.ColumnsDefinition(c => { c.RelativeColumn(); c.RelativeColumn(); });
@@ -307,11 +326,10 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
                     table.Cell().Border(1).BorderColor(Colors.Black).Padding(3).AlignRight().Text(igv.ToString("N2", _culture)).Style(ValueStyle);
 
                     table.Cell().Background("#cfe2f3").Border(1).BorderColor(Colors.Black).Padding(3).Text("Total a Pagar").FontSize(8).Bold();
-                    table.Cell().Background("#cfe2f3").Border(1).BorderColor(Colors.Black).Padding(3).AlignRight().Text($"S/ {total.ToString("N2", _culture)}").FontSize(8).Bold();
+                    table.Cell().Background("#cfe2f3").Border(1).BorderColor(Colors.Black).Padding(3).AlignRight().Text($"{_oc.Moneda} {total.ToString("N2", _culture)}").FontSize(8).Bold();
                 });
             });
         }
-
         // --- FOOTER ---
         void ComposeFooter(IContainer container)
         {

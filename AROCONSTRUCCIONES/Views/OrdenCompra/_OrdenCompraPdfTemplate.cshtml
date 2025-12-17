@@ -1,24 +1,31 @@
 ﻿@model AROCONSTRUCCIONES.Models.OrdenCompra
 
 @{
-    Layout = null; // Sin layout
+    Layout = null;
 
-    // --- CÁLCULOS DE TOTALES ---
-    // Model.Total es tu Subtotal (calculado en el servicio)
-    decimal subtotal = Model.Total;
-    decimal descuento = 0; // Tu modelo no tiene descuentos, así que lo dejamos en 0.
-    decimal igv = subtotal * 0.18m; // ¡CORREGIDO! 18% IGV (Perú)
-    decimal totalFinal = subtotal + igv;
+    // --- CÁLCULOS DE TOTALES (CORREGIDO) ---
+    // Usamos las propiedades que ya guardamos en la Base de Datos.
+    // Esto evita errores de redondeo por recalcular.
 
-    // --- ¡NUEVA LÓGICA DE RUTA DE IMAGEN! ---
-    // 1. Obtenemos la ruta raíz (C:\...) que pasamos desde el PdfService
+    decimal subtotal = Model.SubTotal;   // Viene de BD
+    decimal igv = Model.Impuesto;        // Viene de BD
+    decimal totalFinal = Model.Total;    // Viene de BD
+
+    // Si por alguna razón tu modelo OrdenCompra aún no tiene 'SubTotal' e 'Impuesto',
+    // avísame, pero si seguiste los pasos anteriores, ya deberías tenerlos.
+
+    // --- LÓGICA DE RUTA DE IMAGEN ---
     string webRootPath = ViewData["WebRootPath"] as string;
+    string logoUrl = "";
 
-    // 2. Combinamos la ruta raíz con la ruta de tu imagen
-    string logoPath = System.IO.Path.Combine(webRootPath, "Iconos", "ARO.png");
-
-    // 3. Convertimos la ruta física a una URL absoluta (file:///C:/...)
-    string logoUrl = new System.Uri(logoPath).AbsoluteUri;
+    if (!string.IsNullOrEmpty(webRootPath))
+    {
+        string logoPath = System.IO.Path.Combine(webRootPath, "Iconos", "ARO.png");
+        if (System.IO.File.Exists(logoPath))
+        {
+            logoUrl = new System.Uri(logoPath).AbsoluteUri;
+        }
+    }
 }
 
 <!DOCTYPE html>
@@ -413,7 +420,7 @@
                     <td class="text-right">@item.Cantidad.ToString("N2")</td>
                     <td class="text-right">@item.PrecioUnitario.ToString("N2")</td>
                     <td class="text-right">0.00%</td>
-                    <td class="text-right">@item.Subtotal.ToString("N2")</td>
+                    <td class="text-right">@item.ImporteTotal.ToString("N2")</td>
                 </tr>
             }
             <!-- Relleno de filas vacías -->
