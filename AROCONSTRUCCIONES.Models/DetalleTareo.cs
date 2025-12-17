@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
@@ -27,7 +28,9 @@ namespace AROCONSTRUCCIONES.Models
 
         // Flag de asistencia (True = Asistió, False = Falta)
         public bool Asistio { get; set; } = true;
-
+        // NUEVO CAMPO
+        [MaxLength(5)]
+        public string TipoAsistencia { get; set; } = "LB"; // Default: Laborado
         // --- Snapshot de Costo (Importante) ---
         // Guardamos cuánto ganaba el obrero ESE DÍA para que el historial no cambie si le suben el sueldo después.
         [Column(TypeName = "decimal(18,2)")]

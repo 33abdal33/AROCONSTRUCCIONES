@@ -4,6 +4,7 @@ using AROCONSTRUCCIONES.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AROCONSTRUCCIONES.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251212184016_NuevasPropiedades-Para-DetallePlanilla-Vaciones-Indemnizacion")]
+    partial class NuevasPropiedadesParaDetallePlanillaVacionesIndemnizacion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -337,16 +340,10 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("AporteEsSalud")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<decimal>("AportePension")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("BonificacionBUC")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("BonificacionExtraordinaria")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Conafovicer")
@@ -354,9 +351,6 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
 
                     b.Property<int>("DiasTrabajados")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("Gratificacion")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Indemnizacion")
                         .HasColumnType("decimal(18,2)");
@@ -523,11 +517,6 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
 
                     b.Property<int>("TareoId")
                         .HasColumnType("int");
-
-                    b.Property<string>("TipoAsistencia")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("nvarchar(5)");
 
                     b.Property<int>("TrabajadorId")
                         .HasColumnType("int");

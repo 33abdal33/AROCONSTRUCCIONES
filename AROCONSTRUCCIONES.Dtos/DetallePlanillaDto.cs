@@ -25,8 +25,14 @@ namespace AROCONSTRUCCIONES.Dtos
         public decimal SueldoBasico { get; set; } // H.N * (Jornal/8)
         public decimal PagoExtras { get; set; }
         public decimal BUC { get; set; } // Bonificación Unificada (30-32%)
+        public decimal Indemnizacion { get; set; } // Nuevo
+        public decimal Vacaciones { get; set; }    // Nuevo
         public decimal Movilidad { get; set; } // Pasajes
         public decimal TotalBruto { get; set; }
+
+        public decimal Gratificacion { get; set; }
+        public decimal BonificacionExtraordinaria { get; set; }
+        public decimal AporteEsSalud { get; set; }
 
         // Descuentos
         public decimal AportePension { get; set; } // AFP/ONP

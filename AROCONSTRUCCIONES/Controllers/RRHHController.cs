@@ -206,54 +206,109 @@ namespace AROCONSTRUCCIONES.Controllers
             var url = await _pdfService.GenerarBoletaPago(detalle);
             return Redirect(url);
         }
+
         [HttpGet]
         public async Task<IActionResult> ExportarPlanillaCsv(int id)
         {
-            // 1. Obtener la planilla y sus detalles
             var planilla = await _unitOfWork.Context.PlanillasSemanales
-                .Include(p => p.Detalles)
-                    .ThenInclude(d => d.Trabajador)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Id == id);
+                .Include(p => p.Detalles).ThenInclude(d => d.Trabajador).ThenInclude(t => t.Cargo)
+                .AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
 
             if (planilla == null) return NotFound();
 
-            // 2. Construir el CSV
-            var builder = new StringBuilder();
+            var tareos = await _unitOfWork.Context.Tareos
+                .Include(t => t.Detalles)
+                .Where(t => t.ProyectoId == planilla.ProyectoId && t.Fecha >= planilla.FechaInicio && t.Fecha <= planilla.FechaFin)
+                .ToListAsync();
 
+            var sb = new StringBuilder();
             // Cabecera
-            builder.AppendLine("DNI,TRABAJADOR,DIAS,H.NORM,H.EXT,BASICO,PAGO EXTRAS,BUC,MOVILIDAD,TOTAL BRUTO,AFP/ONP,CONAF,TOTAL DSCTO,NETO A PAGAR");
+            sb.AppendLine("DNI,TRABAJADOR,CARGO,SALARIO,DIAS LAB,DIAS FER,BASICO,DOMINICAL,BUC,MOVILIDAD,INDEM(15%),VAC(10%),GRATI,BONIF,H.E. 60%,H.E. 100%,INDEM H.E.,TOTAL BRUTO,BASE AFP,SNP 13%,AFP APORTE,AFP PRIMA,AFP COMISION,CONAFOVICER,TOTAL DSCTO,NETO,ESSALUD");
 
             foreach (var det in planilla.Detalles)
             {
-                // Formateamos para evitar problemas con comas en los nombres
-                string trabajador = $"\"{det.Trabajador.NombreCompleto}\"";
+                // 1. Datos básicos
+                var asis = tareos.SelectMany(t => t.Detalles).Where(d => d.TrabajadorId == det.TrabajadorId).ToList();
+                int diasLab = asis.Count(d => d.TipoAsistencia == "LB");
+                int diasFer = asis.Count(d => d.TipoAsistencia == "FE" || d.TipoAsistencia == "DM");
+                decimal jornal = det.JornalPromedio;
 
-                var linea = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}",
+                // 2. BUC Real
+                decimal bucReal = (jornal * diasLab) * (det.Trabajador.Cargo.Nombre.ToUpper().Contains("OPERARIO") ? 0.32m : 0.30m);
+
+                // 3. INDEM H.E. (Factores Fijos)
+                decimal factorIndem = 1.15m; // Default Peón
+                string cargo = det.Trabajador.Cargo?.Nombre.ToUpper() ?? "";
+                if (cargo.Contains("OPERARIO")) factorIndem = 1.63m;
+                else if (cargo.Contains("OFICIAL")) factorIndem = 1.28m;
+                else if (cargo.Contains("PEON")) factorIndem = 1.15m;
+
+                // Suma de horas físicas para aplicar el factor
+                decimal totalHorasFisicas = det.TotalHorasExtras60 + det.TotalHorasExtras100;
+                decimal indemHE = totalHorasFisicas * factorIndem;
+
+                // 4. Montos Dinero Extras
+                decimal monto60 = det.TotalHorasExtras60 * (jornal / 8m * 1.60m);
+                decimal monto100 = det.TotalHorasExtras100 * (jornal / 8m * 2.00m);
+
+                // 5. Total Bruto (Reconstruido para Excel)
+                decimal brutoExcel = det.SueldoBasico + monto60 + monto100 + indemHE + bucReal + det.Movilidad + det.Indemnizacion + det.Vacaciones + det.Gratificacion + det.BonificacionExtraordinaria;
+
+                // 6. Base AFP (CORREGIDO: Restamos INDEM H.E.)
+                decimal baseAfp = brutoExcel - det.Movilidad - det.Indemnizacion - det.Gratificacion - det.BonificacionExtraordinaria - indemHE;
+
+                // 7. Cálculos de Descuentos
+                string snp = "-", afpObl = "-", afpPrima = "-", afpCom = "-";
+
+                if (det.SistemaPension.Contains("ONP") || det.SistemaPension.Contains("SNP"))
+                {
+                    snp = (baseAfp * 0.13m).ToString("F2");
+                }
+                else // AFP
+                {
+                    // Simulación Desglose AFP (Ajustado a Habitat/Integra)
+                    afpObl = (baseAfp * 0.10m).ToString("F2");      // 10% Aporte
+                    afpPrima = (baseAfp * 0.0137m).ToString("F2");  // 1.37% Prima
+
+                    // Comisión es el restante hasta llegar al total descontado en Planilla
+                    // (Ya que en BD guardamos el total calculado con la tasa exacta de la AFP)
+                    // Si quieres que el Excel recalcule exacto según la base nueva:
+                    decimal comision = (det.AportePension) - (baseAfp * 0.1137m);
+                    if (comision < 0) comision = baseAfp * 0.0155m; // Fallback 1.55% si no cuadra
+
+                    afpCom = comision.ToString("F2");
+                }
+
+                string linea = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25},{26}",
                     det.Trabajador.NumeroDocumento,
-                    trabajador,
-                    det.DiasTrabajados,
-                    det.TotalHorasNormales,
-                    det.TotalHorasExtras60 + det.TotalHorasExtras100,
-                    det.SueldoBasico.ToString("F2"),
-                    det.PagoHorasExtras.ToString("F2"),
-                    det.BonificacionBUC.ToString("F2"),
+                    $"\"{det.Trabajador.NombreCompleto}\"",
+                    cargo,
+                    jornal.ToString("F2"),
+                    diasLab, diasFer,
+                    (jornal * (diasLab + diasFer)).ToString("F2"), // Basico Dias
+                    (det.SueldoBasico - (jornal * (diasLab + diasFer))).ToString("F2"), // Dominical
+                    bucReal.ToString("F2"),
                     det.Movilidad.ToString("F2"),
-                    det.TotalBruto.ToString("F2"),
-                    det.AportePension.ToString("F2"),
+                    det.Indemnizacion.ToString("F2"),
+                    det.Vacaciones.ToString("F2"),
+                    det.Gratificacion.ToString("F2"),
+                    det.BonificacionExtraordinaria.ToString("F2"),
+                    monto60.ToString("F2"),
+                    monto100.ToString("F2"),
+                    indemHE.ToString("F2"),
+                    brutoExcel.ToString("F2"),
+                    baseAfp.ToString("F2"), // <--- AQUI YA ESTARÁ RESTADO EL INDEM HE
+                    snp, afpObl, afpPrima, afpCom,
                     det.Conafovicer.ToString("F2"),
                     det.TotalDescuentos.ToString("F2"),
-                    det.NetoAPagar.ToString("F2")
+                    (brutoExcel - det.TotalDescuentos).ToString("F2"),
+                    det.AporteEsSalud.ToString("F2")
                 );
-
-                builder.AppendLine(linea);
+                sb.AppendLine(linea);
             }
 
-            // 3. Generar archivo (con BOM para que Excel lea tildes)
-            var nombreArchivo = $"Planilla-{planilla.Codigo}.csv";
-            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
-
-            return File(bytes, "text/csv", nombreArchivo);
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv", $"Planilla_Final_{planilla.Codigo}.csv");
         }
     }
 }

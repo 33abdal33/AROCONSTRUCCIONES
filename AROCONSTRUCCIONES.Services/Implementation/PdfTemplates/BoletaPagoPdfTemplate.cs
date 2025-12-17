@@ -104,27 +104,44 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
                     // Header
                     table.Header(h =>
                     {
-                        h.Cell().Element(HeaderStyle).Text("CONCEPTOS REMUNERATIVOS");
+                        h.Cell().Element(HeaderStyle).Text("CONCEPTOS");
                         h.Cell().Element(HeaderStyle).AlignRight().Text("INGRESOS");
                         h.Cell().Element(HeaderStyle).AlignRight().Text("DESCUENTOS");
                         h.Cell().Element(HeaderStyle).AlignRight().Text("NETO");
                     });
 
                     // --- INGRESOS ---
-                    Row(table, $"Jornal Básico ({det.TotalHorasNormales} hrs)", det.SueldoBasico, 0);
+                    Row(table, $"Jornal Básico + Dominical ({det.DiasTrabajados} días)", det.SueldoBasico, 0);
 
                     if (det.PagoHorasExtras > 0)
                         Row(table, $"Horas Extras (60%: {det.TotalHorasExtras60} | 100%: {det.TotalHorasExtras100})", det.PagoHorasExtras, 0);
 
                     if (det.BonificacionBUC > 0)
-                        Row(table, "Bonif. Unificada Construcción (BUC)", det.BonificacionBUC, 0);
+                        Row(table, "Bonif. Unificada (BUC)", det.BonificacionBUC, 0);
 
                     if (det.Movilidad > 0)
                         Row(table, "Movilidad Supeditada", det.Movilidad, 0);
 
+                    // --- AQUÍ ESTÁN LAS NUEVAS FILAS (LIQUIDACIÓN SEMANAL) ---
+                    if (det.Indemnizacion > 0)
+                        Row(table, "Indemnización (CTS 15%)", det.Indemnizacion, 0);
+
+                    if (det.Vacaciones > 0)
+                        Row(table, "Vacaciones (10%)", det.Vacaciones, 0);
+
+                    if (det.Gratificacion > 0)
+                        Row(table, "Gratificación Proporcional", det.Gratificacion, 0);
+
+                    if (det.BonificacionExtraordinaria > 0)
+                        Row(table, "Bonif. Extraordinaria (9%)", det.BonificacionExtraordinaria, 0);
+                    // --------------------------------------------------------
+
                     // --- DESCUENTOS ---
-                    Row(table, $"Aporte {det.SistemaPension}", 0, det.AportePension);
-                    Row(table, "Conafovicer (2%)", 0, det.Conafovicer);
+                    if (det.AportePension > 0)
+                        Row(table, $"Aporte {det.SistemaPension}", 0, det.AportePension);
+
+                    if (det.Conafovicer > 0)
+                        Row(table, "Conafovicer (2%)", 0, det.Conafovicer);
 
                     // Relleno visual mínimo
                     table.Cell().ColumnSpan(4).PaddingTop(5).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten2);
@@ -141,9 +158,15 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
 
                 col.Spacing(5);
 
-                // Neto en letras (usando tu helper existente si está disponible, o placeholder)
-                // string netoLetras = NumeroALetras.Convertir(det.NetoAPagar);
-                // col.Item().Text($"SON: {netoLetras}").FontSize(8).Italic();
+                // Aportes del Empleador (Informativo)
+                if (det.AporteEsSalud > 0)
+                {
+                    col.Item().PaddingTop(2).Text(t =>
+                    {
+                        t.Span("Aporte Empleador (EsSalud 9%): ").FontSize(7).FontColor(Colors.Grey.Darken2);
+                        t.Span(det.AporteEsSalud.ToString("N2", _culture)).FontSize(7).Bold();
+                    });
+                }
 
                 // 4. Firmas
                 col.Item().PaddingTop(35).Row(row =>

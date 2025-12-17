@@ -36,11 +36,27 @@ namespace AROCONSTRUCCIONES.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal BonificacionBUC { get; set; } // 30% o 32% del básico
 
+        // --- NUEVOS CAMPOS (Liquidación Semanal) ---
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Indemnizacion { get; set; } // 15% (CTS)
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Vacaciones { get; set; } // 10%
+
         [Column(TypeName = "decimal(18,2)")]
         public decimal Movilidad { get; set; } // Pasajes (S/ 7.20 x día asistido aprox)
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalBruto { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Gratificacion { get; set; } // Prorrateada semanal
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal BonificacionExtraordinaria { get; set; } // 9% de la Grati
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal AporteEsSalud { get; set; } // 9% (Lo paga el empleador)
 
         // --- Descuentos ---
         public string SistemaPension { get; set; } // ONP / AFP INTEGRA...

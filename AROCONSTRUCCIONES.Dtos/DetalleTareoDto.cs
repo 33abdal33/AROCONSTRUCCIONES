@@ -18,5 +18,6 @@ namespace AROCONSTRUCCIONES.Dtos
         public decimal HorasExtras60 { get; set; } = 0;
         public decimal HorasExtras100 { get; set; } = 0;
         public bool Asistio { get; set; } = true;
+        public string TipoAsistencia { get; set; } = "LB"; // Para la vista
     }
 }
