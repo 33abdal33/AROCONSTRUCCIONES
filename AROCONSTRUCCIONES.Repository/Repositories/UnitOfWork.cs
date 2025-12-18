@@ -14,10 +14,9 @@ namespace AROCONSTRUCCIONES.Repository.Repositories
         public IProveedorRepository Proveedores { get; private set; }
         public IOrdenCompraRepository OrdenesCompra { get; private set; }
 
-        // --- IMPLEMENTACIÓN ---
+        // --- IMPLEMENTACIÓN --
         public IDetalleOrdenCompraRepository DetalleOrdenCompra { get; private set; }
-        // ----------------------
-
+        // ---------------------
         public IInventarioRepository Inventario { get; private set; }
         public IMovimientoInventarioRepository MovimientosInventario { get; private set; }
         public IProyectoRepository Proyectos { get; private set; }
@@ -26,7 +25,6 @@ namespace AROCONSTRUCCIONES.Repository.Repositories
         // --- IMPLEMENTACIÓN (SOLUCIONA EL ERROR) ---
         public IDetalleRequerimientoRepository DetalleRequerimiento { get; private set; }
         // -------------------------------------------
-
         public UnitOfWork(ApplicationDbContext context)
         {
             _context = context;

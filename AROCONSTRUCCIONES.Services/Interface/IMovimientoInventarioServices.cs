@@ -9,7 +9,8 @@ namespace AROCONSTRUCCIONES.Services.Interface
         Task<bool> RegistrarIngreso(MovimientoInventarioDto dto);
         Task<bool> RegistrarSalida(MovimientoInventarioDto dto);
         Task<IEnumerable<MovimientoInventarioDto>> GetAllMovimientosAsync();
-
+        // Añadir dentro de la interfaz
+        Task<bool> RealizarTransferenciaAsync(TransferenciaDto dto, string usuarioId);
         // ============================================
         // ↓↓↓ ¡AÑADE ESTA LÍNEA NUEVA! ↓↓↓
         // ============================================

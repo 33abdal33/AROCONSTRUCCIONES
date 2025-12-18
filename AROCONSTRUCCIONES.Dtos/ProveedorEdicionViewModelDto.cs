@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using System.Collections.Generic;
-
-namespace AROCONSTRUCCIONES.Dtos
+﻿namespace AROCONSTRUCCIONES.Dtos
 {
     // Este DTO/ViewModel lleva TODOS los datos que el modal necesita
     public class ProveedorEdicionViewModelDto

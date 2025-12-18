@@ -211,5 +211,6 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
             return _mapper.Map<IEnumerable<MovimientoInventarioDto>>(movimientos);
         }
+
     }
 }
