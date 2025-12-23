@@ -5,75 +5,126 @@
     var saldo = ViewData["Saldo"] as InventarioDto;
 }
 
+@* 1. Barra de Acciones y Título *@
+<div class="flex flex-col md:flex-row justify-between items-end gap-4 mb-4 mt-6">
+    <div>
+        <h3 class="text-xl font-bold text-slate-800">Trazabilidad de Inventario (Kárdex)</h3>
+        <p class="text-sm text-slate-500">Historial cronológico de movimientos y saldos calculados</p>
+    </div>
+    
+    @* BOTÓN DE EXPORTACIÓN (Opcional si decides crear la acción en el controlador) *@
+    <button onclick="window.print()" 
+            class="inline-flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-lg shadow-md transition-all">
+        <i class="fas fa-print mr-2"></i> 
+        Imprimir Kárdex
+    </button>
+</div>
+
+@* 2. Panel de Información del Material (Estilo Cards) *@
 @if (saldo != null)
 {
-    <div class="p-4 mb-4 border border-gray-200 rounded-lg bg-slate-50">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-                <small class="text-sm text-slate-500">Material</small>
-                <h5 class="text-base font-semibold text-slate-900">@saldo.MaterialNombre (@saldo.MaterialCodigo)</h5>
-            </div>
-            <div>
-                <small class="text-sm text-slate-500">Almacén</small>
-                <h5 class="text-base font-semibold text-slate-900">@saldo.AlmacenUbicacion</h5>
-            </div>
-            <div class="text-left md:text-right">
-                <small class="text-sm text-slate-500">Stock Actual</small>
-                <h5 class="text-base font-bold text-green-600">@saldo.StockActual.ToString("N0")</h5>
-            </div>
-            <div class="text-left md:text-right">
-                <small class="text-sm text-slate-500">Valorizado</small>
-                <h5 class="text-base font-bold text-slate-900">@saldo.ValorTotal.ToString("C2")</h5>
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p class="text-slate-400 text-[10px] font-bold uppercase">Material</p>
+            <p class="text-sm font-bold text-slate-800 truncate">@saldo.MaterialNombre</p>
+            <p class="text-[10px] font-mono text-blue-600">@saldo.MaterialCodigo</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p class="text-slate-400 text-[10px] font-bold uppercase">Ubicación</p>
+            <p class="text-sm font-bold text-slate-800">@saldo.AlmacenUbicacion</p>
+            <p class="text-[10px] text-slate-400 italic">Almacén Activo</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border-l-4 border-green-500 shadow-sm">
+            <p class="text-green-600 text-[10px] font-bold uppercase">Stock Disponible</p>
+            <p class="text-xl font-black text-slate-900">@saldo.StockActual.ToString("N2")</p>
+            <p class="text-[10px] text-slate-400 font-bold">@saldo.MaterialUnidadMedida</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border-l-4 border-blue-500 shadow-sm">
+            <p class="text-blue-600 text-[10px] font-bold uppercase">Valorización Actual</p>
+            <p class="text-xl font-black text-slate-900">S/. @saldo.ValorTotal.ToString("N2")</p>
+            <p class="text-[10px] text-slate-400 font-bold">CPP: S/. @saldo.CostoPromedio.ToString("N4")</p>
         </div>
     </div>
 }
 
-<div class="overflow-x-auto bg-white rounded-lg shadow">
-    <table class="min-w-full divide-y divide-gray-200" id="tablaKardexReporte">
-        <thead class="bg-slate-50">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha y Hora</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipo</th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Cantidad</th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Costo Unit.</th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Stock Final</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Documento</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Motivo</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Responsable</th>
-            </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-            @if (Model != null && Model.Any())
-            {
-                @foreach (var mov in Model)
+@* 3. Tabla de Movimientos *@
+<div class="bg-white rounded-lg shadow-md overflow-hidden border border-slate-200">
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-left" id="tablaKardexReporte">
+            <thead class="bg-slate-800 text-white uppercase text-[11px] font-bold">
+                <tr>
+                    <th class="px-6 py-4">Fecha y Hora</th>
+                    <th class="px-6 py-4 text-center">Tipo</th>
+                    <th class="px-6 py-4 text-right">Cantidad</th>
+                    <th class="px-6 py-4 text-right">Costo Mov.</th>
+                    <th class="px-6 py-4 text-right bg-slate-700">Saldo Final</th>
+                    <th class="px-6 py-4">Documento / Motivo</th>
+                    <th class="px-6 py-4">Responsable</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @if (Model != null && Model.Any())
                 {
-                    bool esEntrada = mov.TipoMovimiento == "INGRESO";
-                    var tipoClaseText = esEntrada ? "text-green-600" : "text-red-600";
-                    var signoCantidad = esEntrada ? "+" : "-";
+                    @foreach (var mov in Model.OrderByDescending(x => x.FechaMovimiento))
+                    {
+                        bool esEntrada = mov.TipoMovimiento == "INGRESO";
+                        var badgeClass = esEntrada ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700";
+                        var textClass = esEntrada ? "text-green-600" : "text-red-600";
+                        var signo = esEntrada ? "+" : "-";
 
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
+                                @mov.FechaMovimiento.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase @badgeClass">
+                                    @(esEntrada ? "Entrada" : "Salida")
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="font-mono font-bold @textClass">
+                                    @signo@mov.Cantidad.ToString("N2")
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right text-xs text-slate-500">
+                                S/. @mov.CostoUnitarioMovimiento.ToString("N4")
+                            </td>
+                            <td class="px-6 py-4 text-right bg-slate-50/50 font-black text-slate-900">
+                                @mov.StockFinal.ToString("N2")
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-xs font-bold text-slate-700">@mov.Motivo</div>
+                                <div class="text-[10px] text-slate-400 font-mono">DOC: @(string.IsNullOrEmpty(mov.NroFacturaGuia) ? "S/N" : mov.NroFacturaGuia)</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-[11px] text-slate-500">
+                                <i class="fas fa-user-circle mr-1"></i> @mov.ResponsableNombre
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@mov.FechaMovimiento.ToString("yyyy-MM-dd HH:mm")</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium @tipoClaseText">@mov.TipoMovimiento</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                            <span class="font-medium @tipoClaseText">
-                                @signoCantidad@mov.Cantidad.ToString("N0")
-                            </span>
+                        <td colspan="7" class="px-6 py-10 text-center text-slate-400 italic">
+                            No se encontraron registros de movimientos para este material en el almacén seleccionado.
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 text-right">@mov.CostoUnitarioMovimiento.ToString("C4")</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-bold text-right">@mov.StockFinal.ToString("N0")</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@mov.NroFacturaGuia</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@mov.Motivo</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@mov.ResponsableNombre</td>
                     </tr>
                 }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="8" class="px-6 py-4 text-center text-slate-500">No se encontraron movimientos para esta selección.</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>
+
+
+<script>
+    $(document).ready(function() {
+        if (!$.fn.DataTable.isDataTable('#tablaKardexReporte')) {
+            $('#tablaKardexReporte').DataTable({
+                "language": { "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json" },
+                "pageLength": 15,
+                "order": [[0, "desc"]], // Fecha más reciente primero
+                "dom": 'rtip' // Ocultamos el buscador de datatables para usar un diseño más limpio
+            });
+        }
+    });
+</script>

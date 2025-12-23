@@ -1,0 +1,90 @@
+﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.ConsumoMaterialProyectoDto>
+
+@* 1. Barra de Acciones y Título *@
+<div class="flex flex-col md:flex-row justify-between items-end gap-4 mb-4 mt-6">
+    <div>
+        <h3 class="text-xl font-bold text-slate-800">Análisis de Consumo por Obra</h3>
+        <p class="text-sm text-slate-500">Detalle de materiales despachados e impacto económico en el proyecto</p>
+    </div>
+
+    @* BOTÓN DE EXPORTACIÓN A EXCEL *@
+    <a href="@Url.Action("ExportarConsumoExcel", "ReportesLogistica", new { proyectoId = ViewBag.ProyectoId })"
+       class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg shadow-md transition-all transform hover:-translate-y-0.5">
+        <i class="fas fa-file-excel mr-2"></i>
+        Exportar Consumo a Excel
+    </a>
+</div>
+
+@* 2. Card de Inversión Total *@
+<div class="bg-emerald-600 p-5 rounded-xl shadow-lg text-white mb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="text-emerald-100 text-sm font-medium uppercase tracking-wider">Inversión Total Ejecutada</p>
+            <h3 class="text-3xl font-black">S/. @Model.Sum(x => x.CostoTotalAcumulado).ToString("N2")</h3>
+        </div>
+        <div class="bg-white/20 p-3 rounded-lg">
+            <i class="fas fa-hard-hat text-4xl"></i>
+        </div>
+    </div>
+</div>
+
+@* 3. Tabla de Resultados *@
+<div class="bg-white rounded-lg shadow-md overflow-hidden border border-slate-200">
+    <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-widest">Desglose de Materiales</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-slate-800 text-white uppercase text-[11px] font-bold">
+                <tr>
+                    <th class="px-6 py-4">Material / Insumo</th>
+                    <th class="px-6 py-4 text-center">Cant. Consumida</th>
+                    <th class="px-6 py-4 text-right">Costo Acumulado</th>
+                    <th class="px-6 py-4 w-1/3">Impacto en Presupuesto</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach (var item in Model)
+                {
+                    <tr class="hover:bg-emerald-50/30 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-slate-800">@item.MaterialNombre</div>
+                            <div class="text-[10px] text-slate-400 font-semibold uppercase">@item.UnidadMedida</div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="font-mono font-bold text-slate-600">@item.CantidadTotal.ToString("N2")</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="font-bold text-slate-900">S/. @item.CostoTotalAcumulado.ToString("N2")</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
+                                    <div class="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                                         style="width: @item.PorcentajeDelTotal.ToString("0")%"></div>
+                                </div>
+                                <span class="text-xs font-black text-emerald-700 w-10">@item.PorcentajeDelTotal.ToString("N1")%</span>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot class="bg-slate-50 font-bold border-t-2 border-slate-200">
+                <tr>
+                    <td colspan="2" class="px-6 py-4 text-right text-slate-500 uppercase text-xs">Total Invertido en Obra:</td>
+                    <td class="px-6 py-4 text-right text-emerald-700 text-xl font-black">S/. @Model.Sum(x => x.CostoTotalAcumulado).ToString("N2")</td>
+                    <td class="px-6 py-4">
+                        <span class="text-[10px] text-slate-400 font-normal uppercase italic leading-tight block">
+                            * Este monto representa el costo real de materiales <br /> extraídos de almacén para este proyecto.
+                        </span>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@* Script para asegurar que el scroll suba al cargar los resultados *@
+<script>
+    document.getElementById('tab-content-container').scrollIntoView({ behavior: 'smooth' });
+</script>

@@ -1,0 +1,93 @@
+﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.InventarioDto>
+
+@* Barra de Acciones Superior *@
+<div class="flex flex-col md:flex-row justify-between items-end gap-4 mb-4 mt-6">
+    <div>
+        <h3 class="text-xl font-bold text-slate-800">Resultado del Análisis de Stock</h3>
+        <p class="text-sm text-slate-500">Valores calculados en base al Costo Promedio Ponderado (CPP)</p>
+    </div>
+
+    @* BOTÓN DE EXPORTACIÓN A EXCEL *@
+    <a href="@Url.Action("ExportarStockExcel", "ReportesLogistica", new { almacenId = ViewBag.AlmacenId })"
+       class="inline-flex items-center px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-bold rounded-lg shadow-md transition-all transform hover:-translate-y-0.5">
+        <i class="fas fa-file-excel mr-2"></i>
+        Exportar Reporte a Excel
+    </a>
+</div>
+
+@* Bloque de Indicadores (Tus Cards) *@
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div class="bg-blue-600 p-5 rounded-xl shadow-lg text-white">
+        <p class="text-blue-100 text-sm font-medium uppercase tracking-wider">Capital Total en Stock</p>
+        <h3 class="text-3xl font-black">S/. @Model.Sum(x => x.ValorTotal).ToString("N2")</h3>
+    </div>
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-orange-500">
+        <p class="text-slate-500 text-sm font-medium uppercase tracking-wider">Alertas de Reposición</p>
+        <h3 class="text-3xl font-black text-slate-800">@Model.Count(x => x.StockActual <= x.StockMinimo) <span class="text-lg font-normal text-slate-400">ítems bajo el mínimo</span></h3>
+    </div>
+</div>
+
+@* Tabla de Resultados *@
+<div class="bg-white rounded-lg shadow-md overflow-hidden border border-slate-200">
+    <table class="w-full text-left" id="tablaStockValorizado">
+        <thead class="bg-slate-800 text-white uppercase text-[11px] font-bold">
+            <tr>
+                <th class="px-6 py-4">Almacén / Ubicación</th>
+                <th class="px-6 py-4">Material / Insumo</th>
+                <th class="px-6 py-4 text-right">Stock Actual</th>
+                <th class="px-6 py-4 text-right">Costo Prom.</th>
+                <th class="px-6 py-4 text-right">Valorizado Total</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            @foreach (var item in Model)
+            {
+                <tr class="hover:bg-blue-50/50 transition-colors">
+                    <td class="px-6 py-4 text-sm font-medium text-slate-600">
+                        <i class="fas fa-warehouse mr-2 text-slate-400"></i> @item.AlmacenUbicacion
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-slate-800">@item.MaterialNombre</div>
+                        <div class="text-[10px] text-slate-400 font-mono tracking-tighter">REF: @item.MaterialCodigo</div>
+                    </td>
+                    <td class="px-6 py-4 text-right font-bold @(item.StockActual <= item.StockMinimo ? "text-red-600" : "text-slate-700")">
+                        @item.StockActual.ToString("N2")
+                        <span class="text-[10px] font-normal text-slate-400 ml-1">@item.MaterialUnidadMedida</span>
+
+                        @if (item.StockActual <= item.StockMinimo)
+                        {
+                            <div class="text-[9px] text-red-500 font-bold uppercase mt-1">
+                                <i class="fas fa-exclamation-triangle"></i> Reabastecer
+                            </div>
+                        }
+                    </td>
+                    <td class="px-6 py-4 text-right text-slate-600 text-sm">
+                        <span class="text-slate-400 text-xs">S/.</span> @item.CostoPromedio.ToString("N2")
+                    </td>
+                    <td class="px-6 py-4 text-right font-black text-blue-700">
+                        <span class="text-blue-400 text-xs font-normal">S/.</span> @item.ValorTotal.ToString("N2")
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot class="bg-slate-50 border-t-2 border-slate-200">
+            <tr>
+                <td colspan="4" class="px-6 py-4 text-right font-bold text-slate-500 text-xs uppercase">Gran Total Valorizado:</td>
+                <td class="px-6 py-4 text-right font-black text-xl text-slate-900">S/. @Model.Sum(x => x.ValorTotal).ToString("N2")</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Inicialización de DataTable si no se ha hecho globalmente
+        if (!$.fn.DataTable.isDataTable('#tablaStockValorizado')) {
+            $('#tablaStockValorizado').DataTable({
+                "language": { "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json" },
+                "pageLength": 25,
+                "order": [[4, "desc"]] // Ordenar por valorizado total de mayor a menor
+            });
+        }
+    });
+</script>

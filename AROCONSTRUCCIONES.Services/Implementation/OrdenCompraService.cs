@@ -39,9 +39,9 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
         public async Task<OrdenCompra> CreateOrdenCompraAsync(OrdenCompraCreateDto dto)
         {
-            _logger.LogInformation("--- Iniciando CreateOrdenCompraAsync (Versión Robusta) ---");
+            _logger.LogInformation("--- Iniciando CreateOrdenCompraAsync (Versión Robusta con Validación de Proveedor) ---");
 
-            // 1. Validaciones
+            // 1. Validaciones iniciales
             var proveedor = await _unitOfWork.Proveedores.GetByIdAsync(dto.IdProveedor);
             if (proveedor == null)
                 throw new ApplicationException($"El Proveedor con ID {dto.IdProveedor} no fue encontrado.");
@@ -56,36 +56,39 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                 // A. Mapeo Inicial
                 var ordenCompra = _mapper.Map<OrdenCompra>(dto);
 
-                // B. Datos de Cabecera (ROBUSTEZ)
+                // B. Datos de Cabecera
                 ordenCompra.Estado = "Pendiente";
                 ordenCompra.FechaEmision = DateTime.Now;
-                ordenCompra.Moneda = dto.Moneda ?? "PEN"; // Asume Soles si viene null
+                ordenCompra.Moneda = dto.Moneda ?? "PEN";
 
-                // Generar código único (Lógica simple, mejorable con correlativos por año)
+                // Generar código (Considera usar una secuencia real en producción)
                 string correlativo = (new Random().Next(1000, 9999)).ToString();
                 ordenCompra.Codigo = $"OC-{DateTime.Now.Year}-{DateTime.Now.Month:00}-{correlativo}";
 
-                // C. Procesar Detalles y Cálculos (ROBUSTEZ EXTREMA)
                 decimal subTotalAcumulado = 0;
-
-                // NOTA: Es importante iterar sobre la lista mapeada 'ordenCompra.Detalles' 
-                // pero necesitamos acceder al DTO original para saber el 'IdDetalleRequerimiento'
-                // si es que AutoMapper no lo hizo automáticamente.
-
-                // Si AutoMapper ya pasó el IdDetalleRequerimiento, perfecto. Si no, habría que hacerlo manual.
-                // Asumiremos que AutoMapper funcionó bien gracias al Profile.
 
                 foreach (var detalle in ordenCompra.Detalles)
                 {
-                    // 1. Calcular Totales por línea (Sin recalcular en vista)
-                    // (Cantidad * Precio) - Descuento
+                    // --- NUEVA VALIDACIÓN DE ROBUSTEZ: ¿El proveedor vende este material? ---
+                    // Verificamos en la tabla intermedia ProveedorMaterial
+                    var vinculacionExiste = await _unitOfWork.Context.Set<ProveedorMaterial>()
+                        .AnyAsync(pm => pm.ProveedorId == ordenCompra.IdProveedor &&
+                                        pm.MaterialId == detalle.IdMaterial);
+
+                    if (!vinculacionExiste)
+                    {
+                        var material = await _unitOfWork.Materiales.GetByIdAsync(detalle.IdMaterial);
+                        throw new ApplicationException($"Inconsistencia: El proveedor '{proveedor.RazonSocial}' no distribuye el material '{material?.Nombre}'.");
+                    }
+
+                    // --- Cálculos de línea ---
                     decimal bruto = detalle.Cantidad * detalle.PrecioUnitario;
                     decimal descuento = bruto * (detalle.PorcentajeDescuento / 100);
                     detalle.ImporteTotal = bruto - descuento;
 
                     subTotalAcumulado += detalle.ImporteTotal;
 
-                    // 2. TRAZABILIDAD: Actualizar Requerimiento (EL HILO CONDUCTOR)
+                    // --- TRAZABILIDAD: Actualizar Requerimiento ---
                     if (detalle.IdDetalleRequerimiento.HasValue && detalle.IdDetalleRequerimiento > 0)
                     {
                         var reqDetalle = await _unitOfWork.DetalleRequerimiento
@@ -95,14 +98,11 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                         {
                             reqDetalle.CantidadAtendida += detalle.Cantidad;
                             _unitOfWork.DetalleRequerimiento.Update(reqDetalle);
-
-                            // Opcional: Validar si se pasó de la cantidad solicitada
-                            /* if(reqDetalle.CantidadAtendida > reqDetalle.CantidadSolicitada) { ... } */
                         }
                     }
                 }
 
-                // D. Totales Finales (ROBUSTEZ FINANCIERA)
+                // D. Totales Finales
                 ordenCompra.SubTotal = subTotalAcumulado;
                 ordenCompra.Impuesto = subTotalAcumulado * 0.18m; // IGV 18%
                 ordenCompra.Total = ordenCompra.SubTotal + ordenCompra.Impuesto;
@@ -114,10 +114,9 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                 _logger.LogInformation($"OC Guardada con ID: {ordenCompra.Id}. Iniciando generación de PDF...");
 
                 // F. Generar PDF
-                // Necesitamos recargar la entidad con sus relaciones (Proveedor, Detalles+Material) para el PDF
                 var ocCompleta = await _unitOfWork.OrdenesCompra.GetByIdWithDetailsAsync(ordenCompra.Id);
 
-                // Aseguramos que los totales estén presentes (a veces el reload no trae propiedades calculadas si no se guardaron bien)
+                // Sincronizar totales para el PDF
                 ocCompleta.SubTotal = ordenCompra.SubTotal;
                 ocCompleta.Impuesto = ordenCompra.Impuesto;
                 ocCompleta.Total = ordenCompra.Total;
@@ -128,16 +127,16 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                 // G. Guardar Ruta PDF (COMMIT 2)
                 await _unitOfWork.SaveChangesAsync();
 
-                // H. Commit Final
+                // H. Commit Final de la Transacción
                 await transaction.CommitAsync();
 
                 return ordenCompra;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ERROR DENTRO de la transacción CreateOrdenCompraAsync. Rollback.");
+                _logger.LogError(ex, "ERROR DENTRO de la transacción CreateOrdenCompraAsync. Haciendo Rollback.");
                 await transaction.RollbackAsync();
-                throw; // Relanzar para que el controlador lo maneje
+                throw;
             }
         }
     }

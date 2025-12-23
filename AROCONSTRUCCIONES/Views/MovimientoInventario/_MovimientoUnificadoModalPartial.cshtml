@@ -143,15 +143,15 @@
                     <div x-show="motivo === 'CONSUMO_PROYECTO'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                         <div>
-                            <label asp-for="IdProyecto" class="block text-sm font-medium text-gray-700">Asignar a Proyecto *</label>
-                            <select asp-for="IdProyecto"
+                            <label asp-for="ProyectoId" class="block text-sm font-medium text-gray-700">Asignar a Proyecto *</label>
+                            <select asp-for="ProyectoId"
                                     id="selectProyectoMovimiento"
                                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                     asp-items="proyectos"
                                     x-bind:required="motivo === 'CONSUMO_PROYECTO'">
                                 <option value="">Seleccione el proyecto...</option>
                             </select>
-                            <span asp-validation-for="IdProyecto" class="text-sm text-red-600"></span>
+                            <span asp-validation-for="ProyectoId" class="text-sm text-red-600"></span>
                         </div>
 
                         <div>

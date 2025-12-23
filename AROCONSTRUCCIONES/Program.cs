@@ -70,6 +70,7 @@ builder.Services.AddScoped<ITesoreriaService, TesoreriaService>();
 builder.Services.AddScoped<IRecursosHumanosService, RecursosHumanosService>();
 builder.Services.AddScoped<IFinanzasService, FinanzasService>();
 builder.Services.AddScoped<IPresupuestoService, PresupuestoService>();
+builder.Services.AddScoped<IExportService, ExportService>();
 
 builder.Services.AddHttpContextAccessor();
 //Configure Context

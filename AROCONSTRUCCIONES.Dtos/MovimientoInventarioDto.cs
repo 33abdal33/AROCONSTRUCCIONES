@@ -14,7 +14,7 @@ namespace AROCONSTRUCCIONES.Dtos
         public int Id { get; set; }
         // --- ¡AÑADIR ESTE CAMPO! ---
         [DisplayName("Proyecto")]
-        public int? IdProyecto { get; set; } // Nullable, por si es una salida que no es de proyecto
+        public int? ProyectoId { get; set; } // Nullable, por si es una salida que no es de proyecto
 
         [DisplayName("Partida Presupuestaria")]
         public int? PartidaId { get; set; }

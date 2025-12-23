@@ -3,16 +3,11 @@
 @{
     Layout = null;
 
-    // --- CÁLCULOS DE TOTALES (CORREGIDO) ---
-    // Usamos las propiedades que ya guardamos en la Base de Datos.
-    // Esto evita errores de redondeo por recalcular.
-
-    decimal subtotal = Model.SubTotal;   // Viene de BD
-    decimal igv = Model.Impuesto;        // Viene de BD
-    decimal totalFinal = Model.Total;    // Viene de BD
-
-    // Si por alguna razón tu modelo OrdenCompra aún no tiene 'SubTotal' e 'Impuesto',
-    // avísame, pero si seguiste los pasos anteriores, ya deberías tenerlos.
+    // --- CÁLCULOS DE TOTALES ---
+    decimal subtotal = Model.SubTotal;
+    decimal igv = Model.Impuesto;
+    decimal totalFinal = Model.Total;
+    string monedaSymbol = Model.Moneda == "USD" ? "$" : "S/";
 
     // --- LÓGICA DE RUTA DE IMAGEN ---
     string webRootPath = ViewData["WebRootPath"] as string;
@@ -34,13 +29,12 @@
     <meta charset="utf-8" />
     <title>Orden de Compra @Model.Codigo</title>
     <style>
-        /* --- ESTILOS CSS PARA EL PDF --- */
         body {
-            font-family: Arial, sans-serif;
-            font-size: 8px; /* Reducido para que quepa todo */
-            color: #000;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 9px;
+            color: #333;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
         }
 
         table {
@@ -48,387 +42,208 @@
             border-collapse: collapse;
         }
 
-        /* --- Encabezado --- */
+        /* --- Header --- */
         .header-table {
-            width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
 
-            .header-table .logo-cell {
-                width: 20%;
-                vertical-align: top;
-            }
-
-            .header-table .company-cell {
-                width: 50%;
-                text-align: center;
-                vertical-align: top;
-            }
-
-                .header-table .company-cell h1 {
-                    margin: 0;
-                    font-size: 14px;
-                }
-
-                .header-table .company-cell p {
-                    margin: 2px 0;
-                    font-size: 9px;
-                }
-
-            .header-table .oc-cell {
-                width: 30%;
-                vertical-align: top;
-                text-align: right;
-            }
+        .company-name {
+            color: #1e40af;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0;
+        }
 
         .oc-box {
-            border: 2px solid #000;
-            padding: 5px;
-            display: inline-block;
+            border: 2px solid #1e40af;
             text-align: center;
         }
 
             .oc-box h2 {
+                background-color: #1e40af;
+                color: white;
                 margin: 0;
                 padding: 5px;
                 font-size: 12px;
-                background-color: #eee;
             }
 
             .oc-box p {
-                margin: 5px 0 0 0;
-                font-size: 12px;
+                font-size: 14px;
                 font-weight: bold;
                 color: #d00;
+                margin: 5px;
             }
 
-        /* --- Secciones de Datos (Cajas) --- */
+        /* --- Cajas de Datos --- */
         .data-box {
-            border: 1px solid #000;
+            border: 1px solid #ccc;
             margin-top: 10px;
+            border-radius: 4px;
+            overflow: hidden;
         }
 
         .data-box-header {
-            background-color: #000;
-            color: #fff;
+            background-color: #f1f5f9;
+            color: #1e40af;
             font-weight: bold;
-            padding: 4px;
-            font-size: 9px;
+            padding: 5px;
+            border-bottom: 1px solid #ccc;
         }
 
         .data-box-content {
-            padding: 5px;
+            padding: 8px;
         }
 
-            .data-box-content table td {
-                font-size: 9px;
-                vertical-align: top;
-            }
-
-            .data-box-content .label {
-                font-weight: bold;
-                width: 80px; /* Ancho fijo para etiquetas */
-            }
-
-            .data-box-content .label-wide {
-                font-weight: bold;
-                width: 100px;
-            }
+        .label {
+            font-weight: bold;
+            width: 90px;
+            color: #475569;
+        }
 
         /* --- Tabla de Items --- */
         .items-table {
             margin-top: 15px;
-            font-size: 9px;
         }
 
             .items-table th {
-                background-color: #d9d9d9; /* Azul de la imagen */
+                background-color: #1e40af;
                 color: white;
-                padding: 6px;
-                border: 1px solid #000;
-                text-align: center;
+                padding: 8px;
+                border: 1px solid #1e40af;
             }
 
             .items-table td {
-                padding: 5px;
-                border: 1px solid #000;
-                vertical-align: top;
-                height: 15px; /* Altura de fila estándar */
+                padding: 6px;
+                border: 1px solid #e2e8f0;
             }
 
-            .items-table .col-n {
-                width: 3%;
-                text-align: center;
-            }
+        .text-right {
+            text-align: right;
+        }
 
-            .items-table .col-producto {
-                width: 35%;
-            }
+        .text-center {
+            text-align: center;
+        }
 
-            .items-table .col-marca {
-                width: 8%;
-            }
-
-            .items-table .col-und {
-                width: 5%;
-                text-align: center;
-            }
-
-            .items-table .col-cant {
-                width: 8%;
-                text-align: right;
-            }
-
-            .items-table .col-pu {
-                width: 10%;
-                text-align: right;
-            }
-
-            .items-table .col-dscto {
-                width: 8%;
-                text-align: right;
-            }
-
-            .items-table .col-parcial {
-                width: 12%;
-                text-align: right;
-            }
-
-            .items-table .text-right {
-                text-align: right;
-            }
-
-        /* --- Pie de Página (Comentarios y Totales) --- */
-        .footer-section {
+        /* --- Totales --- */
+        .totals-table {
+            float: right;
+            width: 250px;
             margin-top: 10px;
         }
 
-            .footer-section .left-col {
-                width: 70%;
-                vertical-align: top;
-                padding-right: 10px;
-            }
-
-            .footer-section .right-col {
-                width: 30%;
-                vertical-align: top;
-            }
-
-        .obs-title {
-            font-weight: bold;
-            font-size: 8px;
-            padding-bottom: 2px;
-        }
-
-        .obs-box {
-            border: 1px solid #000;
-            padding: 5px;
-            min-height: 80px;
-            font-size: 7px; /* Texto de observaciones pequeño */
-            line-height: 1.4;
-        }
-
-        .totals-table {
-            width: 100%;
-        }
-
             .totals-table td {
-                padding: 4px 6px;
-                font-size: 10px;
+                padding: 5px;
                 border-bottom: 1px solid #eee;
             }
 
-            .totals-table .label {
-                font-weight: bold;
-                text-align: right;
-            }
-
-            .totals-table .value {
-                text-align: right;
-                border: 1px solid #000;
-                width: 100px;
-            }
-
-            .totals-table .grand-total .label {
-                background-color: #cddff0; /* Azul claro de la imagen */
-                border: 1px solid #000;
-            }
-
-            .totals-table .grand-total .value {
-                background-color: #cddff0;
-                font-weight: bold;
-                font-size: 12px;
-            }
-
-        .son-en-letras {
-            background-color: #eee;
-            border: 1px solid #000;
-            padding: 5px;
-            font-size: 8px;
+        .grand-total {
+            background-color: #eff6ff;
             font-weight: bold;
-            margin-bottom: 5px;
-            text-align: left;
+            font-size: 11px;
         }
 
-        /* --- Firmas --- */
-        .signature-table {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 9px;
+        .footer-info {
+            margin-top: 20px;
+            font-size: 8px;
+            color: #64748b;
         }
-
-            .signature-table td {
-                padding-top: 40px;
-                border-top: 1px solid #000;
-                width: 33.3%;
-            }
-
     </style>
 </head>
 <body>
 
-    <!-- ========================================================== -->
-    <!-- 1. Encabezado (Logo, Título, Nro Orden) -->
-    <!-- ========================================================== -->
     <table class="header-table">
         <tr>
-            <td class="logo-cell">
-                <img src="@logoUrl" style="width: 100%; max-width: 120px;" />
-                <!-- Aquí iría tu <img src="..."/> si tuvieras el logo hosteado -->
-                <!-- Por ahora, usamos texto como en la imagen -->
-             @*    <div style="font-size: 16px; font-weight: bold; color: #d00;">ARO</div>
-                <div style="font-size: 8px;">CONSTRUCTORA Y MINEROS E.I.R.L.</div> *@
+            <td style="width: 20%;">
+                @if (!string.IsNullOrEmpty(logoUrl))
+                {
+                    <img src="@logoUrl" style="width: 120px;" />
+                }
             </td>
-            <td class="company-cell">
-                <h1>ARO CONSTRUCTORA Y MINEROS E.I.R.L.</h1>
-                <p>RUC: 20547282559</p>
-                <p>Av. Jose Galvez N° 1146 Lima - Lima - Lima</p>
+            <td style="width: 50%; text-align: center;">
+                <h1 class="company-name">ARO CONSTRUCTORA Y MINEROS E.I.R.L.</h1>
+                <p>RUC: 20547282559 | Av. Jose Galvez N° 1146, Lima</p>
             </td>
-            <td class="oc-cell">
+            <td style="width: 30%;">
                 <div class="oc-box">
-                    <h2>ORDEN DE COMPRA / SERVICIO</h2>
+                    <h2>ORDEN DE COMPRA</h2>
                     <p>@Model.Codigo</p>
                 </div>
             </td>
         </tr>
     </table>
 
-    <!-- ========================================================== -->
-    <!-- 2. Sección OBRA -->
-    <!-- ========================================================== -->
     <div class="data-box">
-        <div class="data-box-header">DATOS DE LA OBRA / SERVICIO</div>
+        <div class="data-box-header">DATOS DE LA OBRA / PROYECTO</div>
         <div class="data-box-content">
             <table>
                 <tr>
-                    <td class="label">OBRA:</td>
-                    <td>
-                        @* Este dato no está en tu modelo de OC. Lo dejamos como placeholder. *@
-                        [CREACION DE LA AVENIDA CRISTO BLANCO EN SAN FRANCISCO...]
-                    </td>
-                    <td class="label-wide">FECHA:</td>
+                    <td class="label">PROYECTO:</td>
+                    @* ROBUSTEZ: Usamos el nombre real del proyecto vinculado *@
+                    <td>@(Model.Proyecto?.NombreProyecto ?? "GASTO ADMINISTRATIVO / GENERAL")</td>
+                    <td class="label">FECHA:</td>
                     <td>@Model.FechaEmision.ToString("dd/MM/yyyy")</td>
                 </tr>
                 <tr>
-                    <td class="label">EMPRESA:</td>
-                    <td>ARO CONSTRUCTORA Y MINEROS E.I.R.L.</td>
-                    <td class="label-wide">RESP.:</td>
-                    <td>[Ing. Maryluna Acuña (Placeholder)]</td>
-                </tr>
-                <tr>
                     <td class="label">UBICACIÓN:</td>
-                    <td colspan="3">[LIMA - LIMA - SAN JUAN DE MIRAFLORES (Placeholder)]</td>
+                    <td>@(Model.Proyecto?.Ubicacion ?? "SEDE CENTRAL")</td>
+                    <td class="label">MONEDA:</td>
+                    <td>@(Model.Moneda == "PEN" ? "SOLES (PEN)" : "DÓLARES (USD)")</td>
                 </tr>
             </table>
         </div>
     </div>
 
-    <!-- ========================================================== -->
-    <!-- 3. Sección PROVEEDOR -->
-    <!-- ========================================================== -->
     <div class="data-box">
         <div class="data-box-header">DATOS DEL PROVEEDOR</div>
         <div class="data-box-content">
             <table>
                 <tr>
-                    <td class="label">PROVEEDOR:</td>
+                    <td class="label">RAZÓN SOCIAL:</td>
                     <td><strong>@Model.Proveedor?.RazonSocial</strong></td>
-                    <td class="label-wide">FORMA PAGO:</td>
-                    <td>[CREDITO (Placeholder)]</td>
-                </tr>
-                <tr>
                     <td class="label">RUC:</td>
                     <td>@Model.Proveedor?.RUC</td>
-                    <td class="label-wide">ENTREGA EN:</td>
-                    <td>[EJECUCION EN OBRA (Placeholder)]</td>
                 </tr>
                 <tr>
-                    <td class="label">DIRECCION:</td>
+                    <td class="label">DIRECCIÓN:</td>
                     <td>@Model.Proveedor?.Direccion</td>
-                    <td class="label-wide">MONEDA:</td>
-                    <td>SOLES</td>
-                </tr>
-                <tr>
                     <td class="label">CONTACTO:</td>
-                    <td>[CARLOS HANNCO (Placeholder)]</td>
-                    <td class="label-wide">REQ. N°:</td>
-                    <td>[RESIDENTE DE OBRA (Placeholder)]</td>
-                </tr>
-                <tr>
-                    <td class="label">TELEFONO:</td>
-                    <td>@Model.Proveedor?.Telefono</td>
-                    <td class="label-wide">COTIZACION N°:</td>
-                    <td>[7724549 (Placeholder)]</td>
-                </tr>
-                <tr>
-                    <td class="label">E-MAIL:</td>
-                    <td>@Model.Proveedor?.Email</td>
-                    <td class="label-wide"></td>
-                    <td></td>
+                    <td>@Model.Proveedor?.NombreContacto</td>
                 </tr>
             </table>
         </div>
     </div>
 
-    <!-- ========================================================== -->
-    <!-- 4. Tabla de Items -->
-    <!-- ========================================================== -->
     <table class="items-table">
         <thead>
             <tr>
-                <th class="col-n">N°</th>
-                <th class="col-producto">PRODUCTO</th>
-                <th class="col-marca">MARCA</th>
-                <th class="col-und">UND</th>
-                <th class="col-cant">CANT</th>
-                <th class="col-pu">P.U</th>
-                <th class="col-dscto">DSCTO %</th>
-                <th class="col-parcial">PARCIAL</th>
+                <th style="width: 5%;">ITEM</th>
+                <th style="width: 45%;">DESCRIPCIÓN DEL MATERIAL</th>
+                <th style="width: 10%;">UND</th>
+                <th style="width: 10%;">CANT</th>
+                <th style="width: 15%;">P. UNITARIO</th>
+                <th style="width: 15%;">TOTAL</th>
             </tr>
         </thead>
         <tbody>
             @{
-                int itemCounter = 1;
+                int i = 1;
             }
             @foreach (var item in Model.Detalles)
             {
                 <tr>
-                    <td style="text-align: center;">@(itemCounter++)</td>
+                    <td class="text-center">@(i++)</td>
                     <td>@item.Material?.Nombre</td>
-                    <td>@* Marca no está en el modelo *@</td>
-                    <td style="text-align: center;">@item.Material?.UnidadMedida</td>
+                    <td class="text-center">@item.Material?.UnidadMedida</td>
                     <td class="text-right">@item.Cantidad.ToString("N2")</td>
-                    <td class="text-right">@item.PrecioUnitario.ToString("N2")</td>
-                    <td class="text-right">0.00%</td>
-                    <td class="text-right">@item.ImporteTotal.ToString("N2")</td>
+                    <td class="text-right">@monedaSymbol @item.PrecioUnitario.ToString("N2")</td>
+                    <td class="text-right">@monedaSymbol @item.ImporteTotal.ToString("N2")</td>
                 </tr>
             }
-            <!-- Relleno de filas vacías -->
-            @for (int i = 0; i < (10 - Model.Detalles.Count); i++)
+            @* Relleno para mantener estética *@
+            @for (int j = 0; j < (8 - Model.Detalles.Count); j++)
             {
                 <tr>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
@@ -440,58 +255,47 @@
         </tbody>
     </table>
 
-    <!-- ========================================================== -->
-    <!-- 5. Pie de Página (Comentarios y Totales) -->
-    <!-- ========================================================== -->
-    <table class="footer-section">
+    <table style="width: 100%; margin-top: 15px;">
         <tr>
-            <!-- Columna Izquierda: Comentarios -->
-            <td class="left-col">
-                <div class="son-en-letras">
-                    @* Esto requiere un helper C# "NumeroALetras". Por ahora se omite. *@
-                    SON: [IMPORTE TOTAL EN LETRAS PENDIENTE]
-                </div>
-                <div class="obs-title">OBSERVACIONES GENERALES:</div>
-                <div class="obs-box">
-                    NOTA: Condiciones comerciales<br />
-                    1. EL PROVEEDOR ENTREGARÁ LOS MATERIALES EN [DIRECCIÓN DE OBRA - PENDIENTE]<br />
-                    2. La Persona Jurídica y/o natural declara... (Términos y condiciones)...<br />
-                    <br />
-                    <strong>Comentarios de esta OC:</strong><br />
+            <td style="vertical-align: top; width: 60%;">
+                <div style="font-weight:bold; margin-bottom:5px;">OBSERVACIONES:</div>
+                <div style="border: 1px solid #ccc; padding: 10px; min-height: 60px;">
                     @Model.Observaciones
                 </div>
             </td>
-
-            <!-- Columna Derecha: Totales -->
-            <td class="right-col">
+            <td style="vertical-align: top; width: 40%;">
                 <table class="totals-table">
                     <tr>
-                        <td class="label">Sub Total</td>
-                        <td class="value">S/ @subtotal.ToString("N2")</td>
+                        <td class="label">SUBTOTAL</td>
+                        <td class="text-right">@monedaSymbol @subtotal.ToString("N2")</td>
                     </tr>
                     <tr>
-                        <td class="label">IGV (18.00%)</td>
-                        <td class="value">S/ @igv.ToString("N2")</td>
+                        <td class="label">IGV (18%)</td>
+                        <td class="text-right">@monedaSymbol @igv.ToString("N2")</td>
                     </tr>
                     <tr class="grand-total">
-                        <td class="label">Total a Pagar</td>
-                        <td class="value">S/ @totalFinal.ToString("N2")</td>
+                        <td class="label">TOTAL A PAGAR</td>
+                        <td class="text-right">@monedaSymbol @totalFinal.ToString("N2")</td>
                     </tr>
                 </table>
             </td>
         </tr>
     </table>
 
-    <!-- ========================================================== -->
-    <!-- 6. Firmas -->
-    <!-- ========================================================== -->
-    <table class="signature-table">
-        <tr>
-            <td>JEFE DE LOGISTICA</td>
-            <td>V°B° PROVEEDOR</td>
-            <td>V°B° GERENCIA DE PROYECTOS</td>
-        </tr>
-    </table>
+    <div style="margin-top: 40px;">
+        <table style="text-align: center;">
+            <tr>
+                <td style="width: 33%; border-top: 1px solid #000; padding-top: 5px;">Solicitado por</td>
+                <td style="width: 33%;"></td>
+                <td style="width: 33%; border-top: 1px solid #000; padding-top: 5px;">Aprobado Gerencia</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer-info">
+        * Esta es una representación impresa de una Orden de Compra electrónica generada por el Sistema ERP AROCONSTRUCCIONES.<br />
+        * Favor de adjuntar copia de esta orden al momento de la entrega de materiales y/o factura.
+    </div>
 
 </body>
 </html>

@@ -1,4 +1,5 @@
 ﻿using AROCONSTRUCCIONES.Models;
+using AROCONSTRUCCIONES.Services.Helpers;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -134,8 +135,8 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
                     table.Cell().Text(residente).Style(ValueStyle); // <-- DATO REAL
 
                     // Fila 3 (Ubicación ocupando todo el ancho restante)
-                    table.Cell().Text("UBICACIÓN:").Style(LabelStyle);
-                    table.Cell().ColumnSpan(3).Text(ubicacionObra).Style(ValueStyle); // <-- DATO REAL
+                    table.Cell().Text("UBICACION:" ).Style(LabelStyle);
+                    table.Cell().Text(ubicacionObra).Style(ValueStyle); // <-- DATO REAL
                 });
             });
         }
@@ -166,7 +167,7 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
                     table.Cell().Text(_oc.Proveedor?.RazonSocial).Style(ValueStyle);
 
                     table.Cell().Text("FORMA PAGO:").Style(LabelStyle);
-                    table.Cell().Text("Crédito 30 Días").Style(ValueStyle); // <-- Dato Estático (No hay campo en BD)
+                    table.Cell().Text(_oc.FormaPago ?? "No especificado").Style(ValueStyle); // DATO REAL
 
                     // Fila 2
                     table.Cell().Text("RUC:").Style(LabelStyle);
@@ -180,7 +181,7 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
                     table.Cell().Text(_oc.Proveedor?.Direccion).Style(ValueStyle);
 
                     table.Cell().Text("MONEDA:").Style(LabelStyle);
-                    table.Cell().Text("SOLES").Style(ValueStyle);
+                    table.Cell().Text(_oc.Moneda == "USD" ? "DÓLARES (USD)" : "SOLES (PEN)").Style(ValueStyle);
 
                     // Fila 4 (NUEVOS CAMPOS SOLICITADOS)
                     table.Cell().Text("CONTACTO:").Style(LabelStyle);
@@ -299,9 +300,9 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
                 row.RelativeItem(6).PaddingRight(10).Column(col =>
                 {
                     col.Item().Border(1).BorderColor(Colors.Black).Padding(4).Text(t => {
-                        t.Span("SON: ").Bold().FontSize(7);
-                        // Aquí podrías usar una librería externa como 'Humanizer' para convertir números a letras
-                        t.Span($"[Monto en letras pendiente de implementar]").FontSize(7);
+                        // USAMOS EL HELPER AQUÍ
+                        string textoMonto = NumeroALetras.Convertir(_oc.Total, _oc.Moneda ?? "PEN");
+                        t.Span(textoMonto).Bold().FontSize(7);
                     });
 
                     col.Spacing(5);

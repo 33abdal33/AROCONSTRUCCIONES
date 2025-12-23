@@ -77,58 +77,69 @@ namespace AROCONSTRUCCIONES.Controllers
         [HttpGet]
         public async Task<IActionResult> CargarFormularioOCDesdeRequerimiento(int id)
         {
-            // 1. Cargar Requerimiento
+            // 1. Cargar Requerimiento con detalles y materiales
             var requerimiento = await _unitOfWork.Requerimientos.GetByIdWithDetailsAsync(id);
-            
+
             if (requerimiento == null || requerimiento.Estado != "Aprobado")
             {
-                return NotFound("Requerimiento no encontrado o no está aprobado."); // Mejor respuesta que string plano
+                return NotFound("Requerimiento no encontrado o no está aprobado.");
             }
 
-            // 2. MAPEO MANUAL (CRÍTICO PARA TRAZABILIDAD)
-            // Hacemos esto manual para asegurar que el ID pase correctamente y calcular saldos.
+            // 2. Identificar los materiales con saldo pendiente
+            var materialesNecesitadosIds = requerimiento.Detalles
+                .Where(d => (d.CantidadSolicitada - d.CantidadAtendida) > 0)
+                .Select(d => d.IdMaterial)
+                .ToList();
+
+            // 3. MAPEO MANUAL PARA TRAZABILIDAD
             var prefilledDto = new OrdenCompraCreateDto
             {
-                ProyectoId = requerimiento.IdProyecto, // Heredamos el proyecto
+                ProyectoId = requerimiento.IdProyecto,
                 Observaciones = $"Atención al Requerimiento {requerimiento.Codigo}",
                 FechaEmision = DateTime.Now,
                 Moneda = "PEN",
                 Detalles = new List<DetalleOrdenCompraCreateDto>()
             };
 
-            if (requerimiento.Detalles != null)
+            foreach (var det in requerimiento.Detalles)
             {
-                foreach (var det in requerimiento.Detalles)
+                decimal saldoPendiente = det.CantidadSolicitada - det.CantidadAtendida;
+                if (saldoPendiente > 0)
                 {
-                    // Solo agregamos si falta por atender
-                    decimal saldoPendiente = det.CantidadSolicitada - det.CantidadAtendida;
-
-                    if (saldoPendiente > 0)
+                    prefilledDto.Detalles.Add(new DetalleOrdenCompraCreateDto
                     {
-                        prefilledDto.Detalles.Add(new DetalleOrdenCompraCreateDto
-                        {
-                            IdMaterial = det.IdMaterial,
-                            // Sugerimos comprar solo lo que falta
-                            Cantidad = saldoPendiente, 
-                            // Buscamos el precio actual del sistema (Opcional, si tienes lista de precios)
-                            PrecioUnitario = 0, 
-                            // ¡ESTO ES LO MÁS IMPORTANTE! Vinculamos con el ID original
-                            IdDetalleRequerimiento = det.Id 
-                        });
-                    }
+                        IdMaterial = det.IdMaterial,
+                        MaterialNombre = det.Material != null ? $"{det.Material.Codigo} - {det.Material.Nombre}" : "Material Desconocido",
+                        Cantidad = saldoPendiente,
+                        PrecioUnitario = 0,
+                        IdDetalleRequerimiento = det.Id
+                    });
                 }
             }
 
             if (!prefilledDto.Detalles.Any())
             {
-                 // Caso borde: El requerimiento existe pero ya todo fue comprado.
-                 return Content("Este requerimiento ya fue atendido totalmente.");
+                return Content("Este requerimiento ya fue atendido totalmente.");
             }
 
-            // 3. Cargar ViewBags
-            await CargarViewBagsFormulario();
+            // 4. FILTRADO DE PROVEEDORES (Solución a tu consulta)
+            // Buscamos proveedores que vendan AL MENOS UNO de los materiales requeridos
+            var proveedoresAptos = await _unitOfWork.Context.Set<ProveedorMaterial>()
+                .Where(pm => materialesNecesitadosIds.Contains(pm.MaterialId))
+                .Select(pm => pm.Proveedor)
+                .Distinct()
+                .Where(p => p.Estado)
+                .ToListAsync();
 
-            // 4. Retornar Vista
+            // 5. CARGAR VIEW BAGS MANUALMENTE (Para no usar el helper que trae todos)
+            ViewBag.Proveedores = new SelectList(proveedoresAptos, "Id", "RazonSocial");
+            ViewBag.FiltroCatalogoActivo = true;
+            ViewBag.Materiales = new SelectList(
+                await _materialService.GetAllActiveAsync(), "Id", "Nombre");
+
+            ViewBag.Proyectos = new SelectList(
+                await _proyectoService.GetAllProyectosAsync(), "Id", "NombreProyecto");
+
             return PartialView("_OrdenCompraFormPartial", prefilledDto);
         }
 

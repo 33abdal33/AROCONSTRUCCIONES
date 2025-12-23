@@ -16,16 +16,27 @@ namespace AROCONSTRUCCIONES.Controllers
         private readonly IMovimientoInventarioServices _movimientoInventarioServices;
         private readonly IAlmacenService _almacenService;
         private readonly IPresupuestoService _presupuestoService;
+        private readonly IMaterialServices _materialService; // Requerido para modales
+        private readonly IProyectoService _proyectoService;   // Requerido para modales
+        private readonly IProveedorService _proveedorService; // Requerido para modales
 
         public MovimientoInventarioController(
                 IMovimientoInventarioServices movimientoInventarioServices,
                 IAlmacenService almacenService,
-                IPresupuestoService presupuestoService)
+                IPresupuestoService presupuestoService,
+                IMaterialServices materialService,
+                IProyectoService proyectoService,
+                IProveedorService proveedorService)
         {
             _movimientoInventarioServices = movimientoInventarioServices;
             _almacenService = almacenService;
             _presupuestoService = presupuestoService;
+            _materialService = materialService;
+            _proyectoService = proyectoService;
+            _proveedorService = proveedorService;
         }
+
+        // --- VISTAS PARCIALES Y LISTADOS ---
 
         [HttpGet]
         public async Task<IActionResult> TablaMovimientosPartial()
@@ -47,6 +58,43 @@ namespace AROCONSTRUCCIONES.Controllers
             }
         }
 
+        // --- CARGA DINÁMICA DE MODALES (AJAX) ---
+
+        [HttpGet]
+        public async Task<IActionResult> GetMovimientoModal(string tipo)
+        {
+            var dto = new MovimientoInventarioDto
+            {
+                TipoMovimiento = tipo.ToUpper(),
+                FechaMovimiento = DateTime.Now
+            };
+
+            // Llenamos los ViewBags que requiere tu _MovimientoUnificadoModalPartial
+            ViewBag.Almacenes = new SelectList(await _almacenService.GetAllActiveAsync(), "Id", "Nombre");
+
+            var materiales = await _materialService.GetAllActiveAsync();
+            ViewBag.Materiales = materiales.Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = $"{m.Codigo} - {m.Nombre}"
+            });
+
+            ViewBag.Proveedores = new SelectList(await _proveedorService.GetAllAsync(), "Id", "RazonSocial");
+            ViewBag.Proyectos = new SelectList(await _proyectoService.GetAllAsync(), "Id", "NombreProyecto");
+
+            return PartialView("_MovimientoUnificadoModalPartial", dto);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTransferenciaModal()
+        {
+            // Datos para el modal de transferencia entre almacenes
+            ViewBag.Almacenes = new SelectList(await _almacenService.GetAllActiveAsync(), "Id", "Nombre");
+            ViewBag.Materiales = new SelectList(await _materialService.GetAllActiveAsync(), "Id", "Nombre");
+
+            return PartialView("_TransferenciaModalPartial", new TransferenciaDto());
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetPartidasPorProyecto(int proyectoId)
         {
@@ -64,6 +112,8 @@ namespace AROCONSTRUCCIONES.Controllers
             return Json(items);
         }
 
+        // --- PROCESAMIENTO DE MOVIMIENTOS (POST) ---
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RegistrarIngreso(MovimientoInventarioDto dto)
@@ -76,15 +126,10 @@ namespace AROCONSTRUCCIONES.Controllers
 
             try
             {
-                // Asignar responsable si no viene del front (Opcional, pero recomendado)
                 dto.ResponsableNombre = User.Identity?.Name ?? "Usuario Sistema";
-
                 bool resultado = await _movimientoInventarioServices.RegistrarIngreso(dto);
 
-                if (resultado)
-                    return Json(new { success = true, message = "¡Ingreso registrado exitosamente!" });
-                else
-                    return Json(new { success = false, message = "Error en el servicio." });
+                return Json(new { success = resultado, message = resultado ? "¡Ingreso registrado exitosamente!" : "Error en el servicio." });
             }
             catch (Exception ex)
             {
@@ -104,15 +149,10 @@ namespace AROCONSTRUCCIONES.Controllers
 
             try
             {
-                // Asignar responsable
                 dto.ResponsableNombre = User.Identity?.Name ?? "Usuario Sistema";
-
                 bool resultado = await _movimientoInventarioServices.RegistrarSalida(dto);
 
-                if (resultado)
-                    return Json(new { success = true, message = "¡Salida registrada exitosamente!" });
-                else
-                    return Json(new { success = false, message = "No se pudo completar la salida." });
+                return Json(new { success = resultado, message = resultado ? "¡Salida registrada exitosamente!" : "No se pudo completar la salida." });
             }
             catch (Exception ex)
             {
@@ -120,14 +160,10 @@ namespace AROCONSTRUCCIONES.Controllers
             }
         }
 
-        // ==========================================
-        // ⭐ NUEVA ACCIÓN: TRANSFERENCIA (Integrated)
-        // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Transferir(TransferenciaDto model)
         {
-            // 1. Validación de lógica de negocio en el Controller
             if (model.AlmacenOrigenId == model.AlmacenDestinoId)
             {
                 ModelState.AddModelError("AlmacenDestinoId", "El almacén de destino no puede ser el mismo que el de origen.");
@@ -137,16 +173,12 @@ namespace AROCONSTRUCCIONES.Controllers
             {
                 try
                 {
-                    // 2. Asignar Responsable (Usuario logueado)
                     model.ResponsableNombre = User.Identity?.Name ?? "Admin Sistema";
-
-                    // 3. Llamar al Servicio
                     var resultado = await _movimientoInventarioServices.RealizarTransferenciaAsync(model);
 
                     if (resultado)
                     {
                         TempData["SuccessMessage"] = "Transferencia realizada con éxito.";
-                        // Redirigimos al Index del Inventario para recargar la página y ver los cambios
                         return RedirectToAction("Index", "Inventario");
                     }
                 }
@@ -157,12 +189,10 @@ namespace AROCONSTRUCCIONES.Controllers
             }
             else
             {
-                // Si el modelo es inválido, recogemos el primer error para mostrarlo
                 var msg = ModelState.Values.SelectMany(v => v.Errors).FirstOrDefault()?.ErrorMessage;
                 TempData["ErrorMessage"] = $"Datos inválidos: {msg}";
             }
 
-            // Si falla, volvemos al Inventario (los mensajes se mostrarán por TempData)
             return RedirectToAction("Index", "Inventario");
         }
     }

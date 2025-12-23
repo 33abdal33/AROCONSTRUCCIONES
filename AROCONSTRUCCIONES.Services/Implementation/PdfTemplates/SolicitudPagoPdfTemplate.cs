@@ -1,4 +1,5 @@
 ﻿using AROCONSTRUCCIONES.Models;
+using AROCONSTRUCCIONES.Services.Helpers;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -355,7 +356,7 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
 
                         c.Item().BorderTop(1).Padding(4).Text(t => {
                             t.Span("SON: ").Style(LabelStyle);
-                            t.Span(NumeroALetras.Convertir(_sp.MontoNetoAPagar)).FontSize(7).Bold();
+                            t.Span(NumeroALetras.Convertir(_sp.MontoNetoAPagar, "PEN")).FontSize(7).Bold();
                         });
                     });
 
@@ -381,69 +382,6 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
                     row.RelativeItem().AlignCenter().Column(c => { c.Item().Width(100).BorderBottom(1); c.Item().AlignCenter().Text("ADMINISTRACION").FontSize(6); });
                 });
             });
-        }
-    }
-
-    // --- HELPER DE CONVERSIÓN ---
-    public static class NumeroALetras
-    {
-        public static string Convertir(decimal numero)
-        {
-            int entero = (int)numero;
-            int decimales = (int)((numero - entero) * 100);
-            string letras = ConvertirEntero(entero);
-            return $"{letras} CON {decimales:00}/100 SOLES";
-        }
-
-        private static string ConvertirEntero(int n)
-        {
-            if (n == 0) return "CERO";
-            if (n < 0) return "MENOS " + ConvertirEntero(Math.Abs(n));
-
-            if (n < 10) return Unidades[n];
-            if (n < 20) return Decenas[n - 10];
-            if (n < 100) return Centenas(n);
-            if (n < 1000) return ConvertirCientos(n);
-            if (n < 1000000) return ConvertirMiles(n);
-            return "NÚMERO MUY GRANDE";
-        }
-
-        private static string[] Unidades = { "CERO", "UNO", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE" };
-        private static string[] Decenas = { "DIEZ", "ONCE", "DOCE", "TRECE", "CATORCE", "QUINCE", "DIECISÉIS", "DIECISIETE", "DIECIOCHO", "DIECINUEVE" };
-
-        private static string Centenas(int n)
-        {
-            int unidad = n % 10;
-            int decena = n / 10;
-            string[] DecenasDiez = { "", "DIEZ", "VEINTE", "TREINTA", "CUARENTA", "CINCUENTA", "SESENTA", "SETENTA", "OCHENTA", "NOVENTA" };
-
-            if (n < 30) return Decenas[n - 10];
-            return DecenasDiez[decena] + (unidad > 0 ? " Y " + Unidades[unidad] : "");
-        }
-
-        private static string ConvertirCientos(int n)
-        {
-            if (n == 100) return "CIEN";
-            int centena = n / 100;
-            int resto = n % 100;
-            string txtCentena = "";
-            switch (centena)
-            {
-                case 1: txtCentena = "CIENTO"; break;
-                case 5: txtCentena = "QUINIENTOS"; break;
-                case 7: txtCentena = "SETECIENTOS"; break;
-                case 9: txtCentena = "NOVECIENTOS"; break;
-                default: txtCentena = Unidades[centena] + "CIENTOS"; break;
-            }
-            return txtCentena + (resto > 0 ? " " + ConvertirEntero(resto) : "");
-        }
-
-        private static string ConvertirMiles(int n)
-        {
-            int miles = n / 1000;
-            int resto = n % 1000;
-            string txtMiles = (miles == 1) ? "MIL" : ConvertirEntero(miles) + " MIL";
-            return txtMiles + (resto > 0 ? " " + ConvertirEntero(resto) : "");
         }
     }
 }

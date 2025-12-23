@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Services.Interface
 {
-    public interface ILogisticaDashboardService
+    public interface IExportService
     {
-        Task<LogisticaDashboardDto> GetSummaryAsync();
-        Task<LogisticaChartDataDto> GetLogisticaChartDataAsync();
+        byte[] GenerarExcelStock(IEnumerable<InventarioDto> datos);
+        byte[] GenerarExcelConsumo(IEnumerable<ConsumoMaterialProyectoDto> datos, string nombreProyecto);
     }
 }

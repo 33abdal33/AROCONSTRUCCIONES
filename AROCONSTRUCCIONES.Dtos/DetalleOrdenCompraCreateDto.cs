@@ -9,12 +9,14 @@ namespace AROCONSTRUCCIONES.Dtos
     public class DetalleOrdenCompraCreateDto
     {
         public int IdMaterial { get; set; }
+
+        // --- NUEVO: Para mostrar el nombre en el formulario ---
+        public string? MaterialNombre { get; set; }
+        // ------------------------------------------------------
+
         public decimal Cantidad { get; set; }
         public decimal PrecioUnitario { get; set; }
         public decimal PorcentajeDescuento { get; set; } = 0;
-
-        // ¡CRÍTICO PARA LA TRAZABILIDAD!
-        // Aquí viaja el ID del requerimiento original para descontar el stock pendiente
         public int? IdDetalleRequerimiento { get; set; }
     }
 }
