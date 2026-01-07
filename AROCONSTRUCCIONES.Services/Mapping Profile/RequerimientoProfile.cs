@@ -2,6 +2,7 @@
 using AROCONSTRUCCIONES.Models;
 using AutoMapper;
 using System;
+using System.Linq;
 
 namespace AROCONSTRUCCIONES.Services.Mapping_Profile
 {
@@ -9,54 +10,54 @@ namespace AROCONSTRUCCIONES.Services.Mapping_Profile
     {
         public RequerimientoProfile()
         {
-            // ... (Mapeo 1 y 2 sin cambios) ...
+            // 1. Mapeos de creación
             CreateMap<DetalleRequerimientoDto, DetalleRequerimiento>()
                 .ForMember(dest => dest.CantidadSolicitada, opt => opt.MapFrom(src => src.Cantidad));
 
             CreateMap<RequerimientoCreateDto, Requerimiento>()
                 .ForMember(dest => dest.Detalles, opt => opt.MapFrom(src => src.Detalles))
-                .ForMember(dest => dest.Proyecto, opt => opt.Ignore());
+                .ForMember(dest => dest.Proyecto, opt => opt.Ignore())
+                .ForMember(dest => dest.FechaSolicitud, opt => opt.MapFrom(src => src.Fecha));
 
             CreateMap<RequerimientoQuickCreateDto, Requerimiento>()
                .ForMember(dest => dest.Detalles, opt => opt.Ignore())
                .ForMember(dest => dest.Proyecto, opt => opt.Ignore())
                .ForMember(dest => dest.Codigo, opt => opt.MapFrom(src => $"REQ-{DateTime.Now:yyyyMMdd-HHmmss}"));
 
-            // --- MAPEO 3 (Lista Global) ---
-            // (Este ya era seguro)
+            // --- MAPEO 3 (Lista Global) - CORREGIDO ---
             CreateMap<Requerimiento, RequerimientoListDto>()
                 .ForMember(dest => dest.ProyectoNombre,
-                           opt => opt.MapFrom(src => src.Proyecto != null ? src.Proyecto.NombreProyecto : "N/A"));
+                           opt => opt.MapFrom(src => src.Proyecto != null ? src.Proyecto.NombreProyecto : "N/A"))
+                // SOLUCIÓN AL ERROR CS1061: Mapeamos la prioridad para que la vista pueda leerla
+                .ForMember(dest => dest.Prioridad, opt => opt.MapFrom(src => src.Prioridad ?? "Normal"))
+                .ForMember(dest => dest.Fecha, opt => opt.MapFrom(src => src.FechaSolicitud));
 
             // --- MAPEO 4 (Detalles Materiales) ---
-            // (Este es seguro porque asume que Material nunca es nulo, lo cual es correcto)
             CreateMap<DetalleRequerimiento, DetalleRequerimientoDetailsDto>()
-                .ForMember(dest => dest.MaterialCodigo, opt => opt.MapFrom(src => src.Material.Codigo))
-                .ForMember(dest => dest.MaterialNombre, opt => opt.MapFrom(src => src.Material.Nombre))
-                .ForMember(dest => dest.UnidadMedida, opt => opt.MapFrom(src => src.Material.UnidadMedida));
+                .ForMember(dest => dest.MaterialCodigo, opt => opt.MapFrom(src => src.Material != null ? src.Material.Codigo : "S/C"))
+                .ForMember(dest => dest.MaterialNombre, opt => opt.MapFrom(src => src.Material != null ? src.Material.Nombre : "Material No Encontrado"))
+                .ForMember(dest => dest.UnidadMedida, opt => opt.MapFrom(src => src.Material != null ? src.Material.UnidadMedida : "Und"));
 
-
-            // --- ¡¡CORRECCIÓN AQUÍ!! ---
             // --- MAPEO 5: Para el modal de DETALLES (Maestro) ---
             CreateMap<Requerimiento, RequerimientoDetailsDto>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id)) // <-- AÑADIR/ASEGURAR ESTA LÍNEA
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.ProyectoNombre,
                            opt => opt.MapFrom(src => src.Proyecto != null ? src.Proyecto.NombreProyecto : "Proyecto no asignado"))
-                .ForMember(dest => dest.Detalles, opt => opt.MapFrom(src => src.Detalles));
+                .ForMember(dest => dest.Detalles, opt => opt.MapFrom(src => src.Detalles))
+                .ForMember(dest => dest.Fecha, opt => opt.MapFrom(src => src.FechaSolicitud));
 
-            // 6. Mapeo de DetalleRequerimiento -> DetalleOrdenCompraDto
-            // (Usado para pre-llenar la tabla de la OC)
+            // 6. Mapeo de DetalleRequerimiento -> DetalleOrdenCompraDto (Para Compras)
             CreateMap<DetalleRequerimiento, DetalleOrdenCompraDto>()
                 .ForMember(dest => dest.IdMaterial, opt => opt.MapFrom(src => src.IdMaterial))
-                .ForMember(dest => dest.Cantidad, opt => opt.MapFrom(src => src.CantidadSolicitada - src.CantidadAtendida)) // Solo lo pendiente
-                .ForMember(dest => dest.PrecioUnitario, opt => opt.Ignore()); // El comprador debe poner el precio
+                .ForMember(dest => dest.Material, opt => opt.MapFrom(src => src.Material.Nombre))
+                .ForMember(dest => dest.Cantidad, opt => opt.MapFrom(src => src.CantidadSolicitada - src.CantidadAtendida))
+                .ForMember(dest => dest.PrecioUnitario, opt => opt.Ignore());
 
-            // 7. Mapeo de Requerimiento -> OrdenCompraCreateDto
-            // (El mapeo principal para pre-llenar el modal)
+            // 7. Mapeo de Requerimiento -> OrdenCompraCreateDto (Para pre-llenar OC)
             CreateMap<Requerimiento, OrdenCompraCreateDto>()
-                .ForMember(dest => dest.Codigo, opt => opt.MapFrom(src => $"OC-REQ-{src.Codigo}")) // Sugiere un código
-                .ForMember(dest => dest.Observaciones, opt => opt.MapFrom(src => $"Basado en Requerimiento: {src.Codigo}"))
-                .ForMember(dest => dest.IdProveedor, opt => opt.Ignore()) // El comprador debe elegirlo
+                .ForMember(dest => dest.ProyectoId, opt => opt.MapFrom(src => src.IdProyecto))
+                .ForMember(dest => dest.Codigo, opt => opt.MapFrom(src => $"OC-REQ-{src.Codigo}"))
+                .ForMember(dest => dest.Observaciones, opt => opt.MapFrom(src => $"Atención de Requerimiento: {src.Codigo}"))
                 .ForMember(dest => dest.Detalles, opt => opt.MapFrom(src => src.Detalles.Where(d => d.CantidadSolicitada > d.CantidadAtendida)));
         }
     }

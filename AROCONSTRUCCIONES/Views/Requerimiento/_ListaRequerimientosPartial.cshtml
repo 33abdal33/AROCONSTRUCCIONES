@@ -5,34 +5,36 @@
     var proyectoId = ViewData["ProyectoId"] ?? 0;
 }
 
+@* Token de seguridad necesario para peticiones POST *@
+@Html.AntiForgeryToken()
+
 <div class="bg-white rounded-lg shadow-md">
     <div class="p-4 md:p-6">
 
-        <!-- Controles de la Tabla -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-4">
             <h3 class="text-xl font-semibold text-slate-700">
                 <i class="fas fa-clipboard-list mr-2 text-blue-600"></i>
                 Requerimientos de Material
             </h3>
             <div class="flex items-center space-x-2 mt-4 md:mt-0">
-                <!-- El botón de Nuevo Requerimiento AHORA abre un modal -->
                 <button type="button"
                         class="flex-shrink-0 flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none"
-                        data-modal-url="@Url.Action("Create", "Requerimiento", new { proyectoId = proyectoId })">
+                        data-modal-trigger="true"
+                        data-url="@Url.Action("Create", "Requerimiento", new { proyectoId = proyectoId })">
                     <i class="fas fa-plus mr-2"></i> Nuevo Requerimiento
                 </button>
             </div>
         </div>
-        <!-- Tabla de Requerimientos -->
+
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200" id="dataTableRequerimientos">
                 <thead class="bg-slate-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase">Código Req.</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase">Fecha</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase">Solicitante</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase">Estado</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-1000 uppercase">Acciones</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Código Req.</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Solicitante</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Estado</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -40,14 +42,14 @@
                     {
                         @foreach (var req in Model)
                         {
-                            string estadoClass = "bg-gray-100 text-gray-800";
-                            switch (req.Estado)
+                            string estadoClass = req.Estado switch
                             {
-                                case "Pendiente": estadoClass = "bg-yellow-100 text-yellow-800"; break;
-                                case "Aprobado": estadoClass = "bg-blue-100 text-blue-800"; break;
-                                case "Despachado": estadoClass = "bg-green-100 text-green-800"; break;
-                                case "Cancelado": estadoClass = "bg-red-100 text-red-800"; break;
-                            }
+                                "Pendiente" => "bg-yellow-100 text-yellow-800",
+                                "Aprobado" => "bg-blue-100 text-blue-800",
+                                "Despachado" => "bg-green-100 text-green-800",
+                                "Cancelado" => "bg-red-100 text-red-800",
+                                _ => "bg-gray-100 text-gray-800"
+                            };
 
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@req.Codigo</td>
@@ -59,15 +61,17 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-
                                     <button type="button" class="p-1 text-slate-500 hover:text-blue-700" title="Ver Detalles"
-                                            data-modal-url="@Url.Action("Details", "Requerimiento", new { id = req.Id })">
+                                            data-modal-trigger="true"
+                                            data-url="@Url.Action("Details", "Requerimiento", new { id = req.Id })">
                                         <i class="fas fa-eye"></i>
                                     </button>
 
                                     @if (req.Estado == "Pendiente")
                                     {
-                                        <button class="p-1 text-slate-500 hover:text-red-700" title="Cancelar">
+                                        <button type="button" class="p-1 text-slate-500 hover:text-red-700 btn-cancelar-req"
+                                                title="Cancelar Requerimiento"
+                                                data-id="@req.Id">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     }
@@ -88,3 +92,74 @@
         </div>
     </div>
 </div>
+
+<div id="modalContainer"></div>
+
+<script>
+    $(document).ready(function () {
+        // 1. ABRIR MODALES
+        $(document).off('click', '[data-modal-trigger]').on('click', '[data-modal-trigger]', function () {
+            const url = $(this).data('url');
+            $.get(url, function (data) {
+                $('#modalContainer').html(data);
+            });
+        });
+
+        // 2. CERRAR MODALES
+        $(document).on('click', '[x-on\\:click="open = false"]', function () {
+            $(this).closest('.fixed').fadeOut(200, function() {
+                $(this).remove();
+                $('#modalContainer').empty();
+            });
+        });
+
+        // 3. LOGICA PARA CANCELAR (Papelera)
+        $(document).off('click', '.btn-cancelar-req').on('click', '.btn-cancelar-req', function() {
+            const id = $(this).data('id');
+            const token = $('input[name="__RequestVerificationToken"]').val();
+
+            Swal.fire({
+                title: '¿Anular Requerimiento?',
+                text: "El estado cambiará a 'Cancelado' y no se podrá procesar.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, cancelar',
+                cancelButtonText: 'No, volver'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '@Url.Action("Cancel", "Requerimiento")',
+                        type: 'POST',
+                        data: {
+                            id: id,
+                            __RequestVerificationToken: token
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Hecho!', response.message, 'success');
+
+                                // Refrescar la pestaña actual
+                                if (typeof cargarTabRequerimientos === 'function') {
+                                    cargarTabRequerimientos();
+                                } else {
+                                    // Si no tienes la función global, recargamos el contenedor manualmente
+                                    const proyectoId = '@proyectoId';
+                                    $.get('@Url.Action("ListaRequerimientosPartial", "Requerimiento")', { proyectoId: proyectoId }, function(data) {
+                                        $('#requerimientos-tab-content').html(data); // Asegúrate que este ID coincida con tu contenedor de tabs
+                                    });
+                                }
+                            } else {
+                                Swal.fire('Error', response.message, 'error');
+                            }
+                        },
+                        error: function() {
+                            Swal.fire('Error', 'No se pudo procesar la solicitud.', 'error');
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>

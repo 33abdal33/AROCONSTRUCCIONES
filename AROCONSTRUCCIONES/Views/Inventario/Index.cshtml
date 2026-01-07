@@ -45,6 +45,12 @@
                 <i class="fas fa-boxes mr-2"></i> Inventario
             </button>
 
+            <button x-on:click="activeTab = 'despachos'; loadTabContent('@Url.Action("ListaPendientesDespachoPartial", "Inventario")', '#tab-content-container')"
+                    :class="{ '@activeStyle': activeTab === 'despachos', '@inactiveStyle': activeTab !== 'despachos' }"
+                    class="@baseClasses">
+                <i class="fas fa-truck-loading mr-2 text-amber-600"></i> Atención Pedidos
+            </button>
+
             @if (User.IsInRole("Administrador") || User.IsInRole("Usuario"))
             {
                 <button x-on:click="activeTab = 'aprobados'; loadTabContent('@Url.Action("ListaRequerimientosAprobadosPartial", "Inventario")', '#tab-content-container')"
@@ -89,6 +95,9 @@
     </div>
 
     <div id="tab-content-container" class="mt-6 bg-white p-4 rounded-lg shadow-sm border border-slate-100 min-h-[400px]">
+        <div class="flex items-center justify-center h-48 text-slate-400">
+            <i class="fas fa-spinner fa-spin mr-2"></i> Cargando información...
+        </div>
     </div>
 
     <div id="modal-placeholder"></div>
@@ -104,22 +113,55 @@
     <script>
         // --- 1. FUNCIÓN GLOBAL PARA MODALES (Accesible desde cualquier parcial) ---
         function cargarModalMovimiento(tipo) {
-            let url = '';
-            const container = $('#modal-placeholder');
-
-            if (tipo === 'transferencia') {
-                url = '@Url.Action("GetTransferenciaModal", "MovimientoInventario")';
-            } else {
-                url = '@Url.Action("GetMovimientoModal", "MovimientoInventario")?tipo=' + tipo;
-            }
+            let url = (tipo === 'transferencia')
+                ? '@Url.Action("GetTransferenciaModal", "MovimientoInventario")'
+                : '@Url.Action("GetMovimientoModal", "MovimientoInventario")?tipo=' + tipo;
 
             $.get(url, function (data) {
-                container.html(data);
-                // Si usas Bootstrap para modales, asegúrate de que el Partial incluya el ID correspondiente
-            }).fail(function() {
-                Swal.fire('Error', 'No se pudo cargar el formulario', 'error');
+                $('#modal-placeholder').html(data);
             });
         }
+        // --- 2. GESTIÓN DE DESPACHO (ATENCIÓN DE REQUERIMIENTO) ---
+        function cargarModalDespacho(requerimientoId) {
+            const url = '@Url.Action("GetDespachoRequerimientoModal", "Inventario")/' + requerimientoId;
+            $.get(url, function (data) {
+                $('#modal-placeholder').html(data);
+            }).fail(function() {
+                Swal.fire('Error', 'No se pudo cargar el requerimiento', 'error');
+            });
+        }
+
+        // Esta función procesa el formulario masivo del modal que creamos antes
+        $(document).on('submit', '#formDespachoMasivo', function (e) {
+            e.preventDefault();
+            const $form = $(this);
+
+            Swal.fire({
+                title: '¿Confirmar Salida?',
+                text: "Se actualizará el stock de los materiales seleccionados.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                confirmButtonText: 'Sí, despachar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: $form.attr('action'),
+                        type: 'POST',
+                        data: $form.serialize(),
+                        success: function (res) {
+                            if (res.success) {
+                                Swal.fire('¡Éxito!', res.message, 'success').then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error', res.message, 'error');
+                            }
+                        }
+                    });
+                }
+            });
+        });
 
         // --- 2. INICIALIZACIÓN DE GRÁFICOS (Chart.js) ---
         function inicializarGraficosDashboard() {
@@ -167,11 +209,11 @@
 
         // --- 3. CARGA INICIAL ---
         $(document).ready(function () {
-            // Cargar gráficos
-            inicializarGraficosDashboard();
+             inicializarGraficosDashboard();
 
-            // Cargar la pestaña de Inventario por defecto
-            loadTabContent('@Url.Action("InventarioPartial", "Inventario")', '#tab-content-container');
-        });
+             // Cargar pestaña inicial basada en TempData o por defecto Inventario
+             const initialUrl = '@Url.Action("InventarioPartial", "Inventario")';
+             loadTabContent(initialUrl, '#tab-content-container');
+         });
     </script>
 }

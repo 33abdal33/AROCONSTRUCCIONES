@@ -65,10 +65,14 @@ namespace AROCONSTRUCCIONES.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var dto = new RequerimientoCreateDto // <-- CAMBIO A DTO COMPLETO
+            // Llamamos al servicio para obtener el siguiente código disponible
+            // Si aún no tienes esta función en el servicio, la definiremos abajo.
+            string proximoCodigo = await _requerimientoService.GetNextCodigoAsync();
+
+            var dto = new RequerimientoCreateDto
             {
                 Fecha = DateTime.Now,
-                Codigo = $"REQ-{DateTime.Now:yyyyMMdd-HHmmss}" // Sugerimos un código
+                Codigo = proximoCodigo // Ahora es correlativo: REQ-0001, etc.
             };
 
             await CargarViewBagsFormulario();
@@ -161,6 +165,28 @@ namespace AROCONSTRUCCIONES.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[RequerimientoController] Error al aprobar.");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrador,Usuario")]
+        public async Task<IActionResult> Cancel(int id)
+        {
+            _logger.LogInformation($"[RequerimientoController] Solicitud de cancelación para ID: {id}");
+            try
+            {
+                var result = await _requerimientoService.CancelAsync(id);
+                if (!result)
+                {
+                    return Json(new { success = false, message = "No se pudo cancelar. Puede que el requerimiento ya haya sido procesado o no exista." });
+                }
+
+                return Json(new { success = true, message = "El requerimiento ha sido cancelado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[RequerimientoController] Error al cancelar.");
                 return Json(new { success = false, message = ex.Message });
             }
         }

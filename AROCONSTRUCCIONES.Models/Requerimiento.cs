@@ -22,7 +22,6 @@ namespace AROCONSTRUCCIONES.Models
         public string? Solicitante { get; set; }
         public string? Area { get; set; }
         public string Estado { get; set; } = "Pendiente";
-        // MEJORA 3: Auditoría de Aprobación (¿Quién autorizó pedir esto?)
         public string? UsuarioAprobador { get; set; }
         public DateTime? FechaAprobacion { get; set; }
         public ICollection<DetalleRequerimiento>? Detalles { get; set; }

@@ -1,0 +1,109 @@
+﻿@model AROCONSTRUCCIONES.Models.Requerimiento
+
+@* Añadimos x-show y x-cloak para que Alpine maneje la visibilidad *@
+<div x-data="{ open: true }"
+     x-show="open"
+     x-cloak
+     class="fixed inset-0 z-50 overflow-y-auto">
+
+    @* Fondo oscuro con efecto de desenfoque *@
+    <div class="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-sm transition-opacity"></div>
+
+    <div class="flex items-center justify-center min-h-screen p-4">
+        @* Contenedor del Modal *@
+        <div @@click.away ="open = false"
+             class="relative bg-white rounded-xl shadow-2xl max-w-5xl w-full overflow-hidden border border-slate-200 transform transition-all">
+
+            @* Cabecera *@
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Despacho de Materiales: @Model.Codigo</h3>
+                    <p class="text-xs text-slate-500">Proyecto: @Model.Proyecto?.NombreProyecto</p>
+                </div>
+                @* Botón X: añadimos la clase btn-cerrar-modal para asegurar el cierre *@
+                <button @@click ="open = false" class="text-slate-400 hover:text-slate-600 btn-cerrar-modal">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="formDespachoMasivo" method="post" asp-controller="Inventario" asp-action="ProcesarDespacho">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="RequerimientoId" value="@Model.Id" />
+
+                <div class="p-6">
+                    @* Datos de Cabecera del Despacho *@
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <div>
+                            <label class="block text-xs font-bold text-blue-700 uppercase">Almacén de Salida *</label>
+                            <select name="AlmacenId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm" required>
+                                <option value="">Seleccione Almacén...</option>
+                                @foreach (var item in (SelectList)ViewBag.Almacenes)
+                                {
+                                    <option value="@item.Value">@item.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-blue-700 uppercase">Referencia (Guía / Vale) *</label>
+                            <input type="text" name="NroFacturaGuia" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm" placeholder="Ej: VALE-001-2026" required />
+                        </div>
+                    </div>
+
+                    @* Tabla de Materiales *@
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-bold text-slate-500 uppercase">Material</th>
+                                    <th class="px-4 py-2 text-right text-xs font-bold text-slate-500 uppercase">Solicitado</th>
+                                    <th class="px-4 py-2 text-right text-xs font-bold text-slate-500 uppercase">Ya Entregado</th>
+                                    <th class="px-4 py-2 text-right text-xs font-bold text-blue-600 uppercase">Pendiente</th>
+                                    <th class="px-4 py-2 text-center text-xs font-bold text-slate-500 uppercase w-32">Despachar Ahora</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach (var det in Model.Detalles.Where(d => d.CantidadAtendida < d.CantidadSolicitada))
+                                {
+                                    <tr>
+                                        <td class="px-4 py-3">
+                                            <div class="text-sm font-medium text-slate-800">@det.Material?.Nombre</div>
+                                            <div class="text-xs text-slate-400 font-mono">@det.Material?.Codigo</div>
+                                        </td>
+                                        <td class="px-4 py-3 text-right text-sm text-slate-600">@det.CantidadSolicitada.ToString("N2")</td>
+                                        <td class="px-4 py-3 text-right text-sm text-slate-500">@det.CantidadAtendida.ToString("N2")</td>
+                                        <td class="px-4 py-3 text-right text-sm font-bold text-blue-600">
+                                            @((det.CantidadSolicitada - det.CantidadAtendida).ToString("N2"))
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <input type="hidden" name="items.Index" value="@det.Id" />
+                                            <input type="hidden" name="items[@det.Id].MaterialId" value="@det.IdMaterial" />
+                                            <input type="hidden" name="items[@det.Id].DetalleRequerimientoId" value="@det.Id" />
+                                            <input type="number" name="items[@det.Id].CantidadADespachar"
+                                                   class="w-full text-right border-amber-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm font-bold text-amber-700"
+                                                   max="@(det.CantidadSolicitada - det.CantidadAtendida)"
+                                                   min="0"
+                                                   step="any"
+                                                   value="0" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @* Pie del Modal *@
+                <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+                    @* Botón Cancelar: añadimos la clase btn-cerrar-modal *@
+                    <button type="button" @@click ="open = false" class="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 btn-cerrar-modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow-lg transition-all flex items-center">
+                        <i class="fas fa-truck-loading mr-2"></i>
+                        Confirmar Salida de Almacén
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

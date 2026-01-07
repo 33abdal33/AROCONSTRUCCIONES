@@ -54,7 +54,7 @@
                             </div>
                             <div>
                                 <label asp-for="Codigo" class="block text-sm font-medium text-gray-700">Código Req. *</label>
-                                <input asp-for="Codigo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required />
+                                <input readonly asp-for="Codigo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required />
                                 <span asp-validation-for="Codigo" class="text-sm text-red-600"></span>
                             </div>
                             <div>
@@ -154,35 +154,70 @@
         $btnAnadir.on('click', function () {
             const materialId = $selectMaterial.val();
             const materialTexto = $selectMaterial.find('option:selected').text();
-            const cantidad = parseFloat($inputCantidad.val());
+            const cantidadNueva = parseFloat($inputCantidad.val());
 
-            if (!materialId || isNaN(cantidad) || cantidad <= 0) {
-                // (Podrías usar Swal.fire aquí)
-                alert('Seleccione un material e ingrese una cantidad válida.');
+            // 1. Validaciones básicas
+            if (!materialId || isNaN(cantidadNueva) || cantidadNueva <= 0) {
+                Swal.fire('Atención', 'Seleccione un material e ingrese una cantidad válida.', 'warning');
                 return;
             }
 
-            const filaHtml = `
-                <tr id="fila-detalle-${detalleIndex}" class="text-sm">
-                    <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">
-                        ${materialTexto}
-                        <input type="hidden" name="Detalles.Index" value="${detalleIndex}" />
-                        <input type="hidden" name="Detalles[${detalleIndex}].IdMaterial" value="${materialId}" />
-                    </td>
-                    <td class="px-6 py-4 text-right">${cantidad.toFixed(2)}<input type="hidden" name="Detalles[${detalleIndex}].Cantidad" value="${cantidad}" /></td>
-                    <td class="px-6 py-4 text-center">
-                        <button type="button" class="p-1 text-slate-400 hover:text-red-600 btn-remover-fila" title="Quitar">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>`;
+            // 2. LÓGICA ANTI-DUPLICADOS: Buscar si el material ya está en la tabla
+            let filaExistente = null;
+            $tablaBody.find('tr').each(function () {
+                // Buscamos el input oculto que guarda el IdMaterial dentro de esta fila
+                const idEnFila = $(this).find('input[name$=".IdMaterial"]').val();
+                if (idEnFila === materialId) {
+                    filaExistente = $(this);
+                    return false; // Romper el bucle .each
+                }
+            });
 
-            $tablaBody.append(filaHtml);
-            detalleIndex++;
+            if (filaExistente) {
+                // --- CASO A: EL MATERIAL YA EXISTE -> SUMAR CANTIDAD ---
+                const $inputCantFila = filaExistente.find('input[name$=".Cantidad"]');
+                const cantidadAnterior = parseFloat($inputCantFila.val());
+                const sumaTotal = cantidadAnterior + cantidadNueva;
+
+                // Actualizar el valor del input oculto
+                $inputCantFila.val(sumaTotal);
+
+                // Actualizar el texto visible en la celda (la segunda td)
+                filaExistente.find('td:nth-child(2)').html(`${sumaTotal.toFixed(2)} <input type="hidden" name="Detalles[${filaExistente.attr('data-index')}].Cantidad" value="${sumaTotal}" />`);
+
+                // Efecto visual de parpadeo para indicar actualización
+                filaExistente.addClass('bg-yellow-50');
+                setTimeout(() => filaExistente.removeClass('bg-yellow-50'), 1000);
+
+            } else {
+                // --- CASO B: MATERIAL NUEVO -> AGREGAR FILA ---
+                const filaHtml = `
+                    <tr id="fila-detalle-${detalleIndex}" data-index="${detalleIndex}" class="text-sm transition-colors duration-500">
+                        <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">
+                            ${materialTexto}
+                            <input type="hidden" name="Detalles.Index" value="${detalleIndex}" />
+                            <input type="hidden" name="Detalles[${detalleIndex}].IdMaterial" value="${materialId}" />
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            ${cantidadNueva.toFixed(2)}
+                            <input type="hidden" name="Detalles[${detalleIndex}].Cantidad" value="${cantidadNueva}" />
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <button type="button" class="p-1 text-slate-400 hover:text-red-600 btn-remover-fila" title="Quitar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+
+                $tablaBody.append(filaHtml);
+                detalleIndex++;
+            }
+
+            // 3. Limpiar inputs y actualizar UI
             toggleFilaVacia();
-
             $selectMaterial.val('');
             $inputCantidad.val('');
+            $selectMaterial.focus();
         });
 
         // Lógica para REMOVER FILA

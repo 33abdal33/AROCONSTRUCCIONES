@@ -26,18 +26,45 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
         public async Task<bool> RegistrarIngreso(MovimientoInventarioDto dto)
         {
-            // 1. Validaciones
-            var material = await _unitOfWork.Materiales.GetByIdAsync(dto.MaterialId);
-            if (material == null)
-                throw new ApplicationException($"El Material con ID {dto.MaterialId} no fue encontrado.");
-
-            var almacen = await _unitOfWork.Almacenes.GetByIdAsync(dto.AlmacenId);
-            if (almacen == null)
-                throw new ApplicationException($"El Almacén con ID {dto.AlmacenId} no fue encontrado.");
-
-            // 2. Lógica de Costo Promedio Ponderado (CPP)
+            using var transaction = await _unitOfWork.Context.Database.BeginTransactionAsync();
             try
             {
+                // A. Validaciones iniciales
+                var material = await _unitOfWork.Materiales.GetByIdAsync(dto.MaterialId);
+                if (material == null) throw new ApplicationException("Material no encontrado.");
+
+                var almacen = await _unitOfWork.Almacenes.GetByIdAsync(dto.AlmacenId);
+                if (almacen == null) throw new ApplicationException("Almacén no encontrado.");
+
+                // B. TRAZABILIDAD: Si viene de una Orden de Compra
+                if (dto.DetalleOrdenCompraId.HasValue)
+                {
+                    var detalleOC = await _unitOfWork.Context.Set<DetalleOrdenCompra>()
+                        .Include(d => d.OrdenCompra)
+                        .FirstOrDefaultAsync(d => d.Id == dto.DetalleOrdenCompraId.Value);
+
+                    if (detalleOC != null)
+                    {
+                        decimal pendiente = detalleOC.Cantidad - detalleOC.CantidadRecibida;
+                        if (dto.Cantidad > pendiente)
+                            throw new ApplicationException($"No puede recibir {dto.Cantidad}. El saldo pendiente de la OC es {pendiente}.");
+
+                        // Actualizar cantidad recibida en la OC
+                        detalleOC.CantidadRecibida += dto.Cantidad;
+                        _unitOfWork.Context.Update(detalleOC);
+
+                        // Verificar si se completó la Orden de Compra
+                        var oc = detalleOC.OrdenCompra;
+                        var totalItemsOC = await _unitOfWork.Context.Set<DetalleOrdenCompra>()
+                            .Where(d => d.IdOrdenCompra == oc.Id)
+                            .ToListAsync();
+
+                        oc.Estado = totalItemsOC.All(d => d.CantidadRecibida >= d.Cantidad) ? "Recibida Total" : "Recibida Parcial";
+                        _unitOfWork.Context.Update(oc);
+                    }
+                }
+
+                // C. Lógica de Costo Promedio Ponderado (CPP)
                 var saldo = await _unitOfWork.Inventario.FindByKeysAsync(dto.MaterialId, dto.AlmacenId);
                 decimal stockFinal;
 
@@ -62,18 +89,15 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                     decimal costoNuevoTotal = dto.Cantidad * dto.CostoUnitarioCompra;
                     stockFinal = saldo.StockActual + dto.Cantidad;
 
-                    // Nuevo Precio Promedio
                     if (stockFinal > 0)
                         saldo.CostoPromedio = (costoActualTotal + costoNuevoTotal) / stockFinal;
 
                     saldo.StockActual = stockFinal;
-                    saldo.StockMinimo = material.StockMinimo;
                     saldo.FechaUltimoMovimiento = dto.FechaMovimiento;
-
                     await _unitOfWork.Inventario.UpdateAsync(saldo);
                 }
 
-                // 3. Registrar el Movimiento
+                // D. Registrar el Movimiento físico
                 var movimiento = _mapper.Map<MovimientoInventario>(dto);
                 movimiento.TipoMovimiento = "INGRESO";
                 movimiento.CostoUnitarioMovimiento = dto.CostoUnitarioCompra;
@@ -82,73 +106,65 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
                 await _unitOfWork.MovimientosInventario.AddAsync(movimiento);
 
-                // 4. Guardar cambios
                 await _unitOfWork.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error en RegistrarIngreso");
                 throw;
             }
         }
 
         public async Task<bool> RegistrarSalida(MovimientoInventarioDto dto)
         {
-            _logger.LogInformation("Iniciando RegistrarSalida...");
-
-            // 1. Validaciones Básicas
-            var material = await _unitOfWork.Materiales.GetByIdAsync(dto.MaterialId);
-            if (material == null) throw new ApplicationException("Material no encontrado.");
-
-            var almacen = await _unitOfWork.Almacenes.GetByIdAsync(dto.AlmacenId);
-            if (almacen == null) throw new ApplicationException("Almacén no encontrado.");
-
-            DateTime fechaMovimiento = dto.FechaMovimiento == default ? DateTime.Now : dto.FechaMovimiento;
-
-            // Validación de Proyecto
-            if (dto.Motivo == "CONSUMO_PROYECTO" && (!dto.ProyectoId.HasValue || dto.ProyectoId == 0))
-            {
-                throw new ApplicationException("Para 'Consumo Proyecto', es obligatorio seleccionar un proyecto.");
-            }
-
-            // Usamos transacción para asegurar consistencia entre Inventario, Movimiento y Costos del Proyecto
             using var transaction = await _unitOfWork.Context.Database.BeginTransactionAsync();
             try
             {
+                // A. Validaciones y Stock
                 var saldo = await _unitOfWork.Inventario.FindByKeysAsync(dto.MaterialId, dto.AlmacenId);
-
                 if (saldo == null || saldo.StockActual < dto.Cantidad)
+                    throw new ApplicationException($"Stock insuficiente. Actual: {saldo?.StockActual ?? 0}");
+
+                // B. TRAZABILIDAD: Si es para atender un Requerimiento
+                if (dto.DetalleRequerimientoId.HasValue)
                 {
-                    throw new ApplicationException($"Stock insuficiente en {almacen.Nombre}. Stock actual: {saldo?.StockActual.ToString("N2") ?? "0"}.");
+                    var detalleReq = await _unitOfWork.Context.Set<DetalleRequerimiento>()
+                        .FirstOrDefaultAsync(d => d.Id == dto.DetalleRequerimientoId.Value);
+
+                    if (detalleReq != null)
+                    {
+                        decimal pendienteReq = detalleReq.CantidadSolicitada - detalleReq.CantidadAtendida;
+                        if (dto.Cantidad > pendienteReq)
+                            throw new ApplicationException($"No puede despachar más de lo pendiente ({pendienteReq}).");
+
+                        detalleReq.CantidadAtendida += dto.Cantidad;
+                        _unitOfWork.Context.Update(detalleReq);
+                    }
                 }
 
                 decimal costoUnitarioSalida = saldo.CostoPromedio;
                 decimal nuevoStock = saldo.StockActual - dto.Cantidad;
-                decimal costoTotalSalida = dto.Cantidad * costoUnitarioSalida; // Costo real a imputar
+                decimal costoTotalSalida = dto.Cantidad * costoUnitarioSalida;
 
-                // 2. Actualizar Stock
+                // C. Actualizar Stock e Inventario
                 saldo.StockActual = nuevoStock;
-                saldo.StockMinimo = material.StockMinimo;
-                saldo.FechaUltimoMovimiento = fechaMovimiento;
+                saldo.FechaUltimoMovimiento = dto.FechaMovimiento;
                 await _unitOfWork.Inventario.UpdateAsync(saldo);
 
-                // 3. Registrar Movimiento
+                // D. Registrar Movimiento
                 var movimiento = _mapper.Map<MovimientoInventario>(dto);
                 movimiento.TipoMovimiento = "SALIDA";
-                movimiento.FechaMovimiento = fechaMovimiento;
-                movimiento.CostoUnitarioMovimiento = costoUnitarioSalida; // Sale valorizado al promedio
+                movimiento.CostoUnitarioMovimiento = costoUnitarioSalida;
                 movimiento.StockFinal = nuevoStock;
                 movimiento.Responsable = dto.ResponsableNombre;
-
-                // Mapear manualmente para asegurar (aunque AutoMapper debería hacerlo si los nombres coinciden)
-                movimiento.PartidaId = dto.PartidaId;
-
                 await _unitOfWork.MovimientosInventario.AddAsync(movimiento);
 
-                // 4. Actualizar Costos del Proyecto y Partida (Saldos Presupuestales)
+                // E. Actualizar Costos de Proyecto y Partida (Tu lógica existente)
                 if (dto.ProyectoId.HasValue && dto.Motivo == "CONSUMO_PROYECTO")
                 {
-                    // A. Actualizar Costo Global del Proyecto
                     var proyecto = await _unitOfWork.Proyectos.GetByIdAsync(dto.ProyectoId.Value);
                     if (proyecto != null)
                     {
@@ -156,23 +172,19 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                         await _unitOfWork.Proyectos.UpdateAsync(proyecto);
                     }
 
-                    // B. Actualizar Costo Específico de la Partida
                     if (dto.PartidaId.HasValue && dto.PartidaId > 0)
                     {
-                        // Accedemos al DbSet de Partidas a través del Contexto del UoW
                         var partida = await _unitOfWork.Context.Set<Partida>().FindAsync(dto.PartidaId.Value);
                         if (partida != null)
                         {
                             partida.CostoEjecutado += costoTotalSalida;
-                            _unitOfWork.Context.Entry(partida).State = EntityState.Modified; // Marcar para update
+                            _unitOfWork.Context.Entry(partida).State = EntityState.Modified;
                         }
                     }
                 }
 
-                // 5. Commit de la transacción
                 await _unitOfWork.SaveChangesAsync();
                 await transaction.CommitAsync();
-
                 return true;
             }
             catch (Exception ex)

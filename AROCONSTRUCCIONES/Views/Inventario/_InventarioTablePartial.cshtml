@@ -1,5 +1,10 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.InventarioDto>
 
+@{
+    // Obtenemos la lista de proyectos desde el ViewBag que cargamos en el Controller
+    var proyectos = ViewBag.Proyectos as SelectList;
+}
+
 <div x-data="{ open: false }" class="pt-4">
     <div class="flex justify-between items-center mb-4">
         <h3 class="text-2xl font-semibold text-gray-800">
@@ -7,29 +12,39 @@
             Inventario de Materiales
         </h3>
         <div class="flex space-x-2">
-            <button onclick="cargarModalMovimiento('transferencia')" class="bg-amber-500 text-white px-3 py-1.5 rounded-md text-sm">
+            <button onclick="cargarModalMovimiento('transferencia')" class="bg-amber-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-amber-600 transition-colors">
                 <i class="fas fa-exchange-alt mr-1"></i> Transferencia
             </button>
-            <button onclick="cargarModalMovimiento('INGRESO')" class="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm">
+            <button onclick="cargarModalMovimiento('INGRESO')" class="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-700 transition-colors">
                 <i class="fas fa-plus mr-1"></i> Ingreso
             </button>
         </div>
     </div>
 
-    <!-- FILTROS - Estilo de Card para la barra de búsqueda -->
     <div class="p-4 border border-gray-200/50 rounded-lg shadow-md mb-4 bg-white">
-        <div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
-            <div class="relative flex-1 max-w-lg w-full">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+            <div class="md:col-span-5 relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3">
                     <i class="fas fa-search h-4 w-4 text-gray-400"></i>
                 </span>
-                <input type="text" id="inventarioSearchInput" class="form-control w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 bg-white focus:border-blue-500 focus:ring-0" placeholder="Buscar material o código...">
+                <input type="text" id="inventarioSearchInput"
+                       class="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm"
+                       placeholder="Buscar material o código...">
             </div>
-            <div class="flex space-x-2">
-                <select id="inventarioCategoryFilter" class="form-select px-3 py-2 rounded-lg border border-gray-300 bg-white focus:border-blue-500 focus:ring-0 text-sm text-gray-700">
+
+            <div class="md:col-span-3">
+                <select id="inventarioProyectoFilter" onchange="filtrarPorProyecto(this.value)"
+                        class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 outline-none text-sm text-gray-700"
+                        asp-items="proyectos">
+                    <option value="">Todos los Proyectos / Almacenes</option>
+                </select>
+            </div>
+
+            <div class="md:col-span-4 flex space-x-2">
+                <select id="inventarioCategoryFilter" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm outline-none">
                     <option value="">Todas las categorías</option>
                 </select>
-                <select id="inventarioStatusFilter" class="form-select px-3 py-2 rounded-lg border border-gray-300 bg-white focus:border-blue-500 focus:ring-0 text-sm text-gray-700">
+                <select id="inventarioStatusFilter" class="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm outline-none">
                     <option value="">Todos los estados</option>
                     <option value="Normal">Normal</option>
                     <option value="Bajo">Bajo</option>
@@ -41,28 +56,21 @@
 
     <partial name="_MensajesTempDataPartial" />
 
-    <!-- TABLA (Estilo Shadcn/ui) -->
-    <!-- Contenedor de tabla: rounded-md border border-border/50 -->
-    <div class="rounded-lg border border-gray-200/50 overflow-hidden shadow-sm">
-        <table class="min-w-full divide-y divide-gray-100/50" id="dataTableInventario">
-            <!-- Header de tabla: bg-muted/50 -->
-            <thead class="bg-gray-100/70">
-                <tr class="border-b border-gray-200/50">
-                    <!-- Columnas usan text-muted-foreground y font-medium -->
-                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-1000 font-medium text-xs uppercase tracking-wider">Código</th>
-                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-1000 font-medium text-xs uppercase tracking-wider">Material</th>
-                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-1000 font-medium text-xs uppercase tracking-wider">Categoría</th>
-                    <th scope="col" class="h-10 px-4 text-right align-middle text-gray-1000 font-medium text-xs uppercase tracking-wider">Stock Actual</th>
-                    <th scope="col" class="h-10 px-4 text-right align-middle text-gray-1000 font-medium text-xs uppercase tracking-wider">Stock Mínimo</th>
-                    <th scope="col" class="h-10 px-4 text-right align-middle text-gray-1000 font-medium text-xs uppercase tracking-wider">Costo Unitario</th>
-                    <th scope="col" class="h-10 px-4 text-right align-middle text-gray-1000 font-medium text-xs uppercase tracking-wider">Valor Total</th>
-                    <th scope="col" class="h-10 px-4 text-center align-middle text-gray-1000 font-medium text-xs uppercase tracking-wider">Estado</th>
-                    <th scope="col" class="h-10 px-4 text-left align-middle text-gray-1000 font-medium text-xs uppercase tracking-wider">Ubicación</th>
-                    <th scope="col" class="h-10 px-4 text-center align-middle text-gray-1000 font-medium text-xs uppercase tracking-wider">Acciones</th>
+    <div class="rounded-lg border border-gray-200/50 overflow-hidden shadow-sm bg-white">
+        <table class="min-w-full divide-y divide-gray-200" id="dataTableInventario">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Código</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Material</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Stock Actual</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Costo Prom.</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Valor Total</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Ubicación / Proyecto</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Acciones</th>
                 </tr>
             </thead>
-            <!-- Filas usan hover:bg-muted/30 -->
-            <tbody class="divide-y divide-gray-100/50">
+            <tbody class="divide-y divide-gray-100">
                 @if (Model != null && Model.Any())
                 {
                     @foreach (var item in Model)
@@ -71,30 +79,35 @@
                         item.NivelAlerta == 1 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700";
                         var estadoTexto = item.NivelAlerta == 0 ? "Normal" : (item.NivelAlerta == 1 ? "Bajo" : "Crítico");
 
-                        <tr class="border-b transition-colors hover:bg-gray-100/30">
-                            <!-- Código usa font-mono text-sm -->
-                            <td class="p-4 align-middle text-sm text-gray-500 font-mono">@item.MaterialCodigo</td>
-                            <td class="p-4 align-middle">
-                                <div class="font-medium text-gray-800">@item.MaterialNombre</div>
-                                <div class="text-xs text-gray-500">@item.MaterialUnidadMedida</div>
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-4 py-3 text-sm font-mono text-gray-500">@item.MaterialCodigo</td>
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-gray-900">@item.MaterialNombre</div>
+                                <div class="text-xs text-gray-500">@item.MaterialCategoria</div>
                             </td>
-                            <td class="p-4 align-middle text-sm text-gray-500">@item.MaterialCategoria</td>
-                            <td class="p-4 align-middle text-sm text-gray-800 font-semibold text-right">@item.StockActual.ToString("N0")</td>
-                            <td class="p-4 align-middle text-sm text-gray-500 text-right">@item.StockMinimo.ToString("N0")</td>
-                            <td class="p-4 align-middle text-sm text-gray-500 text-right">S/ @item.CostoPromedio.ToString("N2")</td>
-                            <td class="p-4 align-middle text-sm text-gray-800 font-semibold text-right">S/ @item.ValorTotal.ToString("N2")</td>
-                            <td class="p-4 align-middle text-center">
-                                <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full @estadoClass">
+                            <td class="px-4 py-3 text-right">
+                                <span class="font-bold text-gray-900">@item.StockActual.ToString("N2")</span>
+                                <span class="text-xs text-gray-400 ml-1">@item.MaterialUnidadMedida</span>
+                            </td>
+                            <td class="px-4 py-3 text-right text-sm text-gray-500">S/ @item.CostoPromedio.ToString("N2")</td>
+                            <td class="px-4 py-3 text-right text-sm font-semibold text-gray-900">S/ @item.ValorTotal.ToString("N2")</td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium @estadoClass">
                                     @estadoTexto
                                 </span>
                             </td>
-                            <td class="p-4 align-middle text-sm text-gray-500">@item.AlmacenUbicacion</td>
-                            <td class="p-4 align-middle text-center text-sm font-medium">
+                            <td class="px-4 py-3">
+                                @* Mostramos el nombre del almacén que usualmente es el del proyecto *@
+                                <div class="text-sm text-gray-700 font-medium">@item.AlmacenNombre</div>
+                                <div class="text-xs text-gray-400">@item.AlmacenUbicacion</div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
                                 <a asp-action="Details" asp-controller="Inventario"
                                    asp-route-materialId="@item.MaterialId"
                                    asp-route-almacenId="@item.AlmacenId"
-                                   class="text-gray-500 hover:text-blue-600 transition-colors" title="Ver Kárdex/Historial">
-                                    <i class="fas fa-search"></i>
+                                   class="inline-flex items-center p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+                                   title="Ver Kárdex Detallado">
+                                    <i class="fas fa-clipboard-list text-lg"></i>
                                 </a>
                             </td>
                         </tr>
@@ -103,8 +116,8 @@
                 else
                 {
                     <tr>
-                        <td colspan="10" class="p-4 text-center text-gray-500">
-                            No hay inventario registrado. Recepcione una Orden de Compra para comenzar.
+                        <td colspan="8" class="px-4 py-10 text-center text-gray-500 italic">
+                            No hay stock disponible con los filtros seleccionados.
                         </td>
                     </tr>
                 }
@@ -112,3 +125,23 @@
         </table>
     </div>
 </div>
+
+<script>
+    // Función para recargar la tabla cuando el usuario cambie el proyecto
+    function filtrarPorProyecto(id) {
+        // Aquí podrías usar AJAX para recargar solo este partial
+        // o filtrar la tabla actual con JavaScript si los datos ya están ahí.
+        const url = '@Url.Action("InventarioPartial", "Inventario")';
+        loadTabContent(`${url}?proyectoId=${id}`, '#tab-content-container');
+    }
+
+    $(document).ready(function() {
+        // Implementación del buscador local para la tabla
+        $("#inventarioSearchInput").on("keyup", function() {
+            var value = $(this).val().toLowerCase();
+            $("#dataTableInventario tbody tr").filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+</script>

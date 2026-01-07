@@ -13,7 +13,10 @@ namespace AROCONSTRUCCIONES.Models
         public string? Responsable { get; set; }
         public bool Estado { get; set; } = true;
 
-        public ICollection<MovimientoInventario>? Movimientos { get; set; }
+        // --- ESTA ES LA VINCULACIÓN QUE FALTA ---
+        public int? ProyectoId { get; set; }
+        public Proyecto? Proyecto { get; set; }
 
+        public ICollection<MovimientoInventario>? Movimientos { get; set; }
     }
 }

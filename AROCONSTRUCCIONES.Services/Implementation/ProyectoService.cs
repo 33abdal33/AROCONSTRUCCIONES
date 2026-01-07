@@ -44,7 +44,6 @@ namespace AROCONSTRUCCIONES.Services.Implementation
         public async Task CreateAsync(ProyectoDto dto)
         {
             var entity = _mapper.Map<Proyecto>(dto);
-            entity.Estado = "Planificación";
             entity.AvancePorcentaje = 0;
             entity.CostoEjecutado = 0;
 

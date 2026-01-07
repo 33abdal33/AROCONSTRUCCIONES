@@ -8,6 +8,7 @@
         public string Solicitante { get; set; }
         public string Estado { get; set; } // Pendiente, Aprobado, Despachado, Cancelado
         public string ProyectoNombre { get; set; } // Para la nueva columna de la tabla
+        public string Prioridad { get; set; } // Ejemplo: "Normal", "Urgente"
 
     }
 }

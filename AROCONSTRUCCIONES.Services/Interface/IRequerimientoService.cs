@@ -14,10 +14,12 @@ namespace AROCONSTRUCCIONES.Services.Interface
 
         // Lógica para crear el nuevo requerimiento (Maestro-Detalle)
         Task<IEnumerable<RequerimientoListDto>> GetAllRequerimientosAsync();
+        Task<string> GetNextCodigoAsync();
         // Volvemos a usar el DTO completo que incluye la lista de Detalles
         Task CreateAsync(RequerimientoCreateDto dto); // Antes: RequerimientoQuickCreateDto
         Task<RequerimientoDetailsDto> GetRequerimientoDetailsAsync(int id);
         Task<bool> ApproveAsync(int id);
         Task<IEnumerable<RequerimientoListDto>> GetAllAprobadosAsync();
+        Task<bool> CancelAsync(int id); // Nuevo método
     }
 }

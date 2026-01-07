@@ -5,16 +5,14 @@ namespace AROCONSTRUCCIONES.Dtos
 {
     public class InventarioDto
     {
-        // 1. Claves para Referencia (Necesarias para Acciones como 'Detalles' o 'Salida')
-
         [Required]
         public int MaterialId { get; set; }
 
         [Required]
         public int AlmacenId { get; set; }
 
-
-        // 2. CAMPOS DE MATERIAL (Obtenidos a través de la relación)
+        // --- PROPIEDAD NUEVA PARA EL FILTRO ---
+        public int? ProyectoId { get; set; }
 
         [DisplayName("Código")]
         public string MaterialCodigo { get; set; }
@@ -26,21 +24,17 @@ namespace AROCONSTRUCCIONES.Dtos
         public string MaterialCategoria { get; set; }
 
         [DisplayName("Unidad")]
-        public string MaterialUnidadMedida { get; set; } // Ejemplo: Bolsa 42.5kg, m², etc.
+        public string MaterialUnidadMedida { get; set; }
+
         [DisplayName("PrecioUnitario")]
         public decimal MaterialPrecioUnidad { get; set; }
 
-
-        // 3. CAMPOS DE ALMACÉN (Obtenidos a través de la relación)
+        // --- PROPIEDAD NUEVA PARA LA VISTA ---
+        [DisplayName("Almacén")]
+        public string AlmacenNombre { get; set; }
 
         [DisplayName("Ubicación")]
-        public string AlmacenUbicacion { get; set; } // Muestra "Almacén Principal - A1"
-
-        // Puedes agregar el responsable si es necesario para la vista
-        // public string AlmacenResponsable { get; set; }
-
-
-        // 4. CAMPOS DE SALDO (De la entidad Inventario)
+        public string AlmacenUbicacion { get; set; }
 
         [DisplayName("Stock")]
         public decimal StockActual { get; set; }
@@ -51,21 +45,15 @@ namespace AROCONSTRUCCIONES.Dtos
         [DisplayName("Precio Prom.")]
         public decimal CostoPromedio { get; set; }
 
-        // Este campo indica el nivel de alerta (0=Normal, 1=Bajo, 2=Crítico)
         [DisplayName("Estado")]
         public int NivelAlerta { get; set; }
 
         [DisplayName("Fecha Última Entrada")]
         public DateTime FechaUltimoMovimiento { get; set; }
 
-
-        // 5. PROPIEDAD CALCULADA PARA LA VISTA
-
         [DisplayName("Valor Total")]
-        // El Valor Total (Stock * Costo Promedio) se calcula aquí, no se persiste.
         public decimal ValorTotal => StockActual * CostoPromedio;
 
-        // Helper para mostrar el estado como texto (Normal, Bajo)
         public string EstadoTexto => NivelAlerta == 0 ? "Normal" :
                                      NivelAlerta == 1 ? "Bajo" : "Crítico";
     }
