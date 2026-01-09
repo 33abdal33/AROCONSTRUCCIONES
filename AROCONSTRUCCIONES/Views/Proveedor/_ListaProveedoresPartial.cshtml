@@ -1,73 +1,107 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.ProveedorDto>
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
-<div class="pt-4">
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-semibold text-slate-700">
-            <i class="fas fa-truck-moving mr-2 text-blue-600"></i>
-            Maestro de Proveedores
-        </h3>
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    @* Cabecera del Módulo *@
+    <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center bg-slate-50/50">
+        <div>
+            <h3 class="text-xl font-bold text-slate-800 flex items-center">
+                <i class="fas fa-handshake mr-3 text-indigo-600"></i>
+                Directorio de Proveedores
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Lista completa de socios comerciales y suministros.</p>
+        </div>
 
         <button type="button"
-                class="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                data-modal-url="@Url.Action("GetProveedorParaEditar", "Proveedor", new { id = 0 })">
-            <i class="fas fa-plus mr-2"></i> Nuevo Proveedor
+                class="mt-4 md:mt-0 flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-black rounded-lg shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-105 uppercase tracking-wider"
+                onclick="cargarModalProveedor()">
+            <i class="fas fa-plus-circle mr-2"></i> Registrar Proveedor
         </button>
     </div>
 
-    <partial name="_MensajesTempDataPartial" />
-
-    <div class="overflow-x-auto bg-white rounded-lg shadow">
-        <table class="min-w-full divide-y divide-gray-200" id="dataTableProveedores">
+    @* Tabla de Datos (Diseño Plano sin DataTables) *@
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50">
                 <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider">Razón Social</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider" >RUC</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider">Categoria</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider">Teléfono</th>
-                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-slate-1000 uppercase tracking-wider">Email</th>
-                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-slate-1000 uppercase tracking-wider">Estado</th>
-                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-slate-1000 uppercase tracking-wider">Acciones</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">RUC</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Razón Social</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Categoría</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Teléfono</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Email</th>
+                    <th class="px-6 py-4 text-center text-[10px] font-black text-slate-500 uppercase tracking-widest">Estado</th>
+                    <th class="px-6 py-4 text-center text-[10px] font-black text-slate-500 uppercase tracking-widest w-24">Acciones</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-slate-100">
                 @if (Model != null && Model.Any())
                 {
                     @foreach (var prov in Model)
                     {
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@prov.RazonSocial</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@prov.RUC</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@prov.Especialidad</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@prov.Telefono</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@prov.Email</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                        <tr class="hover:bg-slate-50/80 transition-colors group">
+                            @* 1. RUC *@
+                            <td class="px-6 py-4 text-sm font-mono text-slate-600 font-medium">
+                                @prov.RUC
+                            </td>
+                            @* 2. Razón Social *@
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-bold text-slate-800">@prov.RazonSocial</div>
+                            </td>
+                            @* 3. Categoría *@
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-[10px] font-bold rounded bg-indigo-50 text-indigo-600 border border-indigo-100 uppercase">
+                                    @(string.IsNullOrEmpty(prov.Especialidad) ? "Sin Categoría" : prov.Especialidad)
+                                </span>
+                            </td>
+                            @* 4. Teléfono *@
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                <div class="flex items-center">
+                                    <i class="fas fa-phone-alt mr-2 text-slate-300 text-xs"></i>
+                                    @prov.Telefono
+                                </div>
+                            </td>
+                            @* 5. Email *@
+                            <td class="px-6 py-4 text-sm text-slate-500">
+                                <div class="flex items-center">
+                                    <i class="fas fa-envelope mr-2 text-slate-300 text-xs"></i>
+                                    @prov.Email
+                                </div>
+                            </td>
+                            @* 6. Estado *@
+                            <td class="px-6 py-4 text-center">
                                 @if (prov.Estado)
                                 {
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
+                                        <span class="w-1 h-1 rounded-full bg-green-500 mr-1.5"></span> ACTIVO
+                                    </span>
                                 }
                                 else
                                 {
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
+                                        <span class="w-1 h-1 rounded-full bg-red-500 mr-1.5"></span> INACTIVO
+                                    </span>
                                 }
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-
-                                <button type="button" class="p-1 text-slate-500 hover:text-blue-700 btn-editar-proveedor"
-                                        data-modal-url="@Url.Action("GetProveedorParaEditar", "Proveedor", new { id = prov.Id })"
-                                        title="Editar">
-                                    <i class="fas fa-pencil-alt"></i>
-                                </button>
-
-                                @if (prov.Estado)
-                                {
-                                    <button class="p-1 text-slate-500 hover:text-red-700 btn-desactivar-proveedor"
-                                            data-id="@prov.Id"
-                                            data-nombre="@prov.RazonSocial"
-                                            title="Desactivar">
-                                        <i class="fas fa-trash-alt"></i>
+                            @* 7. Acciones (Hover) *@
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex justify-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button type="button"
+                                            class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            onclick="editarProveedor(@prov.Id)"
+                                            title="Editar Proveedor">
+                                        <i class="fas fa-edit"></i>
                                     </button>
-                                }
+
+                                    @if (prov.Estado)
+                                    {
+                                        <button type="button"
+                                                class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                onclick="desactivarProveedor(@prov.Id, '@prov.RazonSocial')"
+                                                title="Desactivar">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
@@ -75,10 +109,65 @@
                 else
                 {
                     <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-slate-500">No hay proveedores registrados.</td>
+                        <td colspan="7" class="px-6 py-16 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-address-book text-slate-200 text-6xl mb-4"></i>
+                                <p class="text-slate-400 font-medium">No se encontraron proveedores registrados.</p>
+                            </div>
+                        </td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
 </div>
+
+@Html.AntiForgeryToken()
+
+<script>
+    // 1. Abrir Modal Crear
+    function cargarModalProveedor() {
+        $.get('@Url.Action("Create", "Proveedor")', function (data) {
+            $('#modal-placeholder').html(data);
+        });
+    }
+
+    // 2. Abrir Modal Editar
+    function editarProveedor(id) {
+        $.get('@Url.Action("GetProveedorParaEditar", "Proveedor")/' + id, function (data) {
+            $('#modal-placeholder').html(data);
+        });
+    }
+
+    // 3. Lógica Desactivar (Eliminar)
+    function desactivarProveedor(id, nombre) {
+        const token = $('input[name="__RequestVerificationToken"]').val();
+
+        Swal.fire({
+            title: '¿Desactivar Proveedor?',
+            text: `El proveedor "${nombre}" será marcado como inactivo.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Sí, desactivar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '@Url.Action("Deactivate", "Proveedor")',
+                    type: 'POST',
+                    data: { id: id, __RequestVerificationToken: token },
+                    success: function(res) {
+                        if (res.success) {
+                            Swal.fire('¡Éxito!', res.message, 'success');
+                            loadTabContent('@Url.Action("ListaProveedores", "Proveedor")', '#tab-content-container');
+                        } else {
+                            Swal.fire('Error', res.message, 'error');
+                        }
+                    }
+                });
+            }
+        });
+    }
+</script>

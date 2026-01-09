@@ -14,9 +14,6 @@ namespace AROCONSTRUCCIONES.Controllers
     public class AlmacenController : Controller
     {
         private readonly IAlmacenService _almacenService;
-        // private readonly ApplicationDbContext _dbContext; // <-- SE VA
-
-        // Constructor actualizado: Solo inyecta el servicio
         public AlmacenController(IAlmacenService almacenService) // <-- CAMBIO
         {
             _almacenService = almacenService;

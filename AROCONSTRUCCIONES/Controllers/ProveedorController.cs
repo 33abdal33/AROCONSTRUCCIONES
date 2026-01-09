@@ -14,16 +14,12 @@ namespace AROCONSTRUCCIONES.Controllers
     public class ProveedorController : Controller
     {
         private readonly IProveedorService _proveedorService;
-        // private readonly ApplicationDbContext _dbContext; // <-- SE VA
-
         // Constructor actualizado
-        public ProveedorController(IProveedorService proveedorService) // <-- CAMBIO
+        public ProveedorController(IProveedorService proveedorService) 
         {
             _proveedorService = proveedorService;
-            // _dbContext = dbContext; // <-- SE VA
         }
 
-        // ... (ListaProveedores y GetProveedorParaEditar se quedan igual) ...
         [HttpGet]
         public async Task<IActionResult> ListaProveedores()
         {
@@ -38,7 +34,13 @@ namespace AROCONSTRUCCIONES.Controllers
             if (viewModel == null) return NotFound();
             return PartialView("_ProveedorFormPartial", viewModel);
         }
-
+        [HttpGet]
+        public async Task<IActionResult> Create()
+        {
+            // Pasamos ID 0 al servicio para que nos devuelva un ViewModel limpio para un nuevo proveedor
+            var viewModel = await _proveedorService.GetEdicionProveedorAsync(0);
+            return PartialView("_ProveedorFormPartial", viewModel);
+        }
 
         // --- ACCIONES DE ESCRITURA (AHORA "THIN") ---
 

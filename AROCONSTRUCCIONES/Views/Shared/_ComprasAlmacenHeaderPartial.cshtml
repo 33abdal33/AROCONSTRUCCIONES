@@ -1,77 +1,105 @@
 ﻿@model AROCONSTRUCCIONES.Dtos.LogisticaDashboardDto
-@{
-    // Esta vista recibe 'LogisticaDashboardDto'
-}
 
-<!--
-    Este es el Header de "Compras y Almacén" reescrito con Tailwind CSS
-    para que coincida con tu nuevo _Layout.cshtml y la imagen de diseño.
--->
-
-<div class="mb-6">
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
     <div>
-        <h2 class="text-2xl font-semibold text-slate-800">Compras y Almacén</h2>
-        <p class="text-slate-500">Gestión de inventario, proveedores y órdenes de compra</p>
+        <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Módulo Operativo</span>
+        <h2 class="text-4xl font-extrabold text-slate-800">Logística y Almacén</h2>
+        <p class="text-base text-slate-500 font-medium mt-2">Control de existencias, suministros y cadena de abastecimiento.</p>
+    </div>
+
+    @* Tag de estado del sistema más legible *@
+    <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm font-semibold text-sm text-slate-700">
+        <span class="relative flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+        </span>
+        Sincronizado
     </div>
 </div>
 
-<!-- Contenedor de las 4 Tarjetas (KPIs) -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
 
-    <!-- Tarjeta 1: Valor Inventario -->
-    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+    <div class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+        <div class="flex justify-between items-start mb-5">
+            <div class="p-4 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors shadow-sm">
+                <i class="fas fa-boxes-stacked text-2xl"></i>
+            </div>
+        </div>
         <div>
-            <p class="text-sm font-medium text-slate-500">Valor Inventario</p>
-            <p class="text-3xl font-bold text-slate-800">
+            @* Etiqueta más grande y menos estirada *@
+            <p class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">Valor Inventario</p>
+            @* Número principal más grande *@
+            <h3 class="text-4xl font-extrabold text-slate-800">
                 @Model.ValorInventario.ToString("C2", System.Globalization.CultureInfo.CreateSpecificCulture("es-PE"))
+            </h3>
+            <div class="flex items-center mt-4">
+                <span class="text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-lg">
+                    VALORIZADO AL COSTO
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+        <div class="flex justify-between items-start mb-5">
+            <div class="p-4 bg-amber-50 text-amber-600 rounded-2xl group-hover:bg-amber-500 group-hover:text-white transition-colors shadow-sm">
+                <i class="fas fa-shopping-cart text-2xl"></i>
+            </div>
+            <div class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-lg">
+                PENDIENTES
+            </div>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">Órdenes Activas</p>
+            <h3 class="text-4xl font-extrabold text-slate-800">@Model.OrdenesPendientes</h3>
+            <p class="text-sm text-slate-500 mt-4 font-medium flex items-center">
+                <i class="fas fa-info-circle mr-2 text-amber-500"></i> Por aprobar o recepcionar
             </p>
-            <p class="text-xs text-slate-400">Valorizado al costo</p>
-        </div>
-        <div class="text-4xl text-blue-500 opacity-70">
-            <i class="fas fa-box-open"></i>
         </div>
     </div>
 
-    <!-- Tarjeta 2: Órdenes Pendientes -->
-    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-slate-500">Órdenes Pendientes</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.OrdenesPendientes</p>
-            <p class="text-xs text-slate-400">Por aprobar y recepcionar</p>
+    <div class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+        <div class="flex justify-between items-start mb-5">
+            <div class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-600 group-hover:text-white transition-colors shadow-sm">
+                <i class="fas fa-exchange-alt text-2xl"></i>
+            </div>
         </div>
-        <div class="text-4xl text-amber-500 opacity-70">
-            <i class="fas fa-shopping-cart"></i>
+        <div>
+            <p class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">Flujo Mensual</p>
+            <h3 class="text-4xl font-extrabold text-slate-800">@Model.MovimientosMes</h3>
+
+            <div class="mt-4 w-full bg-slate-100 rounded-full h-2">
+                <div class="bg-emerald-500 h-2 rounded-full" style="width: 65%"></div>
+            </div>
+            <p class="text-sm text-slate-500 mt-3 font-medium">Ingresos y salidas (Últ. 30 días)</p>
         </div>
     </div>
 
-    <!-- Tarjeta 3: Movimientos del Mes -->
-    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-slate-500">Movimientos (30 días)</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.MovimientosMes</p>
-            <p class="text-xs text-slate-400">Ingresos y salidas</p>
+    <div class="group bg-white p-6 rounded-2xl shadow-sm border @(Model.AlertasStock > 0 ? "border-rose-200 bg-rose-50/30" : "border-slate-100") hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+        <div class="flex justify-between items-start mb-5">
+            <div class="p-4 @(Model.AlertasStock > 0 ? "bg-rose-100 text-rose-600 shadow-rose-100" : "bg-slate-100 text-slate-400") rounded-2xl transition-colors shadow-sm">
+                <i class="fas fa-triangle-exclamation text-2xl"></i>
+            </div>
+            @if (Model.AlertasStock > 0)
+            {
+                <span class="animate-pulse bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">
+                    CRÍTICO
+                </span>
+            }
         </div>
-        <div class="text-4xl text-green-500 opacity-70">
-            <i class="fas fa-chart-line"></i>
+        <div>
+            <p class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">Alertas de Stock</p>
+            <h3 class="text-4xl font-extrabold @(Model.AlertasStock > 0 ? "text-rose-700" : "text-slate-800")">
+                @Model.AlertasStock
+            </h3>
+            <p class="text-sm @(Model.AlertasStock > 0 ? "text-rose-700 font-bold" : "text-slate-500 font-medium") mt-4 flex items-center">
+                @if (Model.AlertasStock > 0)
+                {
+                    <i class="fas fa-arrow-down mr-2"></i>
+                }
+                @(Model.AlertasStock > 0 ? "Materiales bajo el stock mínimo" : "Niveles de stock óptimos")
+            </p>
         </div>
     </div>
 
-    <!-- Tarjeta 4: Alertas de Stock -->
-    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-slate-500">Alertas de Stock</p>
-            <p class="text-3xl font-bold text-red-600">@Model.AlertasStock</p>
-            <p class="text-xs text-red-500">Materiales bajo mínimo</p>
-        </div>
-        <div class="text-4xl text-red-500 opacity-70">
-            <i class="fas fa-exclamation-triangle"></i>
-        </div>
-    </div>
 </div>
-
-<!--
-    NOTA: He eliminado la barra de búsqueda y filtros de este archivo.
-    En el diseño que te gustó, esos filtros están DENTRO de la pestaña
-    "Inventario de Materiales", no en el header general.
-    Los añadiremos a '_InventarioTablePartial.cshtml' después.
--->

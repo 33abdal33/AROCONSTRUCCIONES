@@ -1,107 +1,120 @@
 ﻿@using AROCONSTRUCCIONES.Dtos
 @{
     ViewData["Title"] = "Logística y Almacén";
-
-    // Obtenemos los datos del dashboard para las mini-cards del header
     var dashboard = ViewBag.DashboardData as LogisticaDashboardDto ?? new LogisticaDashboardDto();
 }
 
+@* Header con KPIs resumidos *@
 <partial name="_ComprasAlmacenHeaderPartial" model="dashboard" />
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h4 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">
-            <i class="fas fa-chart-pie mr-2 text-blue-500"></i> Inversión por Almacén (S/.)
-        </h4>
-        <div class="h-64">
-            <canvas id="chartInversionAlmacen"></canvas>
+<div class="p-6 bg-slate-50 min-h-screen">
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 transition-all hover:shadow-md">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest">Distribución de Activos</h4>
+                    <h5 class="text-lg font-bold text-slate-700">Inversión por Almacén</h5>
+                </div>
+                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+            </div>
+            <div class="h-72 w-full">
+                <canvas id="chartInversionAlmacen"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 transition-all hover:shadow-md">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest">Consumo Crítico</h4>
+                    <h5 class="text-lg font-bold text-slate-700">Top 5 Materiales del Mes</h5>
+                </div>
+                <div class="p-2 bg-green-50 text-green-600 rounded-lg">
+                    <i class="fas fa-trending-up"></i>
+                </div>
+            </div>
+            <div class="h-72 w-full">
+                <canvas id="chartTopConsumo"></canvas>
+            </div>
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h4 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">
-            <i class="fas fa-chart-bar mr-2 text-green-500"></i> Top 5 Materiales más Consumidos
-        </h4>
-        <div class="h-64">
-            <canvas id="chartTopConsumo"></canvas>
-        </div>
-    </div>
-</div>
+    <div x-data="{ activeTab: 'inventario' }" class="w-full">
 
-<div x-data="{ activeTab: 'inventario' }" class="w-full mt-6">
+        <div class="mb-6 overflow-x-auto pb-2">
+            <nav class="flex space-x-1 bg-slate-200/50 p-1.5 rounded-xl w-max min-w-full md:min-w-0" aria-label="Tabs">
 
-    <div class="flex space-x-2">
-        <nav class="inline-flex h-10 items-center justify-center rounded-lg bg-gray-200 p-1 text-gray-600" aria-label="Tabs">
+                @{
+                    const string baseClasses = "flex items-center justify-center px-4 py-2.5 text-xs font-bold uppercase tracking-tight rounded-lg transition-all duration-200 focus:outline-none whitespace-nowrap";
+                    const string activeStyle = "bg-white text-indigo-700 shadow-sm ring-1 ring-black/5";
+                    const string inactiveStyle = "text-slate-500 hover:text-slate-700 hover:bg-white/40";
+                }
 
-            @{
-                const string activeStyle = "bg-white text-gray-900 shadow-sm";
-                const string inactiveStyle = "text-gray-600 hover:bg-white/50";
-                const string baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50";
-            }
-
-            <button x-on:click="activeTab = 'inventario'; loadTabContent('@Url.Action("InventarioPartial", "Inventario")', '#tab-content-container')"
-                    :class="{ '@activeStyle': activeTab === 'inventario', '@inactiveStyle': activeTab !== 'inventario' }"
-                    class="@baseClasses">
-                <i class="fas fa-boxes mr-2"></i> Inventario
-            </button>
-
-            <button x-on:click="activeTab = 'despachos'; loadTabContent('@Url.Action("ListaPendientesDespachoPartial", "Inventario")', '#tab-content-container')"
-                    :class="{ '@activeStyle': activeTab === 'despachos', '@inactiveStyle': activeTab !== 'despachos' }"
-                    class="@baseClasses">
-                <i class="fas fa-truck-loading mr-2 text-amber-600"></i> Atención Pedidos
-            </button>
-
-            @if (User.IsInRole("Administrador") || User.IsInRole("Usuario"))
-            {
-                <button x-on:click="activeTab = 'aprobados'; loadTabContent('@Url.Action("ListaRequerimientosAprobadosPartial", "Inventario")', '#tab-content-container')"
-                        :class="{ '@activeStyle': activeTab === 'aprobados', '@inactiveStyle': activeTab !== 'aprobados' }"
-                        class="@baseClasses">
-                    <i class="fas fa-check-double mr-2 text-green-500"></i> Por Comprar
+                <button x-on:click="activeTab = 'inventario'; loadTabContent('@Url.Action("InventarioPartial", "Inventario")', '#tab-content-container')"
+                        :class="activeTab === 'inventario' ? '@activeStyle' : '@inactiveStyle'" class="@baseClasses">
+                    <i class="fas fa-boxes mr-2"></i> Inventario
                 </button>
-            }
 
-            <button x-on:click="activeTab = 'movimientos'; loadTabContent('@Url.Action("TablaMovimientosPartial", "MovimientoInventario")', '#tab-content-container')"
-                    :class="{ '@activeStyle': activeTab === 'movimientos', '@inactiveStyle': activeTab !== 'movimientos' }"
-                    class="@baseClasses">
-                <i class="fas fa-dolly mr-2"></i> Movimientos
-            </button>
+                <button x-on:click="activeTab = 'despachos'; loadTabContent('@Url.Action("ListaPendientesDespachoPartial", "Inventario")', '#tab-content-container')"
+                        :class="activeTab === 'despachos' ? '@activeStyle' : '@inactiveStyle'" class="@baseClasses">
+                    <i class="fas fa-truck-loading mr-2"></i> Atender Pedidos
+                </button>
 
-            <button x-on:click="activeTab = 'materiales'; loadTabContent('@Url.Action("ListaMateriales", "Material")', '#tab-content-container')"
-                    :class="{ '@activeStyle': activeTab === 'materiales', '@inactiveStyle': activeTab !== 'materiales' }"
-                    class="@baseClasses">
-                <i class="fas fa-cube mr-2"></i> Catálogo
-            </button>
-            <!-- Pestaña 4: Órdenes de Compra -->
-            <button x-on:click="activeTab = 'ordenes'; loadTabContent('@Url.Action("ListaOrdenes", "OrdenCompra")', '#tab-content-container')"
-                    :class="{ '@activeStyle': activeTab === 'ordenes', '@inactiveStyle': activeTab !== 'ordenes' }"
-                    class="@baseClasses">
-                <i class="fas fa-file-invoice mr-2"></i> Órdenes de Compra
-            </button>
+                @if (User.IsInRole("Administrador") || User.IsInRole("Usuario"))
+                {
+                    <button x-on:click="activeTab = 'aprobados'; loadTabContent('@Url.Action("ListaRequerimientosAprobadosPartial", "Inventario")', '#tab-content-container')"
+                            :class="activeTab === 'aprobados' ? '@activeStyle' : '@inactiveStyle'" class="@baseClasses">
+                        <i class="fas fa-shopping-basket mr-2"></i> Por Comprar
+                    </button>
+                }
 
-            <button x-on:click="activeTab = 'almacenes'; loadTabContent('@Url.Action("ListaAlmacenes", "Almacen")', '#tab-content-container')"
-                    :class="{ '@activeStyle': activeTab === 'almacenes', '@inactiveStyle': activeTab !== 'almacenes' }"
-                    class="@baseClasses">
-                <i class="fas fa-warehouse mr-2"></i> Almacenes
-            </button>
+                <button x-on:click="activeTab = 'movimientos'; loadTabContent('@Url.Action("TablaMovimientosPartial", "MovimientoInventario")', '#tab-content-container')"
+                        :class="activeTab === 'movimientos' ? '@activeStyle' : '@inactiveStyle'" class="@baseClasses">
+                    <i class="fas fa-exchange-alt mr-2"></i> Movimientos
+                </button>
 
-            <button x-on:click="activeTab = 'reportes'; loadTabContent('@Url.Action("Index", "ReportesLogistica")', '#tab-content-container')"
-                    :class="{ '@activeStyle': activeTab === 'reportes', '@inactiveStyle': activeTab !== 'reportes' }"
-                    class="@baseClasses">
-                <i class="fas fa-chart-pie mr-2 text-blue-600"></i> Reportes
-            </button>
+                <button x-on:click="activeTab = 'ordenes'; loadTabContent('@Url.Action("ListaOrdenes", "OrdenCompra")', '#tab-content-container')"
+                        :class="activeTab === 'ordenes' ? '@activeStyle' : '@inactiveStyle'" class="@baseClasses">
+                    <i class="fas fa-file-invoice-dollar mr-2"></i> Órdenes Compra
+                </button>
 
+                <button x-on:click="activeTab = 'proveedores'; loadTabContent('@Url.Action("ListaProveedores", "Proveedor")', '#tab-content-container')"
+                        :class="activeTab === 'proveedores' ? '@activeStyle' : '@inactiveStyle'" class="@baseClasses">
+                    <i class="fas fa-handshake mr-2"></i> Proveedores
+                </button>
 
-        </nav>
-    </div>
+                <button x-on:click="activeTab = 'almacenes'; loadTabContent('@Url.Action("ListaAlmacenes", "Almacen")', '#tab-content-container')"
+                        :class="{ '@activeStyle': activeTab === 'almacenes', '@inactiveStyle': activeTab !== 'almacenes' }"
+                        class="@baseClasses">
+                    <i class="fas fa-warehouse mr-2"></i> Almacenes
+                </button>
+                <button x-on:click="activeTab = 'materiales'; loadTabContent('@Url.Action("ListaMateriales", "Material")', '#tab-content-container')"
+                        :class="activeTab === 'materiales' ? '@activeStyle' : '@inactiveStyle'" class="@baseClasses">
+                    <i class="fas fa-tags mr-2"></i> Catálogo
+                </button>
 
-    <div id="tab-content-container" class="mt-6 bg-white p-4 rounded-lg shadow-sm border border-slate-100 min-h-[400px]">
-        <div class="flex items-center justify-center h-48 text-slate-400">
-            <i class="fas fa-spinner fa-spin mr-2"></i> Cargando información...
+                <button x-on:click="activeTab = 'reportes'; loadTabContent('@Url.Action("Index", "ReportesLogistica")', '#tab-content-container')"
+                        :class="activeTab === 'reportes' ? '@activeStyle' : '@inactiveStyle'" class="@baseClasses">
+                    <i class="fas fa-file-chart-line mr-2 text-rose-500"></i> Reportes
+                </button>
+            </nav>
         </div>
+
+        <div id="tab-content-container" class="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200 min-h-[500px] transition-all duration-300">
+            <div class="flex flex-col items-center justify-center h-64 text-slate-400">
+                <div class="relative w-16 h-16 mb-4">
+                    <div class="absolute inset-0 rounded-full border-4 border-slate-100"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+                </div>
+                <p class="font-bold text-sm uppercase tracking-widest animate-pulse">Sincronizando Almacén...</p>
+            </div>
+        </div>
+
     </div>
 
     <div id="modal-placeholder"></div>
-
 </div>
 
 @section Scripts {
@@ -111,7 +124,11 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     <script>
-        // --- 1. FUNCIÓN GLOBAL PARA MODALES (Accesible desde cualquier parcial) ---
+        // --- 1. CONFIGURACIÓN GLOBAL DE CHART.JS ---
+        Chart.defaults.font.family = "'Inter', 'system-ui', '-apple-system', 'sans-serif'";
+        Chart.defaults.color = '#64748b';
+
+        // --- 2. GESTIÓN DE MODALES ---
         function cargarModalMovimiento(tipo) {
             let url = (tipo === 'transferencia')
                 ? '@Url.Action("GetTransferenciaModal", "MovimientoInventario")'
@@ -121,7 +138,7 @@
                 $('#modal-placeholder').html(data);
             });
         }
-        // --- 2. GESTIÓN DE DESPACHO (ATENCIÓN DE REQUERIMIENTO) ---
+
         function cargarModalDespacho(requerimientoId) {
             const url = '@Url.Action("GetDespachoRequerimientoModal", "Inventario")/' + requerimientoId;
             $.get(url, function (data) {
@@ -131,75 +148,49 @@
             });
         }
 
-        // Esta función procesa el formulario masivo del modal que creamos antes
-        $(document).on('submit', '#formDespachoMasivo', function (e) {
-            e.preventDefault();
-            const $form = $(this);
-
-            Swal.fire({
-                title: '¿Confirmar Salida?',
-                text: "Se actualizará el stock de los materiales seleccionados.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#10b981',
-                confirmButtonText: 'Sí, despachar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: $form.attr('action'),
-                        type: 'POST',
-                        data: $form.serialize(),
-                        success: function (res) {
-                            if (res.success) {
-                                Swal.fire('¡Éxito!', res.message, 'success').then(() => {
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire('Error', res.message, 'error');
-                            }
-                        }
-                    });
-                }
-            });
-        });
-
-        // --- 2. INICIALIZACIÓN DE GRÁFICOS (Chart.js) ---
+        // --- 3. INICIALIZACIÓN DE GRÁFICOS ---
         function inicializarGraficosDashboard() {
             $.get('@Url.Action("GetLogisticaChartData", "Dashboard")', function(response) {
 
-                // Gráfico 1: Inversión por Almacén
+                // Inversión por Almacén (Doughnut)
                 new Chart(document.getElementById('chartInversionAlmacen'), {
                     type: 'doughnut',
                     data: {
                         labels: response.inversionPorAlmacen.map(x => x.label),
                         datasets: [{
                             data: response.inversionPorAlmacen.map(x => x.value),
-                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
-                            borderWidth: 0
+                            backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                            borderWidth: 0,
+                            hoverOffset: 10
                         }]
                     },
                     options: {
                         maintainAspectRatio: false,
-                        plugins: { legend: { position: 'bottom' } }
+                        cutout: '75%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { weight: 'bold', size: 11 } } }
+                        }
                     }
                 });
 
-                // Gráfico 2: Top Consumo Materiales
+                // Top Consumo (Bar)
                 new Chart(document.getElementById('chartTopConsumo'), {
                     type: 'bar',
                     data: {
                         labels: response.consumoTopMateriales.map(x => x.label),
                         datasets: [{
-                            label: 'Gasto Acumulado (S/.)',
+                            label: 'Gasto (S/.)',
                             data: response.consumoTopMateriales.map(x => x.value),
-                            backgroundColor: '#3b82f6',
-                            borderRadius: 6
+                            backgroundColor: '#4f46e5',
+                            borderRadius: 10,
+                            barThickness: 25
                         }]
                     },
                     options: {
                         maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
                         scales: {
-                            y: { beginAtZero: true, grid: { display: false } },
+                            y: { beginAtZero: true, grid: { borderDash: [5, 5], drawBorder: false } },
                             x: { grid: { display: false } }
                         }
                     }
@@ -207,13 +198,10 @@
             });
         }
 
-        // --- 3. CARGA INICIAL ---
         $(document).ready(function () {
-             inicializarGraficosDashboard();
-
-             // Cargar pestaña inicial basada en TempData o por defecto Inventario
-             const initialUrl = '@Url.Action("InventarioPartial", "Inventario")';
-             loadTabContent(initialUrl, '#tab-content-container');
-         });
+            inicializarGraficosDashboard();
+            const initialUrl = '@Url.Action("InventarioPartial", "Inventario")';
+            loadTabContent(initialUrl, '#tab-content-container');
+        });
     </script>
 }

@@ -67,14 +67,22 @@ namespace AROCONSTRUCCIONES.Controllers
                 return View();
             }
         }
-
         // --- 📥 CARGA DE TABLA DE STOCK (CON FILTRO) ---
         [HttpGet]
         public async Task<IActionResult> InventarioPartial(int? proyectoId)
         {
+            // 1. Cargamos los datos del inventario
             var saldos = await _inventarioService.GetAllStockViewAsync();
+
+            // 2. Aplicamos el filtro si existe
             if (proyectoId.HasValue && proyectoId > 0)
-                saldos = saldos.Where(s => s.ProyectoId == proyectoId.Value);
+            {
+                saldos = saldos.Where(s => s.ProyectoId == proyectoId.Value).ToList();
+            }
+
+            // 3. ¡ESTA ES LA PARTE QUE FALTABA! 
+            // Cargamos los selectores para que la vista parcial no falle al renderizar el dropdown
+            await LoadModalSelectLists();
 
             return PartialView("_InventarioTablePartial", saldos);
         }
@@ -102,36 +110,53 @@ namespace AROCONSTRUCCIONES.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ProcesarDespacho(int RequerimientoId, int AlmacenId, string NroFacturaGuia, List<ItemDespachoDto> items)
         {
+            // Iniciamos una transacción para que si falla el stock, se deshaga el cambio en el REQ
+            using var transaction = await _unitOfWork.Context.Database.BeginTransactionAsync();
             try
             {
                 if (items == null || !items.Any(i => i.CantidadADespachar > 0))
-                    return Json(new { success = false, message = "Debe ingresar al menos una cantidad válida para despachar." });
+                    return Json(new { success = false, message = "Ingrese cantidades válidas." });
 
                 foreach (var item in items.Where(i => i.CantidadADespachar > 0))
                 {
                     var movDto = new MovimientoInventarioDto
                     {
                         TipoMovimiento = "SALIDA",
+
                         Motivo = "CONSUMO_PROYECTO",
+
                         AlmacenId = AlmacenId,
+
                         MaterialId = item.MaterialId,
+
                         Cantidad = item.CantidadADespachar,
+
                         DetalleRequerimientoId = item.DetalleRequerimientoId,
+
                         NroFacturaGuia = NroFacturaGuia,
+
                         ProyectoId = (await _unitOfWork.Requerimientos.GetByIdAsync(RequerimientoId))?.IdProyecto,
+
                         FechaMovimiento = DateTime.Now,
+
                         ResponsableNombre = User.Identity?.Name ?? "Almacenero"
                     };
 
+                    // Aquí el servicio DEBE lanzar una excepción si no hay stock
                     await _movimientoInventarioServices.RegistrarSalida(movDto);
                 }
 
-                return Json(new { success = true, message = "¡Despacho procesado y stock actualizado correctamente!" });
+                // Si todo salió bien, guardamos definitivamente
+                await _unitOfWork.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Json(new { success = true, message = "Despacho procesado correctamente." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al procesar el despacho masivo");
-                return Json(new { success = false, message = $"Error en despacho: {ex.Message}" });
+                // SI HAY ERROR (como falta de stock), deshacemos todo lo que se cambió en el REQ
+                await transaction.RollbackAsync();
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
             }
         }
 

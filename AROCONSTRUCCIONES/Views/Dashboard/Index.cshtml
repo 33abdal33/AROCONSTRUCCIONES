@@ -1,137 +1,238 @@
 ﻿@{
-    // Esta vista no necesita un @model, ya que es estática (por ahora)
     ViewData["Title"] = "Dashboard Ejecutivo";
 }
 
-<div class="container-fluid">
-
-    <div class="row mb-4 align-items-center">
-        <div class="col-8">
-            <h1 class="display-6">Dashboard Ejecutivo</h1>
-            <p class="text-muted">Resumen general de proyectos y operaciones de AroConstrucciones</p>
+<div class="p-6 bg-slate-50 min-h-screen">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Dashboard Ejecutivo</h1>
+            <p class="text-slate-500 flex items-center mt-1">
+                <i class="fas fa-calendar-alt mr-2"></i> @DateTime.Now.ToString("dd MMMM, yyyy") — Resumen Operativo
+            </p>
         </div>
-        <div class="col-4">
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="Buscar proyectos, proveedores...">
-                <button class="btn btn-outline-secondary" type="button"><i class="bi bi-search"></i></button>
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <div class="relative w-full md:w-64">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm transition-all" placeholder="Buscar reporte...">
+            </div>
+            <button class="flex-shrink-0 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center">
+                <i class="fas fa-file-pdf mr-2"></i> Exportar
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                    <i class="fas fa-project-diagram text-xl"></i>
+                </div>
+                <span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">+2 nuevos</span>
+            </div>
+            <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Proyectos Activos</p>
+            <h3 class="text-3xl font-black text-slate-800">05</h3>
+            <div class="mt-4">
+                <div class="w-full bg-slate-100 rounded-full h-1.5">
+                    <div class="bg-blue-600 h-1.5 rounded-full" style="width: 73%"></div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2 font-medium">73% de avance promedio</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-3 bg-green-50 text-green-600 rounded-xl">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+                <div class="text-green-600 text-sm font-bold flex items-center">
+                    <i class="fas fa-arrow-up mr-1 text-xs"></i> 5.2%
+                </div>
+            </div>
+            <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Eficiencia Obra</p>
+            <h3 class="text-3xl font-black text-slate-800">73.8%</h3>
+            <p class="text-[10px] text-slate-400 mt-4 font-medium italic">vs. mes anterior</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Personal Activo</p>
+            <h3 class="text-3xl font-black text-slate-800">142</h3>
+            <p class="text-[10px] text-slate-500 mt-4 font-medium underline decoration-amber-200">12 cuadrillas en campo</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-3 bg-rose-50 text-rose-600 rounded-xl">
+                    <i class="fas fa-wallet text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Inversión Total</p>
+            <h3 class="text-3xl font-black text-slate-800">S/ 2.8M</h3>
+            <p class="text-[10px] text-rose-500 mt-4 font-bold tracking-tight">ALERTA: Presupuesto materiales +12%</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex justify-between items-center mb-6">
+                <h5 class="font-bold text-slate-800">Avance de Proyectos</h5>
+                <select class="text-xs font-bold border-none bg-slate-50 rounded-lg text-slate-600 px-3 py-1 focus:ring-0">
+                    <option>Este Trimestre</option>
+                    <option>Este Año</option>
+                </select>
+            </div>
+            <div class="h-80 w-full p-2">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <h5 class="font-bold text-slate-800 mb-6 text-center text-sm uppercase tracking-widest">Inversión por Categoría</h5>
+            <div class="h-80 w-full p-4">
+                <canvas id="donutChart"></canvas>
             </div>
         </div>
     </div>
 
-    <hr class="mb-5" />
-
-    <div class="row mb-5">
-
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100 p-3 border-start border-primary border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h6 class="text-muted text-uppercase mb-2">Proyectos Activos</h6>
-                        <i class="bi bi-briefcase text-primary fs-4"></i>
-                    </div>
-                    <h3 class="card-title mb-0">5</h3>
-                    <p class="text-success fs-6">+2 este mes</p>
-                    <small class="text-muted">73% completados</small>
-                </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b border-slate-50">
+                <h5 class="font-bold text-slate-800">Actividad Reciente</h5>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <tr>
+                            <th class="px-6 py-4">Usuario</th>
+                            <th class="px-6 py-4">Acción</th>
+                            <th class="px-6 py-4">Módulo</th>
+                            <th class="px-6 py-4 text-right">Tiempo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold mr-3">JD</div>
+                                    <span class="text-sm font-bold text-slate-700">Juan Delgado</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">Aprobó Requerimiento</td>
+                            <td class="px-6 py-4">
+                                <span class="text-[10px] font-black px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md">LOGÍSTICA</span>
+                            </td>
+                            <td class="px-6 py-4 text-right text-xs text-slate-400 font-medium">Hace 5 min</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100 p-3 border-start border-success border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h6 class="text-muted text-uppercase mb-2">Avance General</h6>
-                        <i class="bi bi-graph-up-arrow text-success fs-4"></i>
-                    </div>
-                    <h3 class="card-title mb-0">73%</h3>
-                    <p class="text-success fs-6">+5% vs mes anterior</p>
-                    <small class="text-muted">En promedio</small>
+        <div class="bg-indigo-900 rounded-3xl p-8 shadow-xl shadow-indigo-100 text-white relative overflow-hidden">
+            <div class="relative z-10">
+                <h5 class="font-black text-xl mb-6 tracking-tight">Acceso Rápido</h5>
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="/Proyecto" class="flex flex-col items-center justify-center p-4 bg-white/10 rounded-2xl hover:bg-white/20 transition-all border border-white/10 group text-center">
+                        <i class="fas fa-plus-circle text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-tighter">Nuevo Proyecto</span>
+                    </a>
+                    <a href="/Inventario" class="flex flex-col items-center justify-center p-4 bg-white/10 rounded-2xl hover:bg-white/20 transition-all border border-white/10 group text-center">
+                        <i class="fas fa-boxes text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-tighter">Inventario</span>
+                    </a>
+                </div>
+                <div class="mt-8 pt-8 border-t border-white/10">
+                    <p class="text-xs text-indigo-200 leading-relaxed italic">
+                        "La excelencia operativa es el pilar de AroConstrucciones."
+                    </p>
                 </div>
             </div>
+            @* Decoración de fondo *@
+            <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
         </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100 p-3 border-start border-info border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h6 class="text-muted text-uppercase mb-2">Personal Activo</h6>
-                        <i class="bi bi-people text-info fs-4"></i>
-                    </div>
-                    <h3 class="card-title mb-0">142</h3>
-                    <p class="text-success fs-6">8 nuevos ingresos</p>
-                    <small class="text-muted">En todas las obras</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100 p-3 border-start border-warning border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h6 class="text-muted text-uppercase mb-2">Inversión Total</h6>
-                        <i class="bi bi-currency-dollar text-warning fs-4"></i>
-                    </div>
-                    <h3 class="card-title mb-0">$2.8M</h3>
-                    <p class="text-danger fs-6">$450K este mes</p>
-                    <small class="text-muted">Total acumulado</small>
-                </div>
-            </div>
-        </div>
-
     </div>
-
-    <div class="row mb-5">
-
-        <div class="col-md-6">
-            <div class="card shadow h-100 p-3">
-                <h5 class="card-title">Avance de Proyectos</h5>
-                <p class="text-muted">Comparativo planificado vs ejecutado (%)</p>
-
-                <div style="height: 300px; background-color: #f8f9fa; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center;">
-                    <p class="text-muted">Espacio para Gráfico de Barras</p>
-                </div>
-
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card shadow h-100 p-3">
-                <h5 class="card-title">Ejecución Presupuestaria</h5>
-                <p class="text-muted">Últimos 6 meses (USD)</p>
-
-                <div style="height: 300px; background-color: #f8f9fa; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center;">
-                    <p class="text-muted">Espacio para Gráfico de Líneas</p>
-                </div>
-
-            </div>
-        </div>
-
-    </div>
-
-    <div class="row mb-5">
-
-        <div class="col-md-8">
-            <div class="card shadow h-100 p-3">
-                <h5 class="card-title">Actividad Reciente</h5>
-                <p class="text-muted">Últimas actualizaciones del sistema</p>
-                <div style="height: 250px; background-color: #fff; border: 1px dashed #eee; display: flex; align-items: center; justify-content: center;">
-                    <p class="text-muted">Tabla de Logs o Transacciones</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card shadow h-100 p-3">
-                <h5 class="card-title">Acceso Rápido a Módulos</h5>
-                <p class="text-muted">Gestione todas las áreas de su empresa</p>
-                <div style="height: 250px; background-color: #fff; border: 1px dashed #eee; display: flex; align-items: center; justify-content: center;">
-                    <p class="text-muted">Enlaces de Acceso Rápido</p>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
 </div>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // --- 1. GRÁFICO DE BARRAS (AVANCE DE PROYECTOS) ---
+            const ctxMain = document.getElementById('mainChart').getContext('2d');
+            new Chart(ctxMain, {
+                type: 'bar',
+                data: {
+                    labels: ['Edificio Olivos', 'Puente Miraflores', 'Residencial Arona', 'Alameda Central', 'Torre Aro'],
+                    datasets: [
+                        {
+                            label: 'Avance Real (%)',
+                            data: [73, 85, 40, 55, 30],
+                            backgroundColor: '#4f46e5', // Indigo 600
+                            borderRadius: 8,
+                            barPercentage: 0.6
+                        },
+                        {
+                            label: 'Planificado (%)',
+                            data: [80, 90, 50, 60, 45],
+                            backgroundColor: '#e2e8f0', // Slate 200
+                            borderRadius: 8,
+                            barPercentage: 0.6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'bottom', labels: { usePointStyle: true, font: { weight: 'bold' } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // --- 2. GRÁFICO CIRCULAR (INVERSIÓN POR CATEGORÍA) ---
+            const ctxDonut = document.getElementById('donutChart').getContext('2d');
+            new Chart(ctxDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Materiales', 'Mano de Obra', 'Maquinaria', 'Varios'],
+                    datasets: [{
+                        data: [45, 30, 15, 10],
+                        backgroundColor: [
+                            '#4f46e5', // Indigo
+                            '#10b981', // Emerald
+                            '#f59e0b', // Amber
+                            '#f43f5e'  // Rose
+                        ],
+                        hoverOffset: 15,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%', // Hace que el centro sea más grande (estilo moderno)
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: { size: 11, weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
