@@ -139,5 +139,14 @@ namespace AROCONSTRUCCIONES.Services.Implementation
                 throw;
             }
         }
+        public async Task<OrdenCompra> GetByIdWithDetailsAsync(int id)
+        {
+            return await _unitOfWork.Context.OrdenesCompra
+                .Include(o => o.Proveedor)
+                .Include(o => o.Proyecto)
+                .Include(o => o.Detalles)
+                    .ThenInclude(d => d.Material)
+                .FirstOrDefaultAsync(o => o.Id == id);
+        }
     }
 }

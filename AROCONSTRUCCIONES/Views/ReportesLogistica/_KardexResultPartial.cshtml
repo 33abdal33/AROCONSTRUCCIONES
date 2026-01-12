@@ -5,126 +5,205 @@
     var saldo = ViewData["Saldo"] as InventarioDto;
 }
 
-@* 1. Barra de Acciones y Título *@
-<div class="flex flex-col md:flex-row justify-between items-end gap-4 mb-4 mt-6">
-    <div>
-        <h3 class="text-xl font-bold text-slate-800">Trazabilidad de Inventario (Kárdex)</h3>
-        <p class="text-sm text-slate-500">Historial cronológico de movimientos y saldos calculados</p>
+@* 1. ESTILOS DE LIMPIEZA (Para consistencia visual) *@
+<style>
+    #tablaKardexReporte {
+        border-bottom: none !important;
+    }
+
+        #tablaKardexReporte thead th {
+            border-bottom: none !important;
+            letter-spacing: normal !important;
+        }
+
+        #tablaKardexReporte.no-footer {
+            border-bottom: none !important;
+        }
+
+        #tablaKardexReporte tbody tr:last-child td {
+            border-bottom: none !important;
+        }
+</style>
+
+<div class="animate-in fade-in zoom-in duration-300">
+    @* 2. Encabezado de Reporte *@
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+            <h3 class="text-2xl font-bold text-slate-800 tracking-tight">Análisis de Trazabilidad</h3>
+            <p class="text-sm font-medium text-slate-500">Historial cronológico detallado de ingresos y salidas.</p>
+        </div>
+
+        <button onclick="window.print()"
+                class="flex items-center px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-lg transition-all gap-2 uppercase tracking-wide">
+            <i class="fas fa-print"></i>
+            Exportar a PDF
+        </button>
     </div>
-    
-    @* BOTÓN DE EXPORTACIÓN (Opcional si decides crear la acción en el controlador) *@
-    <button onclick="window.print()" 
-            class="inline-flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-bold rounded-lg shadow-md transition-all">
-        <i class="fas fa-print mr-2"></i> 
-        Imprimir Kárdex
-    </button>
-</div>
 
-@* 2. Panel de Información del Material (Estilo Cards) *@
-@if (saldo != null)
-{
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <p class="text-slate-400 text-[10px] font-bold uppercase">Material</p>
-            <p class="text-sm font-bold text-slate-800 truncate">@saldo.MaterialNombre</p>
-            <p class="text-[10px] font-mono text-blue-600">@saldo.MaterialCodigo</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <p class="text-slate-400 text-[10px] font-bold uppercase">Ubicación</p>
-            <p class="text-sm font-bold text-slate-800">@saldo.AlmacenUbicacion</p>
-            <p class="text-[10px] text-slate-400 italic">Almacén Activo</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border-l-4 border-green-500 shadow-sm">
-            <p class="text-green-600 text-[10px] font-bold uppercase">Stock Disponible</p>
-            <p class="text-xl font-black text-slate-900">@saldo.StockActual.ToString("N2")</p>
-            <p class="text-[10px] text-slate-400 font-bold">@saldo.MaterialUnidadMedida</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border-l-4 border-blue-500 shadow-sm">
-            <p class="text-blue-600 text-[10px] font-bold uppercase">Valorización Actual</p>
-            <p class="text-xl font-black text-slate-900">S/. @saldo.ValorTotal.ToString("N2")</p>
-            <p class="text-[10px] text-slate-400 font-bold">CPP: S/. @saldo.CostoPromedio.ToString("N4")</p>
-        </div>
-    </div>
-}
+    @* 3. Resumen Ejecutivo del Material (KPI Cards) *@
+    @if (saldo != null)
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            <div class="bg-indigo-50/50 p-5 rounded-3xl border border-indigo-100/50">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow-sm shadow-indigo-200">
+                        <i class="fas fa-cube text-xs"></i>
+                    </div>
+                    <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Material</span>
+                </div>
+                <p class="text-sm font-bold text-slate-800 truncate">@saldo.MaterialNombre</p>
+                <p class="text-[11px] font-mono font-bold text-slate-400 mt-1">ID: @saldo.MaterialCodigo</p>
+            </div>
 
-@* 3. Tabla de Movimientos *@
-<div class="bg-white rounded-lg shadow-md overflow-hidden border border-slate-200">
-    <div class="overflow-x-auto">
-        <table class="min-w-full text-left" id="tablaKardexReporte">
-            <thead class="bg-slate-800 text-white uppercase text-[11px] font-bold">
-                <tr>
-                    <th class="px-6 py-4">Fecha y Hora</th>
-                    <th class="px-6 py-4 text-center">Tipo</th>
-                    <th class="px-6 py-4 text-right">Cantidad</th>
-                    <th class="px-6 py-4 text-right">Costo Mov.</th>
-                    <th class="px-6 py-4 text-right bg-slate-700">Saldo Final</th>
-                    <th class="px-6 py-4">Documento / Motivo</th>
-                    <th class="px-6 py-4">Responsable</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @if (Model != null && Model.Any())
-                {
-                    @foreach (var mov in Model.OrderByDescending(x => x.FechaMovimiento))
-                    {
-                        bool esEntrada = mov.TipoMovimiento == "INGRESO";
-                        var badgeClass = esEntrada ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700";
-                        var textClass = esEntrada ? "text-green-600" : "text-red-600";
-                        var signo = esEntrada ? "+" : "-";
+            <div class="bg-slate-50 p-5 rounded-3xl border border-slate-200/60">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 bg-slate-400 text-white rounded-lg flex items-center justify-center shadow-sm">
+                        <i class="fas fa-map-marker-alt text-xs"></i>
+                    </div>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ubicación</span>
+                </div>
+                <p class="text-sm font-bold text-slate-700 italic">@saldo.AlmacenUbicacion</p>
+                <p class="text-[11px] font-bold text-slate-400 mt-1 uppercase">Almacén Activo</p>
+            </div>
 
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
-                                @mov.FechaMovimiento.ToString("dd/MM/yyyy HH:mm")
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase @badgeClass">
-                                    @(esEntrada ? "Entrada" : "Salida")
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <span class="font-mono font-bold @textClass">
-                                    @signo@mov.Cantidad.ToString("N2")
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right text-xs text-slate-500">
-                                S/. @mov.CostoUnitarioMovimiento.ToString("N4")
-                            </td>
-                            <td class="px-6 py-4 text-right bg-slate-50/50 font-black text-slate-900">
-                                @mov.StockFinal.ToString("N2")
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-xs font-bold text-slate-700">@mov.Motivo</div>
-                                <div class="text-[10px] text-slate-400 font-mono">DOC: @(string.IsNullOrEmpty(mov.NroFacturaGuia) ? "S/N" : mov.NroFacturaGuia)</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-[11px] text-slate-500">
-                                <i class="fas fa-user-circle mr-1"></i> @mov.ResponsableNombre
-                            </td>
-                        </tr>
-                    }
-                }
-                else
-                {
+            <div class="bg-emerald-50 p-5 rounded-3xl border border-emerald-100">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 bg-emerald-500 text-white rounded-lg flex items-center justify-center shadow-sm shadow-emerald-100">
+                        <i class="fas fa-boxes text-xs"></i>
+                    </div>
+                    <span class="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Disponible</span>
+                </div>
+                <p class="text-2xl font-black text-slate-800">@saldo.StockActual.ToString("N2")</p>
+                <p class="text-[11px] font-bold text-emerald-600/70 uppercase">@saldo.MaterialUnidadMedida</p>
+            </div>
+
+            <div class="bg-amber-50 p-5 rounded-3xl border border-amber-100">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 bg-amber-500 text-white rounded-lg flex items-center justify-center shadow-sm shadow-amber-100">
+                        <i class="fas fa-coins text-xs"></i>
+                    </div>
+                    <span class="text-[10px] font-black text-amber-600 uppercase tracking-widest">Valorización</span>
+                </div>
+                <p class="text-2xl font-black text-slate-800">S/ @saldo.ValorTotal.ToString("N2")</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase">CPP: S/ @saldo.CostoPromedio.ToString("N4")</p>
+            </div>
+        </div>
+    }
+
+    @* 4. Tabla de Movimientos (Diseño Limpio) *@
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/30 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100" id="tablaKardexReporte">
+                <thead class="bg-slate-50">
                     <tr>
-                        <td colspan="7" class="px-6 py-10 text-center text-slate-400 italic">
-                            No se encontraron registros de movimientos para este material en el almacén seleccionado.
-                        </td>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Fecha / Hora</th>
+                        <th class="px-6 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">Operación</th>
+                        <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Cantidad</th>
+                        <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Costo Mov.</th>
+                        <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Stock Final</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Motivo / Documento</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Responsable</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="divide-y divide-slate-50 bg-white">
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var mov in Model.OrderByDescending(x => x.FechaMovimiento))
+                        {
+                            bool esEntrada = mov.TipoMovimiento == "INGRESO" || mov.TipoMovimiento == "TRANSFERENCIA_ENTRADA";
+                            var color = esEntrada ? "emerald" : "rose";
+                            var signo = esEntrada ? "+" : "-";
+
+                            <tr class="hover:bg-slate-50 transition-all group">
+                                <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-500">
+                                    @mov.FechaMovimiento.ToString("dd/MM/yyyy")
+                                    <span class="block text-[10px] font-normal text-slate-400 mt-0.5">@mov.FechaMovimiento.ToString("HH:mm") hrs</span>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-@color-100 text-@color-700 border border-@color-200/50">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-@color-500 mr-2"></span>
+                                        @(esEntrada ? "Entrada" : "Salida")
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="text-sm font-black text-@color-600">
+                                        @signo@mov.Cantidad.ToString("N2")
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right text-xs font-semibold text-slate-500">
+                                    S/ @mov.CostoUnitarioMovimiento.ToString("N4")
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="text-sm font-black text-slate-900">@mov.StockFinal.ToString("N2")</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-xs font-bold text-slate-700">@mov.Motivo</div>
+                                    <div class="text-[10px] text-slate-400 font-mono font-medium">DOC: @(string.IsNullOrEmpty(mov.NroFacturaGuia) ? "S/N" : mov.NroFacturaGuia)</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                                            @mov.ResponsableNombre.Substring(0, 1)
+                                        </div>
+                                        <span class="text-[11px] font-bold text-slate-600">@mov.ResponsableNombre</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* 5. Paginación personalizada (Misma lógica del Inventario) *@
+    <div class="mt-6 flex flex-col md:flex-row justify-between items-center px-4 gap-4">
+        <div id="kardexInfoContainer" class="text-xs font-bold text-slate-400 uppercase tracking-wider"></div>
+        <div id="kardexPaginationContainer" class="flex gap-1.5"></div>
     </div>
 </div>
-
 
 <script>
     $(document).ready(function() {
-        if (!$.fn.DataTable.isDataTable('#tablaKardexReporte')) {
-            $('#tablaKardexReporte').DataTable({
-                "language": { "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json" },
-                "pageLength": 15,
-                "order": [[0, "desc"]], // Fecha más reciente primero
-                "dom": 'rtip' // Ocultamos el buscador de datatables para usar un diseño más limpio
-            });
+        const table = $('#tablaKardexReporte').DataTable({
+            "dom": "t",
+            "pageLength": 10,
+            "destroy": true,
+            "language": { "zeroRecords": "No hay movimientos registrados para este criterio." },
+            "order": [[0, 'desc']],
+            "drawCallback": function(settings) {
+                const api = this.api();
+                const info = api.page.info();
+
+                $('#kardexInfoContainer').html(
+                    `REGISTROS: <span class="text-slate-800">${info.recordsTotal}</span> — PÁGINA <span class="text-slate-800">${info.page + 1}</span> DE <span class="text-slate-800">${info.pages}</span>`
+                );
+
+                renderKardexPagination(api);
+            }
+        });
+
+        function renderKardexPagination(api) {
+            const info = api.page.info();
+            let html = '';
+            if(info.pages <= 1) { $('#kardexPaginationContainer').html(''); return; }
+
+            html += `<button onclick="kardexPage('prev')" class="${info.page === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white border-slate-200'} p-2 rounded-lg border bg-slate-50 text-slate-600 transition-all"><i class="fas fa-chevron-left text-xs"></i></button>`;
+
+            for(let i = 0; i < info.pages; i++) {
+                const activeClass = i === info.page ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50';
+                html += `<button onclick="kardexGoTo(${i})" class="px-3.5 py-1.5 rounded-lg border font-bold text-xs transition-all ${activeClass}">${i + 1}</button>`;
+            }
+
+            html += `<button onclick="kardexPage('next')" class="${info.page === info.pages - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white border-slate-200'} p-2 rounded-lg border bg-slate-50 text-slate-600 transition-all"><i class="fas fa-chevron-right text-xs"></i></button>`;
+
+            $('#kardexPaginationContainer').html(html);
         }
+
+        window.kardexGoTo = function(idx) { table.page(idx).draw('page'); };
+        window.kardexPage = function(dir) {
+            if(dir === 'prev') table.page('previous').draw('page');
+            else table.page('next').draw('page');
+        };
     });
 </script>

@@ -6,182 +6,200 @@
     int initialCount = Model.Detalles != null ? Model.Detalles.Count : 0;
 }
 
-<div x-data="{ open: true }"
+<div x-data="{ open: true, moneda: 'PEN' }"
      x-show="open"
      x-cloak
-     class="fixed inset-0 z-50 overflow-y-auto">
+     class="fixed inset-0 z-[60] overflow-y-auto">
 
-    @* Fondo oscuro con desenfoque *@
-    <div class="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity"></div>
 
     <div class="flex items-center justify-center min-h-screen p-4">
-        <div @@click.away ="open = false"
-             class="relative bg-white rounded-xl shadow-2xl transform transition-all sm:my-8 sm:max-w-6xl sm:w-full border border-slate-200">
+        <div @@click.away="open = false"
+             class="relative bg-white rounded-[2.5rem] shadow-2xl transform transition-all sm:my-8 sm:max-w-6xl sm:w-full border border-slate-200 overflow-hidden">
 
-            <form asp-controller="OrdenCompra" asp-action="Create" method="post" id="formOrdenCompra">
+            <form asp-controller="OrdenCompra" asp-action="Create" method="post" id="formOrdenCompra" data-form-ajax="true">
                 @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="ProyectoId" />
+                <input type="hidden" asp-for="ProyectoId" />    
 
-                @* Cabecera *@
-                <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 rounded-t-xl flex justify-between items-center">
-                    <h3 class="text-xl font-bold text-slate-800 flex items-center">
-                        <i class="fas fa-file-invoice-dollar mr-3 text-blue-600"></i>
-                        Nueva Orden de Compra
-                    </h3>
-                    <button type="button" @@click ="open = false" class="text-slate-400 hover:text-slate-600 btn-cerrar-modal">
-                        <i class="fas fa-times text-2xl"></i>
+                <div class="bg-slate-50/80 px-10 py-8 border-b border-slate-100 flex justify-between items-center">
+                    <div class="flex items-center gap-5">
+                        <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-100">
+                            <i class="fas fa-file-invoice-dollar text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-800 tracking-tight uppercase">Nueva Orden de Compra</h3>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Emisión de documento comercial</p>
+                        </div>
+                    </div>
+                    <button type="button" @@click="open = false" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-200 text-slate-400 transition-all btn-cerrar-modal">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
 
-                <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                <div class="p-10 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
 
-                    @* Resumen de validación *@
-                    <div id="validationSummary" class="hidden text-red-600 bg-red-50 p-3 rounded-md text-sm border border-red-100"></div>
+                    <div id="validationSummary" class="hidden animate-in fade-in slide-in-from-top-2 text-rose-600 bg-rose-50 p-4 rounded-2xl text-sm font-bold border border-rose-100"></div>
 
-                    @* Datos del Proyecto *@
                     @if (Model.ProyectoId.HasValue)
                     {
-                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-md flex items-center">
-                            <i class="fas fa-project-diagram text-blue-500 mr-3"></i>
-                            <span class="text-sm text-blue-800 font-semibold">Vinculado al Proyecto ID: @Model.ProyectoId</span>
+                        <div class="bg-indigo-600 rounded-3xl p-6 text-white flex items-center justify-between shadow-lg shadow-indigo-100 relative overflow-hidden">
+                            <div class="relative z-10 flex items-center gap-4">
+                                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
+                                    <i class="fas fa-project-diagram text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-black uppercase tracking-widest opacity-80">Vinculación Automática</p>
+                                    <p class="text-sm font-bold">ASIGNADO AL PROYECTO ID: @Model.ProyectoId</p>
+                                </div>
+                            </div>
+                            <i class="fas fa-link absolute -right-4 -bottom-4 text-6xl opacity-10 -rotate-12"></i>
                         </div>
                     }
 
-                    @* Fieldset: Datos Principales *@
-                    <fieldset class="border border-slate-200 p-5 rounded-xl bg-white shadow-sm">
-                        <legend class="px-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Información General</legend>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
-                            <div class="md:col-span-2">
-                                <label asp-for="IdProveedor" class="block text-xs font-bold text-slate-700 mb-1">PROVEEDOR *</label>
-                                <select asp-for="IdProveedor" class="w-full rounded-lg border-slate-300 shadow-sm focus:ring-blue-500 text-sm" asp-items="proveedoresList" required>
-                                    <option value="">Seleccione un proveedor...</option>
-                                </select>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div class="space-y-2">
+                                    <label asp-for="IdProveedor" class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Proveedor Autorizado *</label>
+                                    <select asp-for="IdProveedor" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer shadow-sm" asp-items="proveedoresList" required>
+                                        <option value="">Seleccione un socio comercial...</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-2">
+                                    <label asp-for="Codigo" class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Nro. de Referencia Interna</label>
+                                    <input asp-for="Codigo" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-mono font-bold text-indigo-600 transition-all shadow-sm" placeholder="Opcional / Autogenerado" />
+                                </div>
                             </div>
-                            <div>
-                                <label asp-for="Codigo" class="block text-xs font-bold text-slate-700 mb-1">CÓDIGO OC</label>
-                                <input asp-for="Codigo" class="w-full rounded-lg border-slate-300 shadow-sm text-sm bg-slate-50 font-mono" placeholder="Autogenerado" />
-                            </div>
-                            <div>
-                                <label asp-for="Moneda" class="block text-xs font-bold text-slate-700 mb-1">MONEDA *</label>
-                                <select asp-for="Moneda" class="w-full rounded-lg border-slate-300 shadow-sm text-sm">
-                                    <option value="PEN">Soles (S/.)</option>
-                                    <option value="USD">Dólares ($)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label asp-for="FormaPago" class="block text-xs font-bold text-slate-700 mb-1">FORMA DE PAGO *</label>
-                                <select asp-for="FormaPago" class="w-full rounded-lg border-slate-300 shadow-sm text-sm" required>
-                                    <option value="Contado">Contado</option>
-                                    <option value="Crédito 15 días">Crédito 15 días</option>
-                                    <option value="Crédito 30 días">Crédito 30 días</option>
-                                    <option value="Transferencia">Transferencia</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label asp-for="FechaEmision" class="block text-xs font-bold text-slate-700 mb-1">FECHA EMISIÓN</label>
-                                <input asp-for="FechaEmision" type="date" class="w-full rounded-lg border-slate-300 shadow-sm text-sm" />
-                            </div>
-                            <div class="md:col-span-2">
-                                <label asp-for="Observaciones" class="block text-xs font-bold text-slate-700 mb-1">OBSERVACIONES</label>
-                                <textarea asp-for="Observaciones" class="w-full rounded-lg border-slate-300 shadow-sm text-sm" rows="1"></textarea>
+                            <div class="space-y-2">
+                                <label asp-for="Observaciones" class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Justificación o Notas</label>
+                                <textarea asp-for="Observaciones" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-medium text-slate-600 transition-all shadow-sm" rows="1" placeholder="Ej: Adquisición para cimentación..."></textarea>
                             </div>
                         </div>
-                    </fieldset>
 
-                    @* Fieldset: Detalle de Materiales *@
-                    <fieldset class="border border-slate-200 p-5 rounded-xl bg-white shadow-sm">
-                        <legend class="px-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Items de la Orden</legend>
+                        <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-5">
+                            <div class="space-y-1">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Parámetros de Operación</label>
+                                <div class="space-y-3 pt-2">
+                                    <select asp-for="Moneda" x-model="moneda" class="w-full bg-white border-none rounded-xl py-2 text-xs font-bold text-slate-600 shadow-sm focus:ring-2 focus:ring-indigo-500/10 transition-all">
+                                        <option value="PEN">Soles (S/.)</option>
+                                        <option value="USD">Dólares ($)</option>
+                                    </select>
+                                    <select asp-for="FormaPago" class="w-full bg-white border-none rounded-xl py-2 text-xs font-bold text-slate-600 shadow-sm focus:ring-2 focus:ring-indigo-500/10 transition-all" required>
+                                        <option value="Contado">Pago al Contado</option>
+                                        <option value="Crédito 15 días">Crédito (15 días)</option>
+                                        <option value="Crédito 30 días">Crédito (30 días)</option>
+                                        <option value="Transferencia">Transferencia Bancaria</option>
+                                    </select>
+                                    <input asp-for="FechaEmision" type="date" class="w-full bg-white border-none rounded-xl py-2 text-xs font-bold text-slate-600 shadow-sm focus:ring-2 focus:ring-indigo-500/10 transition-all" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                        @* Barra de entrada de materiales *@
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end mb-6 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                            <div class="md:col-span-5">
-                                <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase">Material</label>
-                                <select id="selectMaterial" class="w-full rounded-lg border-slate-300 text-sm disabled:bg-slate-100" disabled>
-                                    <option value="">[Seleccione un Proveedor]</option>
+                    <div class="pt-6">
+                        <div class="flex items-center gap-3 mb-5 ml-1">
+                            <span class="w-8 h-px bg-slate-200"></span>
+                            <h4 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Desglose de Materiales</h4>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 p-2 bg-slate-900 rounded-[1.5rem] shadow-xl">
+                            <div class="lg:col-span-5 p-1">
+                                <select id="selectMaterial" class="w-full bg-slate-800 border-none rounded-xl py-3 px-4 text-sm font-bold text-white focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-50" disabled>
+                                    <option value="">[Seleccione Proveedor primero]</option>
                                 </select>
                             </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase">Cant.</label>
-                                <input type="number" id="inputCantidad" class="w-full rounded-lg border-slate-300 text-sm text-right" placeholder="0.00">
+                            <div class="lg:col-span-2 p-1">
+                                <input type="number" id="inputCantidad" class="w-full bg-slate-800 border-none rounded-xl py-3 px-4 text-sm font-bold text-white text-right focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Cant.">
                             </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase">P. Unit.</label>
-                                <input type="number" id="inputPrecio" class="w-full rounded-lg border-slate-300 text-sm text-right" placeholder="0.00">
+                            <div class="lg:col-span-2 p-1">
+                                <input type="number" id="inputPrecio" class="w-full bg-slate-800 border-none rounded-xl py-3 px-4 text-sm font-bold text-white text-right focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="P. Unit.">
                             </div>
-                            <div class="md:col-span-3">
-                                <button type="button" class="w-full py-2 bg-slate-800 text-white rounded-lg hover:bg-black font-bold text-sm transition-all shadow" id="btnAnadirMaterial">
-                                    <i class="fas fa-plus mr-2"></i>Añadir Item
+                            <div class="lg:col-span-3 p-1">
+                                <button type="button" class="w-full h-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-indigo-900/20" id="btnAnadirMaterial">
+                                    <i class="fas fa-plus-circle mr-2"></i> Añadir Partida
                                 </button>
                             </div>
                         </div>
+                    </div>
 
-                        @* Tabla *@
-                        <div class="overflow-hidden border border-slate-200 rounded-lg">
-                            <table class="min-w-full divide-y divide-slate-200">
-                                <thead class="bg-slate-100">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-[10px] font-bold text-slate-500 uppercase">Descripción</th>
-                                        <th class="px-6 py-3 text-right text-[10px] font-bold text-slate-500 uppercase w-28">Cantidad</th>
-                                        <th class="px-6 py-3 text-right text-[10px] font-bold text-slate-500 uppercase w-32">P. Unitario</th>
-                                        <th class="px-6 py-3 text-right text-[10px] font-bold text-slate-500 uppercase w-36">Subtotal</th>
-                                        <th class="px-6 py-3 text-center text-[10px] font-bold text-slate-500 uppercase w-16"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablaDetallesBody" class="bg-white divide-y divide-slate-100">
-                                    @if (Model.Detalles != null && Model.Detalles.Any())
+                    <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/30 overflow-hidden mt-6">
+                        <table class="min-w-full divide-y divide-slate-100">
+                            <thead class="bg-slate-50/80">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Descripción del Insumo</th>
+                                    <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider w-32">Cantidad</th>
+                                    <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider w-36">Precio Unit.</th>
+                                    <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider w-40">Subtotal</th>
+                                    <th class="px-6 py-4 w-16"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaDetallesBody" class="divide-y divide-slate-50 bg-white">
+                                @if (Model.Detalles != null && Model.Detalles.Any())
+                                {
+                                    for (int i = 0; i < Model.Detalles.Count; i++)
                                     {
-                                        for (int i = 0; i < Model.Detalles.Count; i++)
-                                        {
-                                            var det = Model.Detalles[i];
-                                            var subtotal = det.Cantidad * det.PrecioUnitario;
-                                            <tr id="fila-detalle-@i" class="text-sm group" data-material-id="@det.IdMaterial">
-                                                <td class="px-6 py-4">
-                                                    <span class="font-semibold text-slate-700">@det.MaterialNombre</span>
-                                                    <input type="hidden" name="Detalles.Index" value="@i" />
-                                                    <input type="hidden" name="Detalles[@i].IdMaterial" value="@det.IdMaterial" />
-                                                    <input type="hidden" name="Detalles[@i].IdDetalleRequerimiento" value="@det.IdDetalleRequerimiento" />
-                                                </td>
-                                                <td class="px-6 py-4">
-                                                    <input type="number" step="any" name="Detalles[@i].Cantidad" value="@det.Cantidad.ToString("0.00")"
-                                                           class="w-full text-right border-slate-200 rounded-md text-sm row-cantidad" oninput="actualizarFila(this)" />
-                                                </td>
-                                                <td class="px-6 py-4">
-                                                    <input type="number" step="any" name="Detalles[@i].PrecioUnitario" value="@det.PrecioUnitario.ToString("0.00")"
-                                                           class="w-full text-right border-slate-200 rounded-md text-sm row-precio" oninput="actualizarFila(this)" />
-                                                </td>
-                                                <td class="px-6 py-4 text-right font-bold text-slate-900 subtotal-celda" data-subtotal="@subtotal">
-                                                    S/ @subtotal.ToString("N2")
-                                                </td>
-                                                <td class="px-6 py-4 text-center">
-                                                    <button type="button" class="text-slate-300 hover:text-red-600 btn-remover-fila"><i class="fas fa-trash-alt"></i></button>
-                                                </td>
-                                            </tr>
-                                        }
+                                        var det = Model.Detalles[i];
+                                        var subtotal = det.Cantidad * det.PrecioUnitario;
+                                        <tr id="fila-detalle-@i" class="group animate-in fade-in slide-in-from-left-2 duration-300" data-material-id="@det.IdMaterial">
+                                            <td class="px-6 py-5">
+                                                <span class="text-sm font-bold text-slate-700">@det.MaterialNombre</span>
+                                                <input type="hidden" name="Detalles.Index" value="@i" />
+                                                <input type="hidden" name="Detalles[@i].IdMaterial" value="@det.IdMaterial" />
+                                                <input type="hidden" name="Detalles[@i].IdDetalleRequerimiento" value="@det.IdDetalleRequerimiento" />
+                                            </td>
+                                            <td class="px-6 py-5">
+                                                <input type="number" step="any" name="Detalles[@i].Cantidad" value="@det.Cantidad.ToString("0.00")"
+                                                       class="w-full text-right border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-indigo-500/20 row-cantidad" oninput="actualizarFila(this)" />
+                                            </td>
+                                            <td class="px-6 py-5">
+                                                <input type="number" step="any" name="Detalles[@i].PrecioUnitario" value="@det.PrecioUnitario.ToString("0.00")"
+                                                       class="w-full text-right border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-indigo-500/20 row-precio" oninput="actualizarFila(this)" />
+                                            </td>
+                                            <td class="px-6 py-5 text-right font-black text-slate-900 subtotal-celda" data-subtotal="@subtotal">
+                                                S/ @subtotal.ToString("N2")
+                                            </td>
+                                            <td class="px-6 py-5 text-center">
+                                                <button type="button" class="w-8 h-8 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-all btn-remover-fila">
+                                                    <i class="fas fa-trash-alt text-xs"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
                                     }
-                                    <tr id="fila-vacia" class="@(initialCount > 0 ? "hidden" : "")">
-                                        <td colspan="5" class="px-6 py-8 text-center text-slate-400 italic">No hay materiales añadidos.</td>
-                                    </tr>
-                                </tbody>
-                                <tfoot class="bg-slate-50">
-                                    <tr>
-                                        <td colspan="3" class="px-6 py-4 text-right text-sm font-bold text-slate-600">TOTAL ESTIMADO:</td>
-                                        <td class="px-6 py-4 text-right text-lg font-black text-slate-900" id="totalGeneral">S/ 0.00</td>
-                                        <td></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </fieldset>
+                                }
+                                <tr id="fila-vacia" class="@(initialCount > 0 ? "hidden" : "")">
+                                    <td colspan="5" class="px-6 py-12 text-center">
+                                        <div class="flex flex-col items-center opacity-30">
+                                            <i class="fas fa-box-open text-4xl mb-3"></i>
+                                            <p class="text-sm font-bold uppercase tracking-widest text-slate-400">Sin materiales añadidos</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                @* Pie de Modal *@
-                <div class="bg-slate-50 px-8 py-4 border-t border-slate-200 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" @@click ="open = false" class="px-6 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 btn-cerrar-modal">
-                        CANCELAR
-                    </button>
-                    <button type="submit" class="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-lg transition-all flex items-center">
-                        <i class="fas fa-save mr-2"></i> GUARDAR ORDEN DE COMPRA
-                    </button>
+                <div class="bg-slate-900 px-10 py-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 rounded-b-[2.5rem]">
+                    <div class="flex flex-col md:flex-row items-center gap-10">
+                        <div>
+                            <p class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Inversión Estimada</p>
+                            <h3 class="text-4xl font-black text-white tracking-tighter" id="totalGeneral">S/ 0.00</h3>
+                        </div>
+                        <div class="hidden md:block w-px h-12 bg-white/10"></div>
+                        <div class="text-center md:text-left">
+                            <p class="text-slate-500 text-[10px] font-bold uppercase mb-1">Estado de Emisión</p>
+                            <span class="px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase">Borrador / Pendiente</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 w-full md:w-auto">
+                        <button type="button" @@click="open = false" class="flex-1 md:flex-none px-8 py-3 text-xs font-black text-slate-400 hover:text-white transition-all uppercase tracking-widest btn-cerrar-modal">
+                            Descartar
+                        </button>
+                        <button type="submit" class="flex-1 md:flex-none px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-xs shadow-2xl shadow-indigo-900/40 transition-all uppercase tracking-widest">
+                            <i class="fas fa-save mr-2"></i> Procesar Orden
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -196,7 +214,8 @@
         const precio = parseFloat($tr.find('.row-precio').val()) || 0;
         const subtotal = cantidad * precio;
 
-        $tr.find('.subtotal-celda').attr('data-subtotal', subtotal).text(`S/ ${subtotal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`);
+        const monedaSimbolo = $('#Moneda').val() === 'PEN' ? 'S/' : '$';
+        $tr.find('.subtotal-celda').attr('data-subtotal', subtotal).text(`${monedaSimbolo} ${subtotal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`);
         actualizarTotalGeneral();
     }
 
@@ -224,20 +243,11 @@
 
         actualizarTotalGeneral();
 
-        // 1. CIERRE ROBUSTO
-        $(document).off('click', '.btn-cerrar-modal').on('click', '.btn-cerrar-modal', function () {
-            const $modalElement = $(this).closest('.fixed');
-            $modalElement.fadeOut(200, function() {
-                $(this).remove();
-                $('#modal-placeholder').empty();
-            });
-        });
-
-        // 2. CASCADA PROVEEDOR -> MATERIALES
+        // CASCADA PROVEEDOR -> MATERIALES
         $('#IdProveedor').on('change', function() {
             const proveedorId = $(this).val();
             const $selectMat = $('#selectMaterial');
-            $selectMat.empty().prop('disabled', true).append('<option>Cargando...</option>');
+            $selectMat.empty().prop('disabled', true).append('<option>Cargando catálogo...</option>');
 
             if (!proveedorId) {
                 $selectMat.empty().append('<option>[Seleccione Proveedor]</option>');
@@ -253,7 +263,7 @@
             });
         });
 
-        // 3. AÑADIR MATERIAL (CON LÓGICA DE SUMA DE DUPLICADOS)
+        // AÑADIR MATERIAL
         $('#btnAnadirMaterial').on('click', function () {
             const matId = $('#selectMaterial').val();
             const matTexto = $('#selectMaterial option:selected').data('texto');
@@ -261,44 +271,42 @@
             const prec = parseFloat($('#inputPrecio').val()) || 0;
 
             if (!matId || cantNueva <= 0 || prec <= 0) {
-                Swal.fire('Atención', 'Complete material, cantidad y precio.', 'warning');
+                Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: 'Verifique el material, la cantidad y el precio.', background: '#f8fafc' });
                 return;
             }
 
-            // BUSCAR DUPLICADO
             let filaExistente = $tablaBody.find(`tr[data-material-id="${matId}"]`);
 
             if (filaExistente.length > 0) {
                 const $inputCant = filaExistente.find('.row-cantidad');
-                const cantActual = parseFloat($inputCant.val()) || 0;
-                const total = cantActual + cantNueva;
+                const total = (parseFloat($inputCant.val()) || 0) + cantNueva;
                 $inputCant.val(total.toFixed(2));
                 actualizarFila($inputCant);
-
-                filaExistente.addClass('bg-blue-50');
-                setTimeout(() => filaExistente.removeClass('bg-blue-50'), 1000);
+                filaExistente.addClass('bg-indigo-50');
+                setTimeout(() => filaExistente.removeClass('bg-indigo-50'), 1000);
             } else {
                 const sub = cantNueva * prec;
+                const monedaSimbolo = $('#Moneda').val() === 'PEN' ? 'S/' : '$';
                 const fila = `
-                    <tr id="fila-detalle-${detalleIndex}" class="text-sm transition-all" data-material-id="${matId}">
-                        <td class="px-6 py-4">
-                            <span class="font-semibold text-slate-700">${matTexto}</span>
+                    <tr id="fila-detalle-${detalleIndex}" class="text-sm transition-all group animate-in fade-in slide-in-from-left-2 duration-300" data-material-id="${matId}">
+                        <td class="px-6 py-5">
+                            <span class="font-bold text-slate-700">${matTexto}</span>
                             <input type="hidden" name="Detalles.Index" value="${detalleIndex}" />
                             <input type="hidden" name="Detalles[${detalleIndex}].IdMaterial" value="${matId}" />
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-5 text-right">
                             <input type="number" step="any" name="Detalles[${detalleIndex}].Cantidad" value="${cantNueva.toFixed(2)}"
-                                   class="w-full text-right border-slate-200 rounded-md text-sm row-cantidad" oninput="actualizarFila(this)" />
+                                   class="w-full text-right border-slate-200 rounded-xl text-sm font-bold text-slate-600 row-cantidad" oninput="actualizarFila(this)" />
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-5 text-right">
                             <input type="number" step="any" name="Detalles[${detalleIndex}].PrecioUnitario" value="${prec.toFixed(2)}"
-                                   class="w-full text-right border-slate-200 rounded-md text-sm row-precio" oninput="actualizarFila(this)" />
+                                   class="w-full text-right border-slate-200 rounded-xl text-sm font-bold text-slate-600 row-precio" oninput="actualizarFila(this)" />
                         </td>
-                        <td class="px-6 py-4 text-right font-bold text-slate-900 subtotal-celda" data-subtotal="${sub}">
-                            S/ ${sub.toFixed(2)}
+                        <td class="px-6 py-5 text-right font-black text-slate-900 subtotal-celda" data-subtotal="${sub}">
+                            ${monedaSimbolo} ${sub.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                         </td>
-                        <td class="px-6 py-4 text-center">
-                            <button type="button" class="text-slate-300 hover:text-red-600 btn-remover-fila"><i class="fas fa-trash-alt"></i></button>
+                        <td class="px-6 py-5 text-center">
+                            <button type="button" class="w-8 h-8 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-all btn-remover-fila"><i class="fas fa-trash-alt"></i></button>
                         </td>
                     </tr>`;
                 $tablaBody.append(fila);
@@ -310,32 +318,10 @@
             $('#inputCantidad, #inputPrecio').val('');
         });
 
-        // 4. ELIMINAR FILA
         $tablaBody.on('click', '.btn-remover-fila', function () {
             $(this).closest('tr').remove();
             actualizarTotalGeneral();
             toggleFilaVacia();
-        });
-
-        // 5. ENVÍO AJAX
-        $form.on('submit', function (e) {
-            e.preventDefault();
-            const $btn = $(this).find('button[type="submit"]');
-            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> PROCESANDO...');
-
-            $.ajax({
-                url: $(this).attr('action'),
-                type: 'POST',
-                data: $(this).serialize(),
-                success: function (res) {
-                    if (res.success) {
-                        Swal.fire('¡Éxito!', res.message, 'success').then(() => location.reload());
-                    } else {
-                        Swal.fire('Error', res.message, 'error');
-                        $btn.prop('disabled', false).html('<i class="fas fa-save mr-2"></i> GUARDAR ORDEN DE COMPRA');
-                    }
-                }
-            });
         });
     });
 </script>

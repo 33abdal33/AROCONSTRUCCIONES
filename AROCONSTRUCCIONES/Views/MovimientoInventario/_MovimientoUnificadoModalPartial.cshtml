@@ -1,31 +1,30 @@
 ﻿@using AROCONSTRUCCIONES.Dtos
 @model MovimientoInventarioDto
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
 @{
-    // Cargamos los dropdowns del ViewBag
     var almacenes = ViewBag.Almacenes as SelectList;
     var materiales = ViewBag.Materiales as IEnumerable<SelectListItem>;
     var proveedores = ViewBag.Proveedores as SelectList;
-    var proyectos = ViewBag.Proyectos as SelectList; // <-- 1. AÑADIDO
+    var proyectos = ViewBag.Proyectos as SelectList;
 }
 
 <div x-data="{ open: true, tipo: 'INGRESO', motivo: '@(Model.Motivo ?? "")' }"
      x-show="open"
-     x-transition:enter="ease-out duration-300"
-     x-transition:enter-start="opacity-0"
-     x-transition:enter-end="opacity-100"
-     x-transition:leave="ease-in duration-200"
-     x-transition:leave-start="opacity-100"
-     x-transition:leave-end="opacity-0"
-     class="fixed inset-0 z-50 overflow-y-auto"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 scale-95"
+     x-transition:enter-end="opacity-100 scale-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 scale-100"
+     x-transition:leave-end="opacity-0 scale-95"
+     class="fixed inset-0 z-[60] overflow-y-auto"
      style="display: none;">
 
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
 
-    <div class="flex items-center justify-center min-h-screen p-4">
-
+    <div class="flex items-center justify-center min-h-screen p-4 text-center">
         <div x-on:click.away="open = false"
-             class="relative bg-white rounded-lg shadow-xl transform transition-all sm:my-8 sm:max-w-2xl sm:w-full">
+             class="relative bg-white rounded-[2rem] shadow-2xl transform transition-all sm:my-8 sm:max-w-3xl sm:w-full overflow-hidden border border-slate-200">
 
             <form id="formMovimiento"
                   asp-controller="MovimientoInventario"
@@ -36,155 +35,158 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="TipoMovimiento" x-model="tipo" />
 
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 rounded-t-lg">
-                    <h3 class="text-xl leading-6 font-semibold text-gray-900">
-                        Registrar Movimiento
-                    </h3>
+                <div :class="tipo === 'INGRESO' ? 'bg-emerald-50/50 border-emerald-100' : 'bg-rose-50/50 border-rose-100'"
+                     class="px-8 pt-8 pb-6 border-b text-left transition-colors duration-500">
+                    <div class="flex items-center gap-4 mb-2">
+                        <div :class="tipo === 'INGRESO' ? 'bg-emerald-500 shadow-emerald-100' : 'bg-rose-500 shadow-rose-100'"
+                             class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-colors duration-500">
+                            <i :class="tipo === 'INGRESO' ? 'fa-arrow-down' : 'fa-arrow-up'" class="fas text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-black text-slate-800 tracking-tight">Registro de Movimiento Operativo</h3>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Módulo de Logística e Inventario</p>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                <div class="p-8 space-y-8 text-left max-h-[65vh] overflow-y-auto custom-scrollbar">
 
-                    <fieldset>
-                        <legend class="text-sm font-medium text-gray-700">Tipo de Movimiento *</legend>
-                        <div class="mt-2 grid grid-cols-2 gap-4">
+                    <fieldset class="space-y-3">
+                        <legend class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Seleccione Naturaleza del Movimiento *</legend>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <label x-on:click="tipo = 'INGRESO'"
-                                   :class="{ 'ring-2 ring-blue-500 bg-blue-50 border-blue-500': tipo === 'INGRESO', 'border-gray-300': tipo !== 'INGRESO' }"
-                                   class="relative flex items-center p-4 rounded-lg border cursor-pointer transition-all">
-                                <i class="fas fa-arrow-down text-green-500 text-xl"></i>
-                                <span class="ml-3">
-                                    <strong class="font-medium text-gray-900">Ingreso</strong>
-                                    <span class="block text-sm text-gray-500">Ingreso de materiales</span>
-                                </span>
-                                <input type="radio" name="radioTipoMovimiento" value="INGRESO" class="sr-only" checked>
+                                   :class="tipo === 'INGRESO' ? 'ring-2 ring-emerald-500 bg-emerald-50 border-emerald-200' : 'border-slate-200 hover:bg-slate-50'"
+                                   class="relative flex items-center p-4 rounded-2xl border cursor-pointer transition-all group">
+                                <div :class="tipo === 'INGRESO' ? 'bg-emerald-500' : 'bg-slate-200 group-hover:bg-slate-300'" class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors">
+                                    <i class="fas fa-plus text-white text-xs"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <strong class="block text-sm font-bold text-slate-800">Entrada / Ingreso</strong>
+                                    <span class="block text-[10px] font-medium text-slate-500 uppercase">Aumento de stock</span>
+                                </div>
+                                <input type="radio" name="radioTipoMovimiento" value="INGRESO" class="sr-only" :checked="tipo === 'INGRESO'">
                             </label>
+
                             <label x-on:click="tipo = 'SALIDA'"
-                                   :class="{ 'ring-2 ring-red-500 bg-red-50 border-red-500': tipo === 'SALIDA', 'border-gray-300': tipo !== 'SALIDA' }"
-                                   class="relative flex items-center p-4 rounded-lg border cursor-pointer transition-all">
-                                <i class="fas fa-arrow-up text-red-500 text-xl"></i>
-                                <span class="ml-3">
-                                    <strong class="font-medium text-gray-900">Salida</strong>
-                                    <span class="block text-sm text-gray-500">Salida de materiales</span>
-                                </span>
-                                <input type="radio" name="radioTipoMovimiento" value="SALIDA" class="sr-only">
+                                   :class="tipo === 'SALIDA' ? 'ring-2 ring-rose-500 bg-rose-50 border-rose-200' : 'border-slate-200 hover:bg-slate-50'"
+                                   class="relative flex items-center p-4 rounded-2xl border cursor-pointer transition-all group">
+                                <div :class="tipo === 'SALIDA' ? 'bg-rose-500' : 'bg-slate-200 group-hover:bg-slate-300'" class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors">
+                                    <i class="fas fa-minus text-white text-xs"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <strong class="block text-sm font-bold text-slate-800">Salida / Egreso</strong>
+                                    <span class="block text-[10px] font-medium text-slate-500 uppercase">Disminución de stock</span>
+                                </div>
+                                <input type="radio" name="radioTipoMovimiento" value="SALIDA" class="sr-only" :checked="tipo === 'SALIDA'">
                             </label>
                         </div>
                     </fieldset>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label asp-for="MaterialId" class="block text-sm font-medium text-gray-700">Material *</label>
-                            <select asp-for="MaterialId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required asp-items="materiales">
-                                <option value="">Seleccione...</option>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                        <div class="space-y-2">
+                            <label asp-for="MaterialId" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Insumo / Material *</label>
+                            <select asp-for="MaterialId" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer" required asp-items="materiales">
+                                <option value="">Buscar material...</option>
                             </select>
-                            <span asp-validation-for="MaterialId" class="text-sm text-red-600"></span>
                         </div>
-                        <div>
-                            <label asp-for="AlmacenId" class="block text-sm font-medium text-gray-700">Almacén *</label>
-                            <select asp-for="AlmacenId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required asp-items="almacenes">
-                                <option value="">Seleccione...</option>
+                        <div class="space-y-2">
+                            <label asp-for="AlmacenId" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Sede de Almacén *</label>
+                            <select asp-for="AlmacenId" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer" required asp-items="almacenes">
+                                <option value="">Seleccione sede...</option>
                             </select>
-                            <span asp-validation-for="AlmacenId" class="text-sm text-red-600"></span>
                         </div>
-                        <div>
-                            <label asp-for="Cantidad" class="block text-sm font-medium text-gray-700">Cantidad *</label>
-                            <input asp-for="Cantidad" type="number" min="1" step="0.01" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required />
-                            <span asp-validation-for="Cantidad" class="text-sm text-red-600"></span>
+                        <div class="space-y-2">
+                            <label asp-for="Cantidad" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Cantidad a Procesar *</label>
+                            <input asp-for="Cantidad" type="number" step="0.01" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-black text-slate-800 transition-all" placeholder="0.00" required />
                         </div>
-                        <div>
-                            <label asp-for="NroFacturaGuia" class="block text-sm font-medium text-gray-700">Documento de Referencia</label>
-                            <input asp-for="NroFacturaGuia" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Factura, Guía o ID Proyecto" />
-                            <span asp-validation-for="NroFacturaGuia" class="text-sm text-red-600"></span>
+                        <div class="space-y-2">
+                            <label asp-for="NroFacturaGuia" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Documento de Respaldo</label>
+                            <input asp-for="NroFacturaGuia" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all placeholder:text-slate-300" placeholder="Ej: F001-000123" />
                         </div>
                     </div>
 
-                    <div x-show="tipo === 'INGRESO'" x-transition class="space-y-4">
-                        <hr />
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label asp-for="CostoUnitarioCompra" class="block text-sm font-medium text-gray-700">Costo Unitario (S/.) *</label>
-                                <input asp-for="CostoUnitarioCompra" type="number" step="0.01" min="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" x-bind:required="tipo === 'INGRESO'" />
-                                <span asp-validation-for="CostoUnitarioCompra" class="text-sm text-red-600"></span>
+                    <div x-show="tipo === 'INGRESO'" x-transition class="space-y-5">
+                        <div class="h-px bg-slate-100 w-full"></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="space-y-2">
+                                <label asp-for="CostoUnitarioCompra" class="text-[11px] font-black text-emerald-600 uppercase tracking-widest ml-1">Costo Unitario (S/.) *</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 font-bold text-emerald-500 text-xs">S/</span>
+                                    <input asp-for="CostoUnitarioCompra" type="number" step="0.01" class="w-full pl-11 pr-4 py-3 rounded-xl border-none bg-emerald-50/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-black text-slate-800 transition-all" x-bind:required="tipo === 'INGRESO'" />
+                                </div>
                             </div>
-                            <div>
-                                <label asp-for="ProveedorId" class="block text-sm font-medium text-gray-700">Proveedor</label>
-                                <select asp-for="ProveedorId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" asp-items="proveedores">
-                                    <option value="">Seleccione...</option>
+                            <div class="space-y-2">
+                                <label asp-for="ProveedorId" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Proveedor Relacionado</label>
+                                <select asp-for="ProveedorId" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer" asp-items="proveedores">
+                                    <option value="">Seleccione proveedor...</option>
                                 </select>
-                                <span asp-validation-for="ProveedorId" class="text-sm text-red-600"></span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label asp-for="Motivo" class="block text-sm font-medium text-gray-700">Motivo *</label>
-                            <select asp-for="Motivo" x-model="motivo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                                <option value="">Selecciona un motivo</option>
-                                <optgroup label="Ingresos">
-                                    <option value="COMPRA">Compra (Ingreso)</option>
-                                    <option value="DEVOLUCION_PROYECTO">Devolución de Proyecto (Ingreso)</option>
-                                    <option value="AJUSTE_POSITIVO">Ajuste Positivo (Ingreso)</option>
-                                </optgroup>
-                                <optgroup label="Salidas">
-                                    <option value="CONSUMO_PROYECTO">Consumo Proyecto (Salida)</option>
-                                    <option value="VENTA">Venta (Salida)</option>
-                                    <option value="AJUSTE_NEGATIVO">Ajuste Negativo (Salida)</option>
-                                </optgroup>
-                            </select>
-                            <span asp-validation-for="Motivo" class="text-sm text-red-600"></span>
+                    <div class="space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="space-y-2">
+                                <label asp-for="Motivo" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Motivo / Justificación *</label>
+                                <select asp-for="Motivo" x-model="motivo" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer" required>
+                                    <option value="">Seleccione razón...</option>
+                                    <optgroup label="🟢 INGRESOS">
+                                        <option value="COMPRA">Compra (Stock)</option>
+                                        <option value="DEVOLUCION_PROYECTO">Devolución de Obra</option>
+                                        <option value="AJUSTE_POSITIVO">Ajuste de Inventario (+)</option>
+                                    </optgroup>
+                                    <optgroup label="🔴 SALIDAS">
+                                        <option value="CONSUMO_PROYECTO">Consumo en Proyecto</option>
+                                        <option value="VENTA">Venta de Material</option>
+                                        <option value="AJUSTE_NEGATIVO">Ajuste de Inventario (-)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label asp-for="ResponsableNombre" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Personal Responsable *</label>
+                                <input asp-for="ResponsableNombre" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all" placeholder="Nombre completo" required />
+                            </div>
                         </div>
-                        <div>
-                            <label asp-for="ResponsableNombre" class="block text-sm font-medium text-gray-700">Responsable *</label>
-                            <input asp-for="ResponsableNombre" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Nombre del responsable" required />
-                            <span asp-validation-for="ResponsableNombre" class="text-sm text-red-600"></span>
+
+                        <div x-show="motivo === 'CONSUMO_PROYECTO'"
+                             x-transition
+                             class="p-6 bg-amber-50 rounded-3xl border border-amber-100 grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="space-y-2">
+                                <label asp-for="ProyectoId" class="text-[11px] font-black text-amber-600 uppercase tracking-widest ml-1">Destino: Proyecto / Obra *</label>
+                                <select asp-for="ProyectoId" id="selectProyectoMovimiento" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-amber-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer" asp-items="proyectos" x-bind:required="motivo === 'CONSUMO_PROYECTO'">
+                                    <option value="">Seleccione obra...</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label asp-for="PartidaId" class="text-[11px] font-black text-amber-600 uppercase tracking-widest ml-1">Partida Presupuestaria</label>
+                                <select asp-for="PartidaId" id="selectPartidaMovimiento" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-amber-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer">
+                                    <option value="">(Opcional) Seleccione partida...</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <div x-show="motivo === 'CONSUMO_PROYECTO'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                        <div>
-                            <label asp-for="ProyectoId" class="block text-sm font-medium text-gray-700">Asignar a Proyecto *</label>
-                            <select asp-for="ProyectoId"
-                                    id="selectProyectoMovimiento"
-                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    asp-items="proyectos"
-                                    x-bind:required="motivo === 'CONSUMO_PROYECTO'">
-                                <option value="">Seleccione el proyecto...</option>
-                            </select>
-                            <span asp-validation-for="ProyectoId" class="text-sm text-red-600"></span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="space-y-2">
+                            <label asp-for="FechaMovimiento" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Fecha de Registro</label>
+                            <input asp-for="FechaMovimiento" type="datetime-local" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required />
                         </div>
-
-                        <div>
-                            <label asp-for="PartidaId" class="block text-sm font-medium text-gray-700">Partida Presupuestaria</label>
-                            <select asp-for="PartidaId"
-                                    id="selectPartidaMovimiento"
-                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                <option value="">(Opcional) Seleccione partida...</option>
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">El costo se sumará a esta partida.</p>
+                        <div class="space-y-2">
+                            <label asp-for="Notas" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Observaciones Finales</label>
+                            <textarea asp-for="Notas" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all" rows="1" placeholder="Detalles internos..."></textarea>
                         </div>
-                    </div>
-                    <div>
-                        <label asp-for="FechaMovimiento" class="block text-sm font-medium text-gray-700">Fecha del Movimiento</label>
-                        <input asp-for="FechaMovimiento" type="datetime-local" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required />
-                        <span asp-validation-for="FechaMovimiento" class="text-sm text-red-600"></span>
-                    </div>
-                    <div>
-                        <label asp-for="Notas" class="block text-sm font-medium text-gray-700">Notas Adicionales</label>
-                        <textarea asp-for="Notas" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="2" placeholder="Observaciones..."></textarea>
-                        <span asp-validation-for="Notas" class="text-sm text-red-600"></span>
                     </div>
                 </div>
 
-                <div class="bg-gray-50 px-6 py-3 sm:flex sm:flex-row-reverse rounded-b-lg">
+                <div class="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row-reverse gap-3">
                     <button type="submit"
-                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-colors"
-                            :class="{ 'bg-blue-600 hover:bg-blue-700': tipo === 'INGRESO', 'bg-red-600 hover:bg-red-700': tipo === 'SALIDA' }">
-                        <span x-show="tipo === 'INGRESO'"><i class="fas fa-save mr-2"></i> Registrar Ingreso</span>
-                        <span x-show="tipo === 'SALIDA'"><i class="fas fa-save mr-2"></i> Registrar Salida</span>
+                            class="w-full sm:w-auto px-10 py-3 text-xs font-black rounded-xl shadow-lg transition-all uppercase tracking-widest"
+                            :class="tipo === 'INGRESO' ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100' : 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-100'">
+                        <i class="fas fa-save mr-2"></i>
+                        <span x-text="tipo === 'INGRESO' ? 'Confirmar Ingreso' : 'Confirmar Salida'"></span>
                     </button>
                     <button type="button" x-on:click="open = false"
-                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
+                            class="w-full sm:w-auto px-10 py-3 bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 text-xs font-black rounded-xl transition-all uppercase tracking-widest">
                         Cancelar
                     </button>
                 </div>
@@ -192,34 +194,3 @@
         </div>
     </div>
 </div>
-<script>
-    $(document).ready(function() {
-        // Lógica de Dropdown en Cascada (Proyecto -> Partidas)
-        $('#selectProyectoMovimiento').on('change', function() {
-            const proyectoId = $(this).val();
-            const $comboPartidas = $('#selectPartidaMovimiento');
-
-            $comboPartidas.empty().append('<option value="">Cargando partidas...</option>');
-
-            if (proyectoId) {
-                $.get('@Url.Action("GetPartidasPorProyecto", "MovimientoInventario")', { proyectoId: proyectoId }, function(data) {
-                    $comboPartidas.empty();
-                    $comboPartidas.append('<option value="">-- Seleccione Partida (Opcional) --</option>');
-
-                    if (data.length > 0) {
-                        $.each(data, function(i, item) {
-                            $comboPartidas.append($('<option>', {
-                                value: item.value,
-                                text: item.text
-                            }));
-                        });
-                    } else {
-                        $comboPartidas.append('<option value="">Este proyecto no tiene presupuesto cargado</option>');
-                    }
-                });
-            } else {
-                $comboPartidas.empty().append('<option value="">Seleccione un proyecto primero</option>');
-            }
-        });
-    });
-</script>

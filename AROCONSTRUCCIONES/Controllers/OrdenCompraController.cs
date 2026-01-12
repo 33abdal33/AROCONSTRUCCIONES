@@ -55,7 +55,6 @@ namespace AROCONSTRUCCIONES.Controllers
         }
 
         // --- ACCIONES DE LECTURA (UI) ---
-
         [HttpGet]
         public async Task<IActionResult> ListaOrdenes()
         {
@@ -165,6 +164,20 @@ namespace AROCONSTRUCCIONES.Controllers
             return Json(items);
         }
 
+        // --- ACCIÓN PARA VER DETALLES EN MODAL ---
+        [HttpGet]
+        public async Task<IActionResult> VerDetalles(int id)
+        {
+            // El controlador solo delega la responsabilidad al servicio
+            var orden = await _ordenCompraService.GetByIdWithDetailsAsync(id);
+
+            if (orden == null)
+            {
+                return NotFound("No se encontró la Orden de Compra.");
+            }
+
+            return PartialView("_DetallesOrdenModalPartial", orden);
+        }
         // --- ACCIONES DE ESCRITURA ---
 
         [Authorize(Roles = "Administrador,Usuario")]

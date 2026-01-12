@@ -1,0 +1,74 @@
+﻿@model AROCONSTRUCCIONES.Models.OrdenCompra
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        @* Cabecera *@
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div>
+                <h3 class="text-xl font-black text-slate-800 uppercase tracking-tight">
+                    Detalles de Orden: <span class="text-indigo-600">@Model.Codigo</span>
+                </h3>
+                <p class="text-xs text-slate-500 font-bold">PROVEEDOR: @Model.Proveedor.RazonSocial</p>
+            </div>
+            <button type="button" class="text-slate-400 hover:text-slate-600 transition-colors" onclick="$('#modal-placeholder').html('')">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        @* Cuerpo *@
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Proyecto / Obra</p>
+                    <p class="text-sm font-bold text-slate-700 italic">@(Model.Proyecto?.NombreProyecto ?? "General")</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fecha Emisión</p>
+                    <p class="text-sm font-bold text-slate-700">@Model.FechaEmision.ToString("dd/MM/yyyy")</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado Actual</p>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-700">@Model.Estado.ToUpper()</span>
+                </div>
+            </div>
+
+            <div class="overflow-hidden border border-slate-200 rounded-xl">
+                <table class="min-w-full divide-y divide-slate-100">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase">Material</th>
+                            <th class="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase">Cantidad</th>
+                            <th class="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase">P. Unitario</th>
+                            <th class="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        @foreach (var det in Model.Detalles)
+                        {
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="px-4 py-3 text-sm font-bold text-slate-700">@det.Material.Nombre</td>
+                                <td class="px-4 py-3 text-right text-sm font-mono font-bold text-slate-600">@det.Cantidad.ToString("N2")</td>
+                                <td class="px-4 py-3 text-right text-sm font-mono text-slate-500">@det.PrecioUnitario.ToString("N2")</td>
+                                <td class="px-4 py-3 text-right text-sm font-mono font-black text-slate-800">S/ @((det.Cantidad * det.PrecioUnitario).ToString("N2"))</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="bg-slate-50/80 font-black">
+                        <tr>
+                            <td colspan="3" class="px-4 py-3 text-right text-sm text-slate-500">TOTAL ORDEN:</td>
+                            <td class="px-4 py-3 text-right text-lg text-indigo-700">S/ @Model.Total.ToString("N2")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        @* Pie *@
+        <div class="px-6 py-4 border-t border-slate-100 flex justify-end bg-slate-50/30">
+            <button type="button" class="px-6 py-2 bg-slate-800 text-white text-xs font-black rounded-lg hover:bg-slate-700 transition-all" onclick="$('#modal-placeholder').html('')">
+                CERRAR VENTANA
+            </button>
+        </div>
+    </div>
+</div>

@@ -1,93 +1,192 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.InventarioDto>
 
-@* Barra de Acciones Superior *@
-<div class="flex flex-col md:flex-row justify-between items-end gap-4 mb-4 mt-6">
-    <div>
-        <h3 class="text-xl font-bold text-slate-800">Resultado del Análisis de Stock</h3>
-        <p class="text-sm text-slate-500">Valores calculados en base al Costo Promedio Ponderado (CPP)</p>
+@* 1. CSS PARA LIMPIEZA DE LÍNEAS DE LIBRERÍA *@
+<style>
+    .valorizado-table {
+        border-bottom: none !important;
+    }
+
+        .valorizado-table thead th {
+            border-bottom: none !important;
+            letter-spacing: normal !important;
+        }
+
+        .valorizado-table tbody tr:last-child td {
+            border-bottom: none !important;
+        }
+
+        .valorizado-table tfoot td {
+            border-top: 2px solid #f1f5f9 !important;
+        }
+</style>
+
+@* Silenciamos alertas técnicas *@
+<script>$.fn.dataTable.ext.errMode = 'none';</script>
+
+<div class="animate-in fade-in zoom-in duration-300">
+
+    @* 2. Encabezado de Reporte y Acción *@
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 mt-6">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider">Auditoría Financiera</span>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 tracking-tight">Análisis de Capital en Stock</h3>
+            <p class="text-sm font-medium text-slate-500 mt-1">Cálculos basados en el método de Costo Promedio Ponderado (CPP).</p>
+        </div>
+
+        <a href="@Url.Action("ExportarStockExcel", "ReportesLogistica", new { almacenId = ViewBag.AlmacenId })"
+           class="flex items-center px-6 py-3 bg-white border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-500 hover:text-white text-xs font-black rounded-2xl shadow-sm transition-all gap-2 uppercase tracking-widest group">
+            <i class="fas fa-file-excel text-lg group-hover:scale-110 transition-transform"></i>
+            Exportar Reporte
+        </a>
     </div>
 
-    @* BOTÓN DE EXPORTACIÓN A EXCEL *@
-    <a href="@Url.Action("ExportarStockExcel", "ReportesLogistica", new { almacenId = ViewBag.AlmacenId })"
-       class="inline-flex items-center px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-bold rounded-lg shadow-md transition-all transform hover:-translate-y-0.5">
-        <i class="fas fa-file-excel mr-2"></i>
-        Exportar Reporte a Excel
-    </a>
-</div>
+    @* 3. Bloque de Indicadores Maestros *@
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div class="bg-gradient-to-br from-indigo-600 to-blue-700 p-8 rounded-[2rem] shadow-xl shadow-indigo-200/50 text-white relative overflow-hidden">
+            <div class="relative z-10">
+                <p class="text-indigo-100 text-xs font-bold uppercase tracking-[0.2em] mb-2 opacity-80">Capital Total en Stock</p>
+                <h3 class="text-4xl font-black tracking-tighter">
+                    S/ @Model.Sum(x => x.ValorTotal).ToString("N2")
+                </h3>
+                <div class="mt-4 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-[10px] font-bold text-indigo-100 uppercase">Valorizado al cierre actual</span>
+                </div>
+            </div>
+            <i class="fas fa-coins absolute -right-4 -bottom-4 text-8xl text-white/10 -rotate-12"></i>
+        </div>
 
-@* Bloque de Indicadores (Tus Cards) *@
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-    <div class="bg-blue-600 p-5 rounded-xl shadow-lg text-white">
-        <p class="text-blue-100 text-sm font-medium uppercase tracking-wider">Capital Total en Stock</p>
-        <h3 class="text-3xl font-black">S/. @Model.Sum(x => x.ValorTotal).ToString("N2")</h3>
+        <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mb-2">Alertas de Reposición</p>
+                <h3 class="text-4xl font-black text-slate-800 tracking-tighter">
+                    @Model.Count(x => x.StockActual <= x.StockMinimo)
+                    <span class="text-lg font-bold text-slate-400 ml-1 tracking-normal">Ítems críticos</span>
+                </h3>
+                <p class="text-[11px] text-rose-500 font-bold mt-2 uppercase flex items-center gap-1">
+                    <i class="fas fa-exclamation-circle"></i> Requieren atención de compras
+                </p>
+            </div>
+            <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center shadow-sm">
+                <i class="fas fa-bell text-2xl"></i>
+            </div>
+        </div>
     </div>
-    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-orange-500">
-        <p class="text-slate-500 text-sm font-medium uppercase tracking-wider">Alertas de Reposición</p>
-        <h3 class="text-3xl font-black text-slate-800">@Model.Count(x => x.StockActual <= x.StockMinimo) <span class="text-lg font-normal text-slate-400">ítems bajo el mínimo</span></h3>
+
+    @* 4. Tabla de Resultados *@
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/30 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100 valorizado-table" id="tablaStockValorizado">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Almacén / Ubicación</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Material / Insumo</th>
+                        <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Stock Actual</th>
+                        <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Costo Unit. (CPP)</th>
+                        <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Valor Total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50 bg-white">
+                    @foreach (var item in Model)
+                    {
+                        bool esCritico = item.StockActual <= item.StockMinimo;
+
+                        <tr class="hover:bg-slate-50 transition-all group">
+                            <td class="px-6 py-5">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-warehouse text-slate-300 text-xs"></i>
+                                    <span class="text-xs font-bold text-slate-600 uppercase">@item.AlmacenUbicacion</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-5">
+                                <div class="text-sm font-bold text-slate-800">@item.MaterialNombre</div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase mt-0.5">REF: @item.MaterialCodigo</div>
+                            </td>
+                            <td class="px-6 py-5 text-right">
+                                <div class="flex flex-col items-end">
+                                    <span class="text-sm font-black @(esCritico ? "text-rose-600" : "text-slate-700")">
+                                        @item.StockActual.ToString("N2")
+                                        <span class="text-[10px] font-bold text-slate-400 ml-0.5">@item.MaterialUnidadMedida</span>
+                                    </span>
+                                    @if (esCritico)
+                                    {
+                                        <span class="text-[9px] font-black text-rose-500 uppercase flex items-center gap-1 mt-1 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
+                                            <i class="fas fa-exclamation-triangle"></i> Reabastecer
+                                        </span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="px-6 py-5 text-right">
+                                <span class="text-xs font-bold text-slate-500 italic">S/ @item.CostoPromedio.ToString("N2")</span>
+                            </td>
+                            <td class="px-6 py-5 text-right">
+                                <span class="text-base font-black text-indigo-700 tracking-tight">S/ @item.ValorTotal.ToString("N2")</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="bg-slate-50/80">
+                    <tr>
+                        <td colspan="4" class="px-6 py-6 text-right text-xs font-black text-slate-400 uppercase tracking-widest">Gran Total Valorizado:</td>
+                        <td class="px-6 py-6 text-right">
+                            <span class="text-2xl font-black text-slate-900 tracking-tighter">S/ @Model.Sum(x => x.ValorTotal).ToString("N2")</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
     </div>
-</div>
 
-@* Tabla de Resultados *@
-<div class="bg-white rounded-lg shadow-md overflow-hidden border border-slate-200">
-    <table class="w-full text-left" id="tablaStockValorizado">
-        <thead class="bg-slate-800 text-white uppercase text-[11px] font-bold">
-            <tr>
-                <th class="px-6 py-4">Almacén / Ubicación</th>
-                <th class="px-6 py-4">Material / Insumo</th>
-                <th class="px-6 py-4 text-right">Stock Actual</th>
-                <th class="px-6 py-4 text-right">Costo Prom.</th>
-                <th class="px-6 py-4 text-right">Valorizado Total</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-            @foreach (var item in Model)
-            {
-                <tr class="hover:bg-blue-50/50 transition-colors">
-                    <td class="px-6 py-4 text-sm font-medium text-slate-600">
-                        <i class="fas fa-warehouse mr-2 text-slate-400"></i> @item.AlmacenUbicacion
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="font-bold text-slate-800">@item.MaterialNombre</div>
-                        <div class="text-[10px] text-slate-400 font-mono tracking-tighter">REF: @item.MaterialCodigo</div>
-                    </td>
-                    <td class="px-6 py-4 text-right font-bold @(item.StockActual <= item.StockMinimo ? "text-red-600" : "text-slate-700")">
-                        @item.StockActual.ToString("N2")
-                        <span class="text-[10px] font-normal text-slate-400 ml-1">@item.MaterialUnidadMedida</span>
-
-                        @if (item.StockActual <= item.StockMinimo)
-                        {
-                            <div class="text-[9px] text-red-500 font-bold uppercase mt-1">
-                                <i class="fas fa-exclamation-triangle"></i> Reabastecer
-                            </div>
-                        }
-                    </td>
-                    <td class="px-6 py-4 text-right text-slate-600 text-sm">
-                        <span class="text-slate-400 text-xs">S/.</span> @item.CostoPromedio.ToString("N2")
-                    </td>
-                    <td class="px-6 py-4 text-right font-black text-blue-700">
-                        <span class="text-blue-400 text-xs font-normal">S/.</span> @item.ValorTotal.ToString("N2")
-                    </td>
-                </tr>
-            }
-        </tbody>
-        <tfoot class="bg-slate-50 border-t-2 border-slate-200">
-            <tr>
-                <td colspan="4" class="px-6 py-4 text-right font-bold text-slate-500 text-xs uppercase">Gran Total Valorizado:</td>
-                <td class="px-6 py-4 text-right font-black text-xl text-slate-900">S/. @Model.Sum(x => x.ValorTotal).ToString("N2")</td>
-            </tr>
-        </tfoot>
-    </table>
+    @* 5. Paginación y Resumen *@
+    <div class="mt-6 flex flex-col md:flex-row justify-between items-center px-4 gap-4">
+        <div id="valorizadoInfoContainer" class="text-xs font-bold text-slate-400 uppercase tracking-wider"></div>
+        <div id="valorizadoPaginationContainer" class="flex gap-1.5"></div>
+    </div>
 </div>
 
 <script>
     $(document).ready(function() {
-        // Inicialización de DataTable si no se ha hecho globalmente
-        if (!$.fn.DataTable.isDataTable('#tablaStockValorizado')) {
-            $('#tablaStockValorizado').DataTable({
-                "language": { "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json" },
-                "pageLength": 25,
-                "order": [[4, "desc"]] // Ordenar por valorizado total de mayor a menor
-            });
+        const table = $('#tablaStockValorizado').DataTable({
+            "dom": "t",
+            "pageLength": 10,
+            "destroy": true,
+            "language": { "zeroRecords": "No hay datos de valorización disponibles." },
+            "order": [[4, "desc"]], // Ordenar por Valor Total de mayor a menor
+            "drawCallback": function(settings) {
+                const api = this.api();
+                const info = api.page.info();
+
+                $('#valorizadoInfoContainer').html(
+                    `MATERIALES VALORIZADOS: <span class="text-slate-800">${info.recordsTotal}</span>`
+                );
+
+                renderValPagination(api);
+            }
+        });
+
+        function renderValPagination(api) {
+            const info = api.page.info();
+            let html = '';
+            if(info.pages <= 1) { $('#valorizadoPaginationContainer').html(''); return; }
+
+            html += `<button onclick="valPage('prev')" class="${info.page === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white border-slate-200'} p-2 rounded-lg border bg-slate-50 text-slate-600 transition-all"><i class="fas fa-chevron-left text-xs"></i></button>`;
+
+            for(let i = 0; i < info.pages; i++) {
+                const active = i === info.page ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50';
+                html += `<button onclick="valGoTo(${i})" class="px-3.5 py-1.5 rounded-lg border font-bold text-xs transition-all ${active}">${i + 1}</button>`;
+            }
+
+            html += `<button onclick="valPage('next')" class="${info.page === info.pages - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white border-slate-200'} p-2 rounded-lg border bg-slate-50 text-slate-600 transition-all"><i class="fas fa-chevron-right text-xs"></i></button>`;
+
+            $('#valorizadoPaginationContainer').html(html);
         }
+
+        window.valGoTo = function(idx) { table.page(idx).draw('page'); };
+        window.valPage = function(dir) {
+            if(dir === 'prev') table.page('previous').draw('page');
+            else table.page('next').draw('page');
+        };
     });
 </script>

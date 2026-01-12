@@ -4,138 +4,196 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
-<div class="pt-4">
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-semibold text-slate-700">
-            <i class="fas fa-file-invoice mr-2 text-blue-600"></i>
-            Gestión de Órdenes de Compra
-        </h3>
+@* 1. CSS PARA LIMPIEZA TOTAL DE LIBRERÍAS *@
+<style>
+    #dataTableOrdenesCompra {
+        border-bottom: none !important;
+    }
 
-        <!-- Botón Nueva OC (Solo visible para Admin y Usuario) -->
+        #dataTableOrdenesCompra thead th {
+            border-bottom: none !important;
+            letter-spacing: normal !important;
+        }
+
+        #dataTableOrdenesCompra.no-footer {
+            border-bottom: none !important;
+        }
+
+        #dataTableOrdenesCompra tbody tr:last-child td {
+            border-bottom: none !important;
+        }
+</style>
+
+@* Silenciamos alertas técnicas *@
+<script>$.fn.dataTable.ext.errMode = 'none';</script>
+
+<div class="pt-2">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4 px-2">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100 transition-transform hover:scale-105">
+                <i class="fas fa-file-invoice text-white text-2xl"></i>
+            </div>
+            <div>
+                <h3 class="text-2xl font-bold text-slate-800 tracking-tight">Gestión de Órdenes de Compra</h3>
+                <p class="text-sm font-medium text-slate-500">Seguimiento de adquisiciones, recepciones y estados de pago.</p>
+            </div>
+        </div>
+
         @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Administrador") || User.IsInRole("Usuario")))
         {
             <button type="button"
-                    class="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    class="flex-1 lg:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xs font-bold shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
                     data-modal-url="@Url.Action("CargarFormularioOC", "OrdenCompra")">
-                <i class="fas fa-plus mr-2"></i> Nueva Orden de Compra
+                <i class="fas fa-plus"></i> Nueva Orden de Compra
             </button>
         }
     </div>
 
+    <div class="bg-slate-100/50 p-2 rounded-2xl mb-6 border border-slate-200/60 shadow-sm">
+        <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                <i class="fas fa-search text-sm"></i>
+            </span>
+            <input type="text" id="inputBuscarOC"
+                   class="w-full pl-11 pr-4 py-2.5 rounded-xl border-transparent bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-medium transition-all shadow-sm placeholder:text-slate-400"
+                   placeholder="Buscar por código OC, proveedor o estado...">
+        </div>
+    </div>
+
     <partial name="_MensajesTempDataPartial" />
 
-    <div class="overflow-x-auto bg-white rounded-lg shadow">
-        <table class="min-w-full divide-y divide-gray-200" id="dataTableOrdenesCompra">
-            <thead class="bg-slate-50">
-                <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Código OC</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Proveedor</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha Emisión</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
-                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Documento</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Total (S/)</th>
-                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                @if (Model != null && Model.Any())
-                {
-                    @foreach (var orden in Model)
-                    {
-                        bool completado = orden.Estado == "Completado" || orden.Estado == "Cancelado";
-
-                        string estadoClass = "bg-gray-100 text-gray-800"; // Gris (Default)
-                        string estadoIcon = "fas fa-question-circle";
-
-                        switch (orden.Estado)
-                        {
-                            case "Pendiente":
-                                estadoClass = "bg-yellow-100 text-yellow-800"; // Naranja
-                                estadoIcon = "fas fa-clock";
-                                break;
-                            case "Aprobado":
-                                estadoClass = "bg-blue-100 text-blue-800"; // Azul
-                                estadoIcon = "fas fa-thumbs-up";
-                                break;
-                            case "Recibido Parcial":
-                                estadoClass = "bg-indigo-100 text-indigo-800"; // Indigo
-                                estadoIcon = "fas fa-truck-loading";
-                                break;
-                            case "Completado":
-                                estadoClass = "bg-green-100 text-green-800"; // Verde
-                                estadoIcon = "fas fa-check-circle";
-                                break;
-                            case "Cancelado":
-                                estadoClass = "bg-red-100 text-red-800"; // Rojo
-                                estadoIcon = "fas fa-times-circle";
-                                break;
-                        }
-
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@orden.Codigo</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@orden.ProveedorRazonSocial</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@orden.FechaEmision.ToString("dd/MM/yyyy")</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @estadoClass">
-                                    <i class="@estadoIcon mr-1"></i>
-                                    @orden.Estado
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center">
-                                @if (!string.IsNullOrEmpty(orden.RutaPdf))
-                                {
-                                    <a href="@orden.RutaPdf" target="_blank" class="p-1 text-slate-500 hover:text-red-600" title="Ver PDF">
-                                        <i class="fas fa-file-pdf fa-lg"></i>
-                                    </a>
-                                }
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-bold text-right">@orden.Total.ToString("N2")</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2 flex justify-center items-center">
-
-                                <!-- Botón Ver Detalles (Para todos) -->
-                                <a href="#" class="p-1 text-slate-500 hover:text-blue-700" title="Ver Detalles">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-
-                                <!-- Botón Recepcionar (Solo si no está completada/cancelada) -->
-                                @if (!completado)
-                                {
-                                    <button type="button"
-                                            class="p-1 text-slate-500 hover:text-green-700 btn-recepcionar"
-                                            data-modal-url="@Url.Action("AbrirModalRecepcion", "OrdenCompra", new { id = orden.Id })"
-                                            title="Recepcionar">
-                                        <i class="fas fa-truck-loading"></i>
-                                    </button>
-                                }
-
-                                <!-- Botón Generar Solicitud de Pago (Solo Admin/Usuario) -->
-                                @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Administrador") || User.IsInRole("Usuario")))
-                                {
-                                    <form asp-action="GenerarSolicitudPago"
-                                          asp-controller="OrdenCompra"
-                                          asp-route-id="@orden.Id"
-                                          method="post"
-                                          data-form-ajax="true"
-                                          style="display:inline;">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="p-1 text-slate-500 hover:text-yellow-600" title="Enviar a Tesorería (Generar SP)">
-                                            <i class="fas fa-money-check-alt"></i>
-                                        </button>
-                                    </form>
-                                }
-                            </td>
-                        </tr>
-                    }
-                }
-                else
-                {
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/30 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100" id="dataTableOrdenesCompra">
+                <thead class="bg-slate-50">
                     <tr>
-                        <td colspan="7" class="px-6 py-4 text-center text-slate-500">
-                            No hay órdenes de compra para mostrar.
-                        </td>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Código</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Proveedor</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Emisión</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Documento</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">Total (S/)</th>
+                        <th class="px-6 py-4 w-32"></th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="divide-y divide-slate-50 bg-white">
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var orden in Model)
+                        {
+                            bool completado = orden.Estado == "Completado" || orden.Estado == "Cancelado";
+                            var color = orden.Estado switch
+                            {
+                                "Pendiente" => "amber",
+                                "Aprobado" => "blue",
+                                "Recibido Parcial" => "indigo",
+                                "Completado" => "emerald",
+                                "Cancelado" => "rose",
+                                _ => "slate"
+                            };
+
+                            <tr class="hover:bg-slate-50 transition-all group">
+                                <td class="px-6 py-5 whitespace-nowrap text-sm font-mono font-bold text-indigo-600 uppercase">@orden.Codigo</td>
+                                <td class="px-6 py-5">
+                                    <div class="text-sm font-bold text-slate-800">@orden.ProveedorRazonSocial</div>
+                                </td>
+                                <td class="px-6 py-5 whitespace-nowrap text-sm font-semibold text-slate-500">
+                                    @orden.FechaEmision.ToString("dd/MM/yyyy")
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase bg-@color-100 text-@color-700 border border-@color-200/50">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-@color-500 mr-2"></span>
+                                        @orden.Estado
+                                    </span>
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    @if (!string.IsNullOrEmpty(orden.RutaPdf))
+                                    {
+                                        <a href="@orden.RutaPdf" target="_blank" class="text-slate-400 hover:text-rose-600 transition-colors" title="Ver PDF">
+                                            <i class="fas fa-file-pdf text-xl"></i>
+                                        </a>
+                                    }
+                                </td>
+                                <td class="px-6 py-5 text-right whitespace-nowrap">
+                                    <span class="text-sm font-black text-slate-900 tracking-tight">S/ @orden.Total.ToString("N2")</span>
+                                </td>
+                                <td class="px-6 py-5 text-right">
+                                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button type="button"
+                                                class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                                                data-modal-url="@Url.Action("VerDetalles", "OrdenCompra", new { id = orden.Id })"
+                                                title="Ver Detalles">
+                                            <i class="fas fa-eye text-sm"></i>
+                                        </button>
+
+                                        @if (!completado)
+                                        {
+                                            <button type="button"
+                                                    class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                                    data-modal-url="@Url.Action("AbrirModalRecepcion", "OrdenCompra", new { id = orden.Id })"
+                                                    title="Recepcionar Materiales">
+                                                <i class="fas fa-truck-loading text-sm"></i>
+                                            </button>
+                                        }
+
+                                        @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Administrador") || User.IsInRole("Usuario")))
+                                        {
+                                            <form asp-action="GenerarSolicitudPago" asp-controller="OrdenCompra" asp-route-id="@orden.Id" method="post" data-form-ajax="true" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" title="Enviar a Tesorería">
+                                                    <i class="fas fa-money-check-alt text-sm"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-6 flex flex-col md:flex-row justify-between items-center px-4 gap-4 pb-4">
+        <div id="ocInfoContainer" class="text-xs font-bold text-slate-400 uppercase tracking-wider"></div>
+        <div id="ocPaginationContainer" class="flex gap-1.5"></div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        const table = $('#dataTableOrdenesCompra').DataTable({
+            "dom": "t",
+            "pageLength": 10,
+            "destroy": true,
+            "language": { "zeroRecords": "No se encontraron órdenes registradas." },
+            "order": [[0, 'desc']],
+            "drawCallback": function(settings) {
+                const api = this.api();
+                const info = api.page.info();
+                $('#ocInfoContainer').html(`MOSTRANDO ${info.start + 1} A ${info.end} DE ${info.recordsTotal} ÓRDENES`);
+                renderOCPagination(api);
+            }
+        });
+
+        $('#inputBuscarOC').on('keyup', function() { table.search(this.value).draw(); });
+
+        function renderOCPagination(api) {
+            const info = api.page.info();
+            let html = '';
+            if(info.pages <= 1) { $('#ocPaginationContainer').html(''); return; }
+
+            html += `<button onclick="ocPage('prev')" class="${info.page === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white border-slate-200'} p-2 rounded-lg border bg-slate-50 text-slate-600 transition-all shadow-sm"><i class="fas fa-chevron-left text-xs"></i></button>`;
+            for(let i = 0; i < info.pages; i++) {
+                const active = i === info.page ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50';
+                html += `<button onclick="ocGoTo(${i})" class="px-3.5 py-1.5 rounded-lg border font-bold text-xs transition-all ${active}">${i + 1}</button>`;
+            }
+            html += `<button onclick="ocPage('next')" class="${info.page === info.pages - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white border-slate-200'} p-2 rounded-lg border bg-slate-50 text-slate-600 transition-all shadow-sm"><i class="fas fa-chevron-right text-xs"></i></button>`;
+            $('#ocPaginationContainer').html(html);
+        }
+
+        window.ocGoTo = function(idx) { table.page(idx).draw('page'); };
+        window.ocPage = function(dir) { dir === 'prev' ? table.page('previous').draw('page') : table.page('next').draw('page'); };
+    });
+</script>

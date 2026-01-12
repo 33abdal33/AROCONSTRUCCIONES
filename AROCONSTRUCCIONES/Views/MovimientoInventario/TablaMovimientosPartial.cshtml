@@ -5,114 +5,188 @@
     var almacenesSelectList = ViewBag.Almacenes as SelectList;
 }
 
-<div class="pt-4">
+@* 1. CSS PARA LIMPIEZA TOTAL *@
+<style>
+    #dataTableMovimientos {
+        border-bottom: none !important;
+    }
 
-    @* 1. Encabezado y Botón "Registrar Movimiento" (CORREGIDO) *@
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-semibold text-slate-700">
-            <i class="fas fa-dolly mr-2 text-blue-600"></i> Historial de Movimientos
-        </h3>
+        #dataTableMovimientos thead th {
+            border-bottom: none !important;
+            letter-spacing: normal !important;
+        }
+
+        #dataTableMovimientos.no-footer {
+            border-bottom: none !important;
+        }
+
+        #dataTableMovimientos tbody tr:last-child td {
+            border-bottom: none !important;
+        }
+</style>
+
+<script>$.fn.dataTable.ext.errMode = 'none';</script>
+
+<div class="pt-2">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4 px-2">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
+                <i class="fas fa-exchange-alt text-white text-2xl"></i>
+            </div>
+            <div>
+                <h3 class="text-2xl font-bold text-slate-800 tracking-tight">Registro de Movimientos</h3>
+                <p class="text-sm font-medium text-slate-500">Auditoría completa de entradas, salidas y transferencias.</p>
+            </div>
+        </div>
 
         <button type="button"
                 onclick="cargarModalMovimiento('INGRESO')"
-                class="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700">
-            <i class="fas fa-plus mr-2"></i> Registrar Movimiento
+                class="flex-1 lg:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xs font-bold shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
+            <i class="fas fa-plus"></i> Registrar Movimiento
         </button>
     </div>
 
-    @* 2. Filtros de la Tabla (CORREGIDOS CON TAILWIND) *@
-    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
-        <div class="relative w-full md:w-1/3">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                <i class="fas fa-search text-slate-400"></i>
-            </span>
-            <input type="text" class="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 bg-white focus:border-blue-500 focus:ring-0" id="inputBuscarMovimiento" placeholder="Buscar por material o documento...">
-        </div>
-        <div class="flex w-full md:w-auto gap-2">
-            <select class="px-3 py-2 rounded-lg border border-slate-300 bg-white focus:border-blue-500 focus:ring-0 text-sm" id="filtroTipoMovimiento" style="min-width: 150px;">
-                <option selected value="">Todos Tipos</option>
-                <option value="INGRESO">ENTRADA</option>
-                <option value="SALIDA">SALIDA</option>
-            </select>
-            <select class="px-3 py-2 rounded-lg border border-slate-300 bg-white focus:border-blue-500 focus:ring-0 text-sm" id="filtroAlmacen" style="min-width: 200px;">
-                <option selected value="">Todos los Almacenes</option>
-                @if (almacenesSelectList != null)
-                {
-                    @foreach (var item in almacenesSelectList)
+    <div class="bg-slate-100/50 p-2 rounded-2xl mb-6 border border-slate-200/60 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-2">
+            <div class="md:col-span-5 relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                    <i class="fas fa-search text-base"></i>
+                </span>
+                <input type="text" id="inputBuscarMovimiento"
+                       class="w-full pl-11 pr-4 py-2.5 rounded-xl border-transparent bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-semibold transition-all shadow-sm"
+                       placeholder="Buscar material, responsable o documento...">
+            </div>
+
+            <div class="md:col-span-3">
+                <select id="filtroTipoMovimiento"
+                        class="w-full px-4 py-2.5 rounded-xl border-transparent bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 shadow-sm cursor-pointer">
+                    <option value="">📊 Todos los Tipos</option>
+                    <option value="ENTRADA">🟢 Entradas</option>
+                    <option value="SALIDA">🔴 Salidas</option>
+                </select>
+            </div>
+
+            <div class="md:col-span-4">
+                <select id="filtroAlmacen"
+                        class="w-full px-4 py-2.5 rounded-xl border-transparent bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 shadow-sm cursor-pointer">
+                    <option value="">🏢 Todos los Almacenes</option>
+                    @if (almacenesSelectList != null)
                     {
-                        <option value="@item.Text">@item.Text</option>
+                        @foreach (var item in almacenesSelectList)
+                        {
+                            <option value="@item.Text">@item.Text</option>
+                        }
                     }
-                }
-            </select>
+                </select>
+            </div>
         </div>
     </div>
 
     <partial name="_MensajesTempDataPartial" />
 
-    @* 3. Tabla de Movimientos (LIMPIA DE ERRORES) *@
-    <div class="overflow-x-auto bg-white rounded-lg shadow">
-        <table class="min-w-full divide-y divide-gray-200" id="dataTableMovimientos">
-            <thead class="bg-slate-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider">Fecha y Hora</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider">Tipo</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider">Material</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-1000 uppercase tracking-wider">Cantidad</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider">Almacén</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider">Documento</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider">Motivo</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase tracking-wider">Responsable</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-1000 uppercase tracking-wider">Stock Final</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                @if (Model != null && Model.Any())
-                {
-                    @foreach (var movimiento in Model)
-                    {
-                        var esEntrada = movimiento.TipoMovimiento == "INGRESO";
-                        var tipoClaseText = esEntrada ? "text-green-600" : "text-red-600";
-                        var tipoClaseBg = esEntrada ? "bg-green-100" : "bg-red-100";
-                        var iconoTipo = esEntrada ? "fas fa-arrow-up" : "fas fa-arrow-down";
-                        var signoCantidad = esEntrada ? "+" : "-";
-
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@movimiento.FechaMovimiento.ToString("yyyy-MM-dd HH:mm")</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @tipoClaseBg @tipoClaseText">
-                                    <i class="@iconoTipo mr-1"></i>
-                                    @(esEntrada ? "ENTRADA" : "SALIDA")
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-slate-900">@movimiento.MaterialNombre</div>
-                                <div class="text-sm text-slate-500">@movimiento.MaterialCodigo</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                                <span class="font-bold @tipoClaseText">
-                                    @signoCantidad@movimiento.Cantidad.ToString("N0")
-                                </span>
-                                <span class="text-slate-500 ml-1">@movimiento.UnidadMedida</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@movimiento.AlmacenNombre</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@movimiento.NroFacturaGuia</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@movimiento.Motivo</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@movimiento.ResponsableNombre</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-bold text-right">
-                                @movimiento.StockFinal.ToString("N0")
-                            </td>
-                        </tr>
-                    }
-                }
-                else
-                {
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/30 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100" id="dataTableMovimientos">
+                <thead class="bg-slate-50">
                     <tr>
-                        <td colspan="9" class="px-6 py-4 text-center text-slate-500">
-                            No hay movimientos de inventario registrados.
-                        </td>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha / Hora</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Operación</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Material / Insumo</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Cantidad</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Almacén</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Referencia</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Saldo Final</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="divide-y divide-slate-50 bg-white">
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var mov in Model)
+                        {
+                            var esEntrada = mov.TipoMovimiento == "INGRESO" || mov.TipoMovimiento.Contains("ENTRADA");
+                            var color = esEntrada ? "emerald" : "rose";
+                            var signo = esEntrada ? "+" : "-";
+
+                            <tr class="hover:bg-slate-50 transition-all">
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="text-sm font-semibold text-slate-800">@mov.FechaMovimiento.ToString("dd/MM/yyyy")</div>
+                                    <div class="text-xs font-bold text-slate-400 mt-0.5">@mov.FechaMovimiento.ToString("HH:mm") hrs</div>
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase bg-@color-100 text-@color-700 border border-@color-200/50">
+                                        @(esEntrada ? "Entrada" : "Salida")
+                                    </span>
+                                </td>
+                                <td class="px-6 py-5">
+                                    <div class="text-sm font-bold text-slate-800 uppercase tracking-tight">@mov.MaterialNombre</div>
+                                    <div class="text-[11px] font-bold text-slate-400 uppercase">REF: @mov.MaterialCodigo</div>
+                                </td>
+                                <td class="px-6 py-5 text-right whitespace-nowrap">
+                                    <span class="text-sm font-black text-@color-600">@signo@mov.Cantidad.ToString("N2")</span>
+                                    <span class="text-[10px] font-bold text-slate-400 ml-0.5 uppercase">@mov.UnidadMedida</span>
+                                </td>
+                                <td class="px-6 py-5">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-warehouse text-slate-300 text-xs"></i>
+                                        <span class="text-sm font-bold text-slate-600 uppercase">@mov.AlmacenNombre</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5">
+                                    <div class="text-sm font-bold text-slate-700 uppercase">@mov.Motivo</div>
+                                    <div class="text-[10px] font-bold text-slate-400 font-mono">DOC: @(string.IsNullOrEmpty(mov.NroFacturaGuia) ? "S/N" : mov.NroFacturaGuia)</div>
+                                </td>
+                                <td class="px-6 py-5 text-right">
+                                    <span class="text-sm font-black text-slate-900 tracking-tight">@mov.StockFinal.ToString("N2")</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-6 flex flex-col md:flex-row justify-between items-center px-4 gap-4 pb-4">
+        <div id="movimientosInfoContainer" class="text-xs font-bold text-slate-400 uppercase tracking-wider"></div>
+        <div id="movimientosPaginationContainer" class="flex gap-1.5"></div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        const table = $('#dataTableMovimientos').DataTable({
+            "dom": "t",
+            "pageLength": 10,
+            "destroy": true,
+            "language": { "zeroRecords": "No hay movimientos registrados." },
+            "order": [[0, 'desc']],
+            "drawCallback": function(settings) {
+                const api = this.api();
+                const info = api.page.info();
+                $('#movimientosInfoContainer').html(`MOSTRANDO ${info.start + 1} A ${info.end} DE ${info.recordsTotal} MOVIMIENTOS`);
+                renderMovPagination(api);
+            }
+        });
+
+        $('#inputBuscarMovimiento').on('keyup', function() { table.search(this.value).draw(); });
+        $('#filtroTipoMovimiento').on('change', function() { table.column(1).search(this.value).draw(); });
+        $('#filtroAlmacen').on('change', function() { table.column(4).search(this.value).draw(); });
+
+        function renderMovPagination(api) {
+            const info = api.page.info();
+            let html = '';
+            if(info.pages <= 1) { $('#movimientosPaginationContainer').html(''); return; }
+
+            html += `<button onclick="movPage('prev')" class="${info.page === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white border-slate-200'} p-2 rounded-lg border bg-slate-50 text-slate-600 transition-all"><i class="fas fa-chevron-left text-xs"></i></button>`;
+            for(let i = 0; i < info.pages; i++) {
+                const active = i === info.page ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50';
+                html += `<button onclick="movGoTo(${i})" class="px-3.5 py-1.5 rounded-lg border font-bold text-xs transition-all ${active}">${i + 1}</button>`;
+            }
+            html += `<button onclick="movPage('next')" class="${info.page === info.pages - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white border-slate-200'} p-2 rounded-lg border bg-slate-50 text-slate-600 transition-all"><i class="fas fa-chevron-right text-xs"></i></button>`;
+            $('#movimientosPaginationContainer').html(html);
+        }
+
+        window.movGoTo = function(idx) { table.page(idx).draw('page'); };
+        window.movPage = function(dir) { dir === 'prev' ? table.page('previous').draw('page') : table.page('next').draw('page'); };
+    });
+</script>

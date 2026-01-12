@@ -12,5 +12,6 @@ namespace AROCONSTRUCCIONES.Services.Interface
     {
         Task<IEnumerable<OrdenCompraListDto>> GetAllOrdenesCompraAsync();
         Task<OrdenCompra> CreateOrdenCompraAsync(OrdenCompraCreateDto dto);
+        Task<OrdenCompra> GetByIdWithDetailsAsync(int id);
     }
 }
