@@ -92,15 +92,24 @@ namespace AROCONSTRUCCIONES.Controllers
         [HttpGet]
         public async Task<IActionResult> GetDespachoRequerimientoModal(int id)
         {
-            _logger.LogInformation($"Cargando modal de despacho para Requerimiento ID: {id}");
+            _logger.LogInformation($"[ALMACÉN] Cargando modal de despacho para REQ ID: {id}");
 
+            // AGREGAMOS .AsNoTracking() para asegurar que traiga los detalles frescos de la BD
+            // incluso si el estado acaba de cambiar en otro proceso.
             var requerimiento = await _unitOfWork.Context.Requerimientos
                 .Include(r => r.Proyecto)
                 .Include(r => r.Detalles)
                     .ThenInclude(d => d.Material)
+                .AsNoTracking() // <--- ESTO SOLUCIONA EL PROBLEMA DE LA TABLA VACÍA
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (requerimiento == null) return NotFound();
+
+            // Verificación de seguridad para el Log
+            if (requerimiento.Detalles == null || !requerimiento.Detalles.Any())
+            {
+                _logger.LogWarning($"El requerimiento {id} no tiene detalles cargados.");
+            }
 
             await LoadModalSelectLists();
             return PartialView("_DespachoRequerimientoModalPartial", requerimiento);
@@ -147,6 +156,7 @@ namespace AROCONSTRUCCIONES.Controllers
                 }
 
                 // Si todo salió bien, guardamos definitivamente
+                await _requerimientoService.ActualizarEstadoSegunAtencionAsync(RequerimientoId);
                 await _unitOfWork.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -215,6 +225,14 @@ namespace AROCONSTRUCCIONES.Controllers
             ViewBag.Proyectos = new SelectList(
                 proyectos.Where(p => p.Estado == "En Ejecución" || p.Estado == "Planificación"),
                 "Id", "NombreProyecto");
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetStockPorAlmacenJson(int almacenId)
+        {
+            // El controlador solo delega la responsabilidad al servicio
+            var stock = await _inventarioService.GetStockActualPorAlmacenAsync(almacenId);
+
+            return Json(stock);
         }
     }
 }

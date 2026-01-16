@@ -4,6 +4,7 @@ using AROCONSTRUCCIONES.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AROCONSTRUCCIONES.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260114164300_nuevas_entidades_para_modeloOC")]
+    partial class nuevas_entidades_para_modeloOC
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1665,7 +1668,7 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
                         .HasForeignKey("ProyectoId");
 
                     b.HasOne("AROCONSTRUCCIONES.Models.Requerimiento", "Requerimiento")
-                        .WithMany("OrdenesCompra")
+                        .WithMany()
                         .HasForeignKey("RequerimientoId");
 
                     b.Navigation("Proveedor");
@@ -1884,8 +1887,6 @@ namespace AROCONSTRUCCIONES.Persistence.Migrations
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.Requerimiento", b =>
                 {
                     b.Navigation("Detalles");
-
-                    b.Navigation("OrdenesCompra");
                 });
 
             modelBuilder.Entity("AROCONSTRUCCIONES.Models.SolicitudPago", b =>

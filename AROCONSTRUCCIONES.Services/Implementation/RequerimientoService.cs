@@ -196,17 +196,53 @@ namespace AROCONSTRUCCIONES.Services.Implementation
         // --- MÉTODO CORREGIDO ---
         public async Task<IEnumerable<RequerimientoListDto>> GetAllAprobadosAsync()
         {
-            _logger.LogInformation("[RequerimientoService] Obteniendo requerimientos 'Aprobados'.");
+            var estadosInteres = new List<string> { "Aprobado", "Con Orden", "En Compra", "Parcial" };
 
             var requerimientos = await _unitOfWork.Context.Requerimientos
                 .Include(r => r.Proyecto)
-                .Where(r => r.Estado == "Aprobado")
-                // CORRECCIÓN: Usamos FechaSolicitud en lugar de Fecha
+                .Where(r => estadosInteres.Contains(r.Estado)) // <-- Ahora trae ambos
                 .OrderByDescending(r => r.FechaSolicitud)
                 .AsNoTracking()
                 .ToListAsync();
 
             return _mapper.Map<IEnumerable<RequerimientoListDto>>(requerimientos);
+        }
+        public async Task<bool> CambiarEstadoAsync(int id, string nuevoEstado)
+        {
+            _logger.LogInformation($"[RequerimientoService] Intentando cambiar estado de REQ ID: {id} a '{nuevoEstado}'");
+
+            var requerimiento = await _unitOfWork.Context.Requerimientos.FindAsync(id);
+
+            if (requerimiento == null)
+            {
+                _logger.LogWarning($"[RequerimientoService] No se encontró el requerimiento {id} para actualizar estado.");
+                return false;
+            }
+
+            requerimiento.Estado = nuevoEstado;
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation($"[RequerimientoService] Estado actualizado con éxito.");
+            return true;
+        }
+        public async Task ActualizarEstadoSegunAtencionAsync(int requerimientoId)
+        {
+            var req = await _unitOfWork.Context.Requerimientos
+                .Include(r => r.Detalles)
+                .FirstOrDefaultAsync(r => r.Id == requerimientoId);
+
+            if (req == null) return;
+
+            // Lógica: ¿Todos los items están cubiertos?
+            bool todoAtendido = req.Detalles.All(d => d.CantidadAtendida >= d.CantidadSolicitada);
+            bool algoAtendido = req.Detalles.Any(d => d.CantidadAtendida > 0);
+
+            if (todoAtendido)
+                req.Estado = "Despachado";
+            else if (algoAtendido)
+                req.Estado = "Parcial";
+
+            await _unitOfWork.SaveChangesAsync();
         }
     }
 }

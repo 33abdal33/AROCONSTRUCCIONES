@@ -12,5 +12,7 @@ namespace AROCONSTRUCCIONES.Services.Interface
 
         // NOTA: Los métodos Add/Update del saldo no van aquí
         // porque se llaman internamente desde MovimientoInventarioService, no desde el Controlador.
+        // Añade esto a tu interfaz existente
+        Task<IEnumerable<StockPorAlmacenDto>> GetStockActualPorAlmacenAsync(int almacenId);
     }
 }

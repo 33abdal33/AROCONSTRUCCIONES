@@ -52,7 +52,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="space-y-2">
-                            <label asp-for="Codigo" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Código de Referencia *</label>
+                            <label asp-for="Codigo" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Código de Referencia *</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
                                     <i class="fas fa-fingerprint text-xs"></i>
@@ -65,7 +65,7 @@
                         </div>
 
                         <div class="space-y-2">
-                            <label asp-for="Nombre" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre Comercial *</label>
+                            <label asp-for="Nombre" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Nombre Comercial *</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
                                     <i class="fas fa-tag text-xs"></i>
@@ -79,7 +79,7 @@
                     </div>
 
                     <div class="space-y-2">
-                        <label asp-for="Descripcion" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Especificaciones Técnicas</label>
+                        <label asp-for="Descripcion" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Especificaciones Técnicas</label>
                         <textarea asp-for="Descripcion"
                                   class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all placeholder:text-slate-300"
                                   rows="2" placeholder="Detalles adicionales, marca o modelo..."></textarea>
@@ -87,7 +87,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="space-y-2">
-                            <label asp-for="Categoria" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Categoría / Familia</label>
+                            <label asp-for="Categoria" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Categoría / Familia</label>
                             <select asp-for="Categoria"
                                     class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer"
                                     asp-items="@ViewBag.Categorias">
@@ -95,7 +95,7 @@
                             </select>
                         </div>
                         <div class="space-y-2">
-                            <label asp-for="UnidadMedida" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Unidad de Medida</label>
+                            <label asp-for="UnidadMedida" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Unidad de Medida</label>
                             <select asp-for="UnidadMedida"
                                     class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer"
                                     asp-items="@ViewBag.Unidades">
@@ -106,7 +106,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
                         <div class="space-y-2">
-                            <label asp-for="StockMinimo" class="text-[11px] font-black text-indigo-400 uppercase tracking-widest ml-1">Stock de Seguridad (Mín)</label>
+                            <label asp-for="StockMinimo" class="text-[11px] font-black text-indigo-800 uppercase tracking-widest ml-1">Stock de Seguridad (Mín)</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-indigo-400">
                                     <i class="fas fa-shield-alt text-xs"></i>
@@ -116,7 +116,7 @@
                             </div>
                         </div>
                         <div class="space-y-2">
-                            <label asp-for="PrecioUnitario" class="text-[11px] font-black text-indigo-400 uppercase tracking-widest ml-1">Precio Base de Venta *</label>
+                            <label asp-for="PrecioUnitario" class="text-[11px] font-black text-indigo-800 uppercase tracking-widest ml-1">Precio Base de Venta *</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-indigo-400 font-bold text-xs">S/</span>
                                 <input asp-for="PrecioUnitario" type="number" step="0.01" min="0"
@@ -124,7 +124,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                         <div>
                             <p class="text-sm font-bold text-slate-700">Disponibilidad del Material</p>

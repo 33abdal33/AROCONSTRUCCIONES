@@ -49,12 +49,14 @@ namespace AROCONSTRUCCIONES.Services.Mapping_Profile
             // 6. Mapeo de DetalleRequerimiento -> DetalleOrdenCompraDto (Para Compras)
             CreateMap<DetalleRequerimiento, DetalleOrdenCompraDto>()
                 .ForMember(dest => dest.IdMaterial, opt => opt.MapFrom(src => src.IdMaterial))
-                .ForMember(dest => dest.Material, opt => opt.MapFrom(src => src.Material.Nombre))
+                .ForMember(dest => dest.Material, opt => opt.MapFrom(src => src.Material.Nombre))   
                 .ForMember(dest => dest.Cantidad, opt => opt.MapFrom(src => src.CantidadSolicitada - src.CantidadAtendida))
                 .ForMember(dest => dest.PrecioUnitario, opt => opt.Ignore());
 
             // 7. Mapeo de Requerimiento -> OrdenCompraCreateDto (Para pre-llenar OC)
+            // 7. Requerimiento -> OrdenCompraCreateDto (Para pre-llenar OC desde el botón del carrito)
             CreateMap<Requerimiento, OrdenCompraCreateDto>()
+                .ForMember(dest => dest.RequerimientoId, opt => opt.MapFrom(src => src.Id)) // ¡AÑADIR ESTO!
                 .ForMember(dest => dest.ProyectoId, opt => opt.MapFrom(src => src.IdProyecto))
                 .ForMember(dest => dest.Codigo, opt => opt.MapFrom(src => $"OC-REQ-{src.Codigo}"))
                 .ForMember(dest => dest.Observaciones, opt => opt.MapFrom(src => $"Atención de Requerimiento: {src.Codigo}"))

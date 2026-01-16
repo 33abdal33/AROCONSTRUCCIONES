@@ -1,104 +1,133 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.ProveedorDto>
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    @* Cabecera del Módulo *@
-    <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center bg-slate-50/50">
-        <div>
-            <h3 class="text-xl font-bold text-slate-800 flex items-center">
-                <i class="fas fa-handshake mr-3 text-indigo-600"></i>
-                Directorio de Proveedores
-            </h3>
-            <p class="text-xs text-slate-500 mt-1">Lista completa de socios comerciales y suministros.</p>
-        </div>
+<div class="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden animate-in fade-in duration-500">
+    
+    @* --- CABECERA Y BUSCADOR --- *@
+    <div class="p-8 border-b border-slate-100 bg-slate-50/30">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div>
+                <h3 class="text-2xl font-black text-slate-800 tracking-tight flex items-center">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center mr-4 shadow-lg shadow-indigo-100">
+                        <i class="fas fa-handshake text-white text-sm"></i>
+                    </div>
+                    Directorio de Proveedores
+                </h3>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1 ml-14">Gestión de Cuentas y Suministros</p>
+            </div>
 
-        <button type="button"
-                class="mt-4 md:mt-0 flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-black rounded-lg shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-105 uppercase tracking-wider"
-                onclick="cargarModalProveedor()">
-            <i class="fas fa-plus-circle mr-2"></i> Registrar Proveedor
-        </button>
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                @* BUSCADOR EN TIEMPO REAL *@
+                <div class="relative w-full sm:w-80">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                        <i class="fas fa-search text-xs"></i>
+                    </span>
+                    <input type="text" id="busquedaProveedor" 
+                           class="w-full pl-11 pr-4 py-3 rounded-2xl border-2 border-slate-100 bg-white focus:border-indigo-500 focus:ring-0 outline-none text-sm font-bold text-slate-700 transition-all placeholder:text-slate-400 placeholder:font-medium" 
+                           placeholder="Buscar por RUC, nombre o cuenta...">
+                </div>
+
+                <button type="button"
+                        class="w-full sm:w-auto flex items-center justify-center px-8 py-3.5 bg-indigo-600 text-white text-xs font-black rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all transform hover:-translate-y-1 uppercase tracking-widest"
+                        onclick="cargarModalProveedor()">
+                    <i class="fas fa-plus-circle mr-2"></i> Nuevo Proveedor
+                </button>
+            </div>
+        </div>
     </div>
 
-    @* Tabla de Datos (Diseño Plano sin DataTables) *@
+    @* --- TABLA DE DATOS --- *@
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
+        <table class="min-w-full divide-y divide-slate-100" id="tablaProveedores">
+            <thead class="bg-slate-800">
                 <tr>
-                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">RUC</th>
-                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Razón Social</th>
-                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Categoría</th>
-                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Teléfono</th>
-                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Email</th>
-                    <th class="px-6 py-4 text-center text-[10px] font-black text-slate-500 uppercase tracking-widest">Estado</th>
-                    <th class="px-6 py-4 text-center text-[10px] font-black text-slate-500 uppercase tracking-widest w-24">Acciones</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-300 uppercase tracking-widest">Identificación</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-300 uppercase tracking-widest">Razón Social / Contacto</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-300 uppercase tracking-widest">Información Bancaria</th>
+                    <th class="px-6 py-4 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest">Detracciones</th>
+                    <th class="px-6 py-4 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest">Estado</th>
+                    <th class="px-6 py-4 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest w-24"></th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-slate-100">
+            <tbody class="bg-white divide-y divide-slate-50">
                 @if (Model != null && Model.Any())
                 {
                     @foreach (var prov in Model)
                     {
-                        <tr class="hover:bg-slate-50/80 transition-colors group">
-                            @* 1. RUC *@
-                            <td class="px-6 py-4 text-sm font-mono text-slate-600 font-medium">
-                                @prov.RUC
-                            </td>
-                            @* 2. Razón Social *@
-                            <td class="px-6 py-4">
-                                <div class="text-sm font-bold text-slate-800">@prov.RazonSocial</div>
-                            </td>
-                            @* 3. Categoría *@
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 text-[10px] font-bold rounded bg-indigo-50 text-indigo-600 border border-indigo-100 uppercase">
-                                    @(string.IsNullOrEmpty(prov.Especialidad) ? "Sin Categoría" : prov.Especialidad)
-                                </span>
-                            </td>
-                            @* 4. Teléfono *@
-                            <td class="px-6 py-4 text-sm text-slate-600">
-                                <div class="flex items-center">
-                                    <i class="fas fa-phone-alt mr-2 text-slate-300 text-xs"></i>
-                                    @prov.Telefono
+                        <tr class="hover:bg-slate-50/80 transition-all group row-proveedor">
+                            @* 1. RUC Y CATEGORIA *@
+                            <td class="px-6 py-5">
+                                <div class="text-sm font-mono font-bold text-indigo-600 search-data">@prov.RUC</div>
+                                <div class="mt-1">
+                                    <span class="px-2 py-0.5 text-[9px] font-black rounded-md bg-slate-100 text-slate-500 uppercase">
+                                        @(string.IsNullOrEmpty(prov.Especialidad) ? "GENERAL" : prov.Especialidad)
+                                    </span>
                                 </div>
                             </td>
-                            @* 5. Email *@
-                            <td class="px-6 py-4 text-sm text-slate-500">
-                                <div class="flex items-center">
-                                    <i class="fas fa-envelope mr-2 text-slate-300 text-xs"></i>
-                                    @prov.Email
+
+                            @* 2. RAZON SOCIAL *@
+                            <td class="px-6 py-5">
+                                <div class="text-sm font-black text-slate-800 uppercase tracking-tight search-data">@prov.RazonSocial</div>
+                                <div class="flex items-center mt-1 text-[11px] font-bold text-slate-400">
+                                    <i class="fas fa-user-circle mr-1.5 opacity-50"></i>
+                                    @(prov.NombreContacto ?? "Sin contacto asignado")
                                 </div>
                             </td>
-                            @* 6. Estado *@
-                            <td class="px-6 py-4 text-center">
-                                @if (prov.Estado)
+
+                            @* 3. CUENTAS BANCARIAS *@
+                            <td class="px-6 py-5 border-l border-slate-50">
+                                @if (!string.IsNullOrEmpty(prov.NumeroCuenta))
                                 {
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
-                                        <span class="w-1 h-1 rounded-full bg-green-500 mr-1.5"></span> ACTIVO
+                                    <div class="flex flex-col gap-1 search-data">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[9px] font-black bg-emerald-100 text-emerald-700 px-1.5 rounded uppercase">@prov.Banco</span>
+                                            <span class="text-xs font-mono font-bold text-slate-600">@prov.NumeroCuenta</span>
+                                        </div>
+                                        <div class="text-[10px] font-bold text-slate-400">
+                                            <span class="text-indigo-500">CCI:</span> @(prov.CCI ?? "---")
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-[10px] font-bold text-slate-300 italic">No registra cuentas</span>
+                                }
+                            </td>
+
+                            @* 4. DETRACCION *@
+                            <td class="px-6 py-5 text-center">
+                                @if (prov.TieneDetraccion)
+                                {
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black bg-amber-50 text-amber-600 border border-amber-100">
+                                        <i class="fas fa-percentage mr-1.5"></i> APLICA
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
-                                        <span class="w-1 h-1 rounded-full bg-red-500 mr-1.5"></span> INACTIVO
-                                    </span>
+                                    <span class="text-[10px] font-bold text-slate-300 uppercase tracking-tighter">No aplica</span>
                                 }
                             </td>
-                            @* 7. Acciones (Hover) *@
-                            <td class="px-6 py-4 text-center">
-                                <div class="flex justify-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button type="button"
-                                            class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            onclick="editarProveedor(@prov.Id)"
-                                            title="Editar Proveedor">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
 
+                            @* 5. ESTADO *@
+                            <td class="px-6 py-5 text-center">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase @(prov.Estado ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")">
+                                    <span class="w-1.5 h-1.5 rounded-full @(prov.Estado ? "bg-emerald-500" : "bg-rose-500") mr-2"></span>
+                                    @(prov.Estado ? "ACTIVO" : "INACTIVO")
+                                </span>
+                            </td>
+
+                            @* 6. ACCIONES *@
+                            <td class="px-6 py-5 text-right">
+                                <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                    <button type="button" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm rounded-xl transition-all"
+                                            onclick="editarProveedor(@prov.Id)" title="Editar">
+                                        <i class="fas fa-pen-nib text-xs"></i>
+                                    </button>
                                     @if (prov.Estado)
                                     {
-                                        <button type="button"
-                                                class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                onclick="desactivarProveedor(@prov.Id, '@prov.RazonSocial')"
-                                                title="Desactivar">
-                                            <i class="fas fa-trash-alt"></i>
+                                        <button type="button" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:shadow-sm rounded-xl transition-all"
+                                                onclick="desactivarProveedor(@prov.Id, '@prov.RazonSocial')" title="Desactivar">
+                                            <i class="fas fa-ban text-xs"></i>
                                         </button>
                                     }
                                 </div>
@@ -109,10 +138,10 @@
                 else
                 {
                     <tr>
-                        <td colspan="7" class="px-6 py-16 text-center">
-                            <div class="flex flex-col items-center">
-                                <i class="fas fa-address-book text-slate-200 text-6xl mb-4"></i>
-                                <p class="text-slate-400 font-medium">No se encontraron proveedores registrados.</p>
+                        <td colspan="6" class="px-6 py-24 text-center">
+                            <div class="flex flex-col items-center opacity-20">
+                                <i class="fas fa-folder-open text-7xl mb-4 text-slate-300"></i>
+                                <p class="text-sm font-black uppercase tracking-[0.3em] text-slate-400">Sin registros</p>
                             </div>
                         </td>
                     </tr>
@@ -125,46 +154,47 @@
 @Html.AntiForgeryToken()
 
 <script>
-    // 1. Abrir Modal Crear
+    $(document).ready(function() {
+        // --- LÓGICA DEL BUSCADOR EN TIEMPO REAL ---
+        $("#busquedaProveedor").on("keyup", function() {
+            var value = $(this).val().toLowerCase();
+            $("#tablaProveedores tbody tr").filter(function() {
+                // Busca en las columnas que tienen la clase 'search-data'
+                $(this).toggle($(this).find(".search-data").text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
     function cargarModalProveedor() {
         $.get('@Url.Action("Create", "Proveedor")', function (data) {
             $('#modal-placeholder').html(data);
         });
     }
 
-    // 2. Abrir Modal Editar
     function editarProveedor(id) {
         $.get('@Url.Action("GetProveedorParaEditar", "Proveedor")/' + id, function (data) {
             $('#modal-placeholder').html(data);
         });
     }
 
-    // 3. Lógica Desactivar (Eliminar)
     function desactivarProveedor(id, nombre) {
         const token = $('input[name="__RequestVerificationToken"]').val();
-
         Swal.fire({
             title: '¿Desactivar Proveedor?',
             text: `El proveedor "${nombre}" será marcado como inactivo.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Sí, desactivar',
-            cancelButtonText: 'Cancelar'
+            confirmButtonText: 'Sí, desactivar'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.ajax({
-                    url: '@Url.Action("Deactivate", "Proveedor")',
-                    type: 'POST',
-                    data: { id: id, __RequestVerificationToken: token },
-                    success: function(res) {
-                        if (res.success) {
-                            Swal.fire('¡Éxito!', res.message, 'success');
-                            loadTabContent('@Url.Action("ListaProveedores", "Proveedor")', '#tab-content-container');
-                        } else {
-                            Swal.fire('Error', res.message, 'error');
-                        }
+                $.post('@Url.Action("Deactivate", "Proveedor")', { id: id, __RequestVerificationToken: token }, function(res) {
+                    if (res.success) {
+                        Swal.fire('¡Éxito!', res.message, 'success').then(() => {
+                             loadTabContent('@Url.Action("ListaProveedores", "Proveedor")', '#tab-content-container');
+                        });
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
                     }
                 });
             }

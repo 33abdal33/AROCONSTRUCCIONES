@@ -1,62 +1,169 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.RequerimientoListDto>
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
-<div class="bg-white rounded-lg shadow-md">
-    <div class="p-4 md:p-6">
+<style>
+    #dataTableReqAprobados {
+        border-bottom: none !important;
+    }
 
-        <div class="flex flex-col md:flex-row justify-between items-center mb-4">
-            <h3 class="text-xl font-semibold text-slate-700">
-                <i class="fas fa-check-double mr-2 text-green-600"></i>
-                Requerimientos Aprobados (Listos para Comprar)
-            </h3>
+        #dataTableReqAprobados thead th {
+            border-bottom: none !important;
+        }
+
+        #dataTableReqAprobados tbody tr:last-child td {
+            border-bottom: none !important;
+        }
+</style>
+
+<div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div class="p-8 md:p-10">
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h3 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+                        <i class="fas fa-check-double text-sm"></i>
+                    </div>
+                    Requerimientos Aprobados
+                </h3>
+                <p class="text-sm font-medium text-slate-500 mt-1 ml-13">Gestión de suministros y órdenes de compra emitidas.</p>
+            </div>
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-200">
+                    @Model.Count() Solicitudes en Lista
+                </div>
+            }
         </div>
 
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200" id="dataTableReqAprobados">
-                <thead class="bg-slate-50">
+            <table class="min-w-full divide-y divide-slate-100" id="dataTableReqAprobados">
+                <thead class="bg-slate-50/50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Código Req.</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Proyecto</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Fecha</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Solicitante</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Acciones</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Código Req.</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Proyecto Destino</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Fecha Aprob.</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Atención</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Solicitante</th>
+                        <th class="px-6 py-4 w-32"></th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-slate-50 bg-white">
                     @if (Model != null && Model.Any())
                     {
                         @foreach (var req in Model)
                         {
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@req.Codigo</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-600">@req.ProyectoNombre</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@req.Fecha.ToString("dd/MM/yyyy")</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@req.Solicitante</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
+                            string labelAtencion = "Falta Atender";
+                            string colorAtencion = "amber";
+                            string iconAtencion = "fa-clock";
+                            bool mostrarBotonCompra = true;
 
-                                    <button type="button" class="p-1 text-slate-500 hover:text-blue-700" title="Ver Detalles"
-                                            data-modal-url="@Url.Action("Details", "Requerimiento", new { id = req.Id })">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
+                            if (req.Estado == "Despachado")
+                            {
+                                labelAtencion = "Atendido";
+                                colorAtencion = "emerald";
+                                iconAtencion = "fa-check-circle";
+                                mostrarBotonCompra = false;
+                            }
+                            else if (req.Estado == "Con Orden" || req.Estado == "Comprado")
+                            {
+                                labelAtencion = "Orden Generada";
+                                colorAtencion = "indigo";
+                                iconAtencion = "fa-file-invoice-dollar";
+                                mostrarBotonCompra = false;
+                            }
+                            else if (req.Estado == "En Proceso" || req.Estado == "Parcial")
+                            {
+                                labelAtencion = "Atención Parcial";
+                                colorAtencion = "blue";
+                                iconAtencion = "fa-spinner";
+                                mostrarBotonCompra = true;
+                            }
 
-                                    <button type="button" class="p-1 text-green-500 hover:text-green-700" title="Generar Orden de Compra"
-                                            data-modal-url="@Url.Action("CargarFormularioOCDesdeRequerimiento", "OrdenCompra", new { id = req.Id })">
-                                        <i class="fas fa-shopping-cart"></i>
-                                    </button>
+                            <tr class="hover:bg-slate-50/80 transition-all group">
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="text-sm font-mono font-bold text-indigo-600 uppercase tracking-tight">@req.Codigo</div>
+                                </td>
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="text-sm font-bold text-slate-800 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">@req.ProyectoNombre</div>
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Logística ARO</div>
+                                </td>
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="text-sm font-semibold text-slate-600">@req.Fecha.ToString("dd/MM/yyyy")</div>
+                                </td>
+
+                                <td class="px-6 py-5 text-center whitespace-nowrap">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase bg-@colorAtencion-100 text-@colorAtencion-700 border border-@colorAtencion-200/50 shadow-sm">
+                                        <i class="fas @iconAtencion mr-1.5 text-[9px]"></i>
+                                        @labelAtencion
+                                    </span>
+                                </td>
+
+                                <td class="px-6 py-5">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-200 shadow-sm">
+                                            @(string.IsNullOrEmpty(req.Solicitante) ? "?" : req.Solicitante.Substring(0, 1).ToUpper())
+                                        </div>
+                                        <span class="text-sm font-bold text-slate-700">@req.Solicitante</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-right">
+                                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button type="button"
+                                                class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-white hover:text-indigo-600 hover:shadow-sm border border-transparent hover:border-slate-200 transition-all"
+                                                title="Ver Detalles"
+                                                onclick="cargarModalDetalles(@req.Id)">
+                                            @* <-- CAMBIO A FUNCIÓN DIRECTA *@
+                                            <i class="fas fa-eye text-xs"></i>
+                                        </button>
+
+                                        @if (mostrarBotonCompra)
+                                        {
+                                            <button type="button"
+                                                    class="w-9 h-9 flex items-center justify-center rounded-xl text-emerald-500 hover:bg-emerald-600 hover:text-white hover:shadow-lg hover:shadow-emerald-100 transition-all border border-emerald-100 hover:border-emerald-600"
+                                                    title="Generar Orden de Compra"
+                                                    onclick="cargarModalOC(@req.Id)">
+                                                @* <-- CAMBIO A FUNCIÓN DIRECTA *@
+                                                <i class="fas fa-shopping-cart text-xs"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <div class="w-9 h-9 flex items-center justify-center text-slate-300">
+                                                <i class="fas fa-lock text-xs"></i>
+                                            </div>
+                                        }
+                                    </div>
                                 </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5" class="px-6 py-4 text-center text-slate-500">
-                                No hay requerimientos aprobados pendientes de compra.
-                            </td>
-                        </tr>
                     }
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+@* SCRIPT DE DISPARO PARA ESTA VISTA *@
+<script>
+    function cargarModalOC(id) {
+        const url = '@Url.Action("CargarFormularioOCDesdeRequerimiento", "OrdenCompra")/' + id;
+        $('#modal-placeholder').load(url);
+    }
+
+    function cargarModalDetalles(id) {
+        const url = '@Url.Action("Details", "Requerimiento")/' + id;
+        $('#modal-placeholder').load(url);
+    }
+
+    $(document).ready(function() {
+        if (!$.fn.DataTable.isDataTable('#dataTableReqAprobados')) {
+            $('#dataTableReqAprobados').DataTable({
+                "dom": "t",
+                "language": { "zeroRecords": "No hay requerimientos para mostrar" },
+                "ordering": false
+            });
+        }
+    });
+</script>

@@ -1,25 +1,24 @@
 ﻿using AROCONSTRUCCIONES.Dtos;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AROCONSTRUCCIONES.Services.Interface
 {
     public interface IRequerimientoService
     {
-        // Obtiene la lista para la pestaña del proyecto
         Task<IEnumerable<RequerimientoListDto>> GetRequerimientosPorProyectoAsync(int proyectoId);
-
-        // Lógica para crear el nuevo requerimiento (Maestro-Detalle)
         Task<IEnumerable<RequerimientoListDto>> GetAllRequerimientosAsync();
         Task<string> GetNextCodigoAsync();
-        // Volvemos a usar el DTO completo que incluye la lista de Detalles
-        Task CreateAsync(RequerimientoCreateDto dto); // Antes: RequerimientoQuickCreateDto
+        Task CreateAsync(RequerimientoCreateDto dto);
         Task<RequerimientoDetailsDto> GetRequerimientoDetailsAsync(int id);
         Task<bool> ApproveAsync(int id);
         Task<IEnumerable<RequerimientoListDto>> GetAllAprobadosAsync();
-        Task<bool> CancelAsync(int id); // Nuevo método
+        Task<bool> CancelAsync(int id);
+        Task<bool> CambiarEstadoAsync(int id, string nuevoEstado);
+
+        // --- MÉTODO NUEVO PARA EL DESPACHO (VITAL) ---
+        // Este método calcula automáticamente si el estado debe ser "Parcial" o "Despachado"
+        // basándose en las cantidades físicas entregadas vs las solicitadas.
+        Task ActualizarEstadoSegunAtencionAsync(int requerimientoId);
     }
 }

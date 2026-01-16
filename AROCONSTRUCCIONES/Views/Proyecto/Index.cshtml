@@ -5,97 +5,152 @@
     ViewData["Title"] = "Gestión de Proyectos";
     var dashboardData = ViewBag.DashboardData as AROCONSTRUCCIONES.Dtos.ProyectoDashboardDto
                         ?? new AROCONSTRUCCIONES.Dtos.ProyectoDashboardDto();
-
-    // Obtenemos el primer ID de proyecto para la carga inicial de requerimientos
-    var primerProyectoId = Model.FirstOrDefault()?.Id ?? 0;
 }
 
-<!-- 1. Encabezado de estadísticas (KPIs) -->
+@* Estilos Premium para la UI *@
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+</style>
+
 <partial name="_ProyectosHeaderPartial" model="dashboardData" />
 
-<!-- 2. Contenedor del Módulo con Pestañas -->
-<div x-data="{ activeTab: 'proyectos' }" class="w-full mt-6">
+<div x-data="{ activeTab: 'proyectos' }" class="w-full mt-4 space-y-8">
 
-    <!-- Gráfico (Placeholder) -->
-    <div class="bg-white rounded-lg shadow-md mb-6">
-        <div class="p-4 md:p-6">
-            <h5 class="text-xl font-semibold text-slate-700">Avance de Proyectos</h5>
-            <p class="text-sm text-slate-500">Comparativo planificado vs ejecutado (%)</p>
-            <div class="mt-4 h-64 flex items-center justify-center bg-slate-50 text-center text-slate-400 rounded-lg">
-                <i class="fas fa-chart-bar fa-2x mr-3"></i> (Gráfico de Barras - Próximamente)
+    <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+        <div class="p-8 md:p-10">
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <h5 class="text-2xl font-black text-slate-800 tracking-tight">Rendimiento Operativo</h5>
+                    <p class="text-sm font-medium text-slate-500 mt-1">Avance físico comparado por proyecto (Soles S/)</p>
+                </div>
+                <div class="px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                    Métricas Consolidadas
+                </div>
+            </div>
+
+            <div class="relative h-80 w-full bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100">
+                <canvas id="avanceChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- 3. Navegación de Pestañas (Estilo Tailwind) -->
-    <div class="flex space-x-2">
-        <nav class="inline-flex h-10 items-center justify-center rounded-lg bg-gray-200 p-1 text-gray-600" aria-label="Tabs">
-            @{
-                const string activeStyle = "bg-white text-gray-900 shadow-sm";
-                const string inactiveStyle = "text-gray-600 hover:bg-white/50";
-                const string baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all";
-            }
-
-            <!-- Pestaña Proyectos -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+        <nav class="flex p-1.5 bg-slate-200/60 backdrop-blur-md rounded-2xl w-fit border border-slate-200">
             <button x-on:click="activeTab = 'proyectos'; loadTabContent('@Url.Action("ListaProyectosPartial", "Proyecto")', '#proyectos-content')"
-                    :class="{ '@activeStyle': activeTab === 'proyectos', '@inactiveStyle': activeTab !== 'proyectos' }"
-                    class="@baseClasses"
-                    data-tab-url="@Url.Action("ListaProyectosPartial", "Proyecto")">
-                <i class="fas fa-tasks mr-2"></i> Proyectos
+                    :class="activeTab === 'proyectos' ? 'bg-white text-indigo-600 shadow-lg scale-100' : 'text-slate-500 hover:bg-white/40 scale-95'"
+                    class="flex items-center justify-center px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ease-out">
+                <i class="fas fa-layer-group mr-2"></i> Proyectos
             </button>
 
-            <!-- Pestaña Requerimientos -->
             <button x-on:click="activeTab = 'requerimientos'; loadTabContent('@Url.Action("ListaRequerimientosPartial", "Requerimiento")', '#requerimientos-content')"
-                    :class="{ '@activeStyle': activeTab === 'requerimientos', '@inactiveStyle': activeTab !== 'requerimientos' }"
-                    class="@baseClasses"
-                    data-tab-url="@Url.Action("ListaRequerimientosPartial", "Requerimiento")">
-                <i class="fas fa-clipboard-list mr-2"></i> Requerimientos
+                    :class="activeTab === 'requerimientos' ? 'bg-white text-indigo-600 shadow-lg scale-100' : 'text-slate-500 hover:bg-white/40 scale-95'"
+                    class="flex items-center justify-center px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ease-out">
+                <i class="fas fa-clipboard-check mr-2"></i> Requerimientos
             </button>
-        </nav>  
+        </nav>
     </div>
 
-    <!-- 4. Contenedor del Contenido de la Pestaña -->
-    <div id="tab-content-container" class="mt-6">
-
-        <!-- Contenido de Pestaña 1 (Proyectos) -->
-        <div id="proyectos-content" x-show="activeTab === 'proyectos'" class="hidden">
-            <div class="flex justify-center items-center p-10">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
+    <div id="tab-content-container" class="min-h-[400px] relative">
+        <div id="proyectos-content" x-show="activeTab === 'proyectos'" x-cloak class="animate-in fade-in slide-in-from-bottom-2">
+            @* Se carga vía AJAX *@
         </div>
 
-        <!-- Contenido de Pestaña 2 (Requerimientos) -->
-        <div id="requerimientos-content" x-show="activeTab === 'requerimientos'" class="hidden">
-            <div class="flex justify-center items-center p-10">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
+        <div id="requerimientos-content" x-show="activeTab === 'requerimientos'" x-cloak class="animate-in fade-in slide-in-from-bottom-2">
+            @* Se carga vía AJAX *@
         </div>
     </div>
 
-    <!-- 5. Placeholder para los Modales -->
     <div id="modal-placeholder"></div>
-
 </div>
 
 @section Scripts {
-    <!-- Carga los scripts de validación ANTES que site.js -->
     @await Html.PartialAsync("_ValidationScriptsPartial")
 
+    @* Librería de Gráficos *@
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="~/js/logistica-tabs.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     <script>
         $(document).ready(function () {
-            $('#proyectos-content').removeClass('hidden');
-            $('#requerimientos-content').removeClass('hidden');//AÑADI SOLO ESTO Y AHORA SI APARECE. POR QUE ?
-
+            // A. CARGA INICIAL
             loadTabContent('@Url.Action("ListaProyectosPartial", "Proyecto")', '#proyectos-content');
+            initAvanceChart();
 
+            // B. MANEJO DE PESTAÑA DESDE REDIRECCIÓN
             const openTab = '@(TempData["OpenTab"])';
             if (openTab === '#requerimientos-tab') {
-                // Busca el botón de requerimientos y simula un clic
-                $('button[data-tab-url*="ListaRequerimientosPartial"]').click();
+                setTimeout(() => {
+                    $('button:contains("Requerimientos")').trigger('click');
+                }, 200);
             }
+
+            // C. GESTOR GLOBAL DE MODALES (Premium)
+            // Detecta cualquier clic en botones con data-modal-url o data-url
+            $(document).on('click', '[data-modal-url], [data-url][data-modal-trigger]', function (e) {
+                e.preventDefault();
+                const url = $(this).data('modal-url') || $(this).data('url');
+                const $placeholder = $('#modal-placeholder');
+
+                // Efecto de carga en el cursor o botón si fuera necesario
+                $.get(url).done(function (data) {
+                    $placeholder.html(data);
+                    // Si el modal usa Alpine.js, se inicializa solo al insertarse en el DOM
+                }).fail(function() {
+                    Swal.fire('Error', 'No se pudo cargar el formulario.', 'error');
+                });
+            });
         });
+
+        // D. FUNCIONALIDAD DEL GRÁFICO (Chart.js)
+        function initAvanceChart() {
+            const ctx = document.getElementById('avanceChart').getContext('2d');
+
+            // Datos traídos desde el Modelo C#
+            const labels = @Json.Serialize(Model.Select(p => p.NombreProyecto));
+            const dataAvance = @Json.Serialize(Model.Select(p => p.AvancePorcentaje));
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Avance Físico (%)',
+                        data: dataAvance,
+                        backgroundColor: 'rgba(79, 70, 229, 0.8)', // Indigo 600
+                        borderRadius: 12,
+                        borderSkipped: false,
+                        barThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: { display: false },
+                            ticks: { callback: value => value + '%' }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
     </script>
 }

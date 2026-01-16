@@ -84,23 +84,23 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-6 bg-slate-50 rounded-3xl border border-slate-100">
                         <div class="space-y-2">
-                            <label asp-for="MaterialId" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Insumo / Material *</label>
+                            <label asp-for="MaterialId" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Insumo / Material *</label>
                             <select asp-for="MaterialId" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer" required asp-items="materiales">
                                 <option value="">Buscar material...</option>
                             </select>
                         </div>
                         <div class="space-y-2">
-                            <label asp-for="AlmacenId" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Sede de Almacén *</label>
+                            <label asp-for="AlmacenId" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Sede de Almacén *</label>
                             <select asp-for="AlmacenId" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer" required asp-items="almacenes">
                                 <option value="">Seleccione sede...</option>
                             </select>
                         </div>
                         <div class="space-y-2">
-                            <label asp-for="Cantidad" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Cantidad a Procesar *</label>
+                            <label asp-for="Cantidad" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Cantidad a Procesar *</label>
                             <input asp-for="Cantidad" type="number" step="0.01" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-black text-slate-800 transition-all" placeholder="0.00" required />
                         </div>
                         <div class="space-y-2">
-                            <label asp-for="NroFacturaGuia" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Documento de Respaldo</label>
+                            <label asp-for="NroFacturaGuia" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Documento de Respaldo</label>
                             <input asp-for="NroFacturaGuia" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all placeholder:text-slate-300" placeholder="Ej: F001-000123" />
                         </div>
                     </div>
@@ -116,7 +116,7 @@
                                 </div>
                             </div>
                             <div class="space-y-2">
-                                <label asp-for="ProveedorId" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Proveedor Relacionado</label>
+                                <label asp-for="ProveedorId" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Proveedor Relacionado</label>
                                 <select asp-for="ProveedorId" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer" asp-items="proveedores">
                                     <option value="">Seleccione proveedor...</option>
                                 </select>
@@ -127,7 +127,7 @@
                     <div class="space-y-5">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div class="space-y-2">
-                                <label asp-for="Motivo" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Motivo / Justificación *</label>
+                                <label asp-for="Motivo" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Motivo / Justificación *</label>
                                 <select asp-for="Motivo" x-model="motivo" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer" required>
                                     <option value="">Seleccione razón...</option>
                                     <optgroup label="🟢 INGRESOS">
@@ -143,7 +143,7 @@
                                 </select>
                             </div>
                             <div class="space-y-2">
-                                <label asp-for="ResponsableNombre" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Personal Responsable *</label>
+                                <label asp-for="ResponsableNombre" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Personal Responsable *</label>
                                 <input asp-for="ResponsableNombre" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all" placeholder="Nombre completo" required />
                             </div>
                         </div>
@@ -168,11 +168,11 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="space-y-2">
-                            <label asp-for="FechaMovimiento" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Fecha de Registro</label>
+                            <label asp-for="FechaMovimiento" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Fecha de Registro</label>
                             <input asp-for="FechaMovimiento" type="datetime-local" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required />
                         </div>
                         <div class="space-y-2">
-                            <label asp-for="Notas" class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Observaciones Finales</label>
+                            <label asp-for="Notas" class="text-[11px] font-black text-slate-800 uppercase tracking-widest ml-1">Observaciones Finales</label>
                             <textarea asp-for="Notas" class="w-full px-4 py-3 rounded-xl border-none bg-slate-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all" rows="1" placeholder="Detalles internos..."></textarea>
                         </div>
                     </div>

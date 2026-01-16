@@ -22,6 +22,7 @@ namespace AROCONSTRUCCIONES.Dtos
         public string? Observaciones { get; set; }
 
         public int? ProyectoId { get; set; }
+        public int? RequerimientoId { get; set; } // <--- AGREGAR ESTO
 
         // CAMBIO IMPORTANTE: Usamos 'DetalleOrdenCompraCreateDto', no el DTO de lectura
         public List<DetalleOrdenCompraCreateDto> Detalles { get; set; } = new();

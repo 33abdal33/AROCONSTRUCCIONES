@@ -1,20 +1,17 @@
 ﻿namespace AROCONSTRUCCIONES.Dtos
 {
-    // Este DTO/ViewModel lleva TODOS los datos que el modal necesita
     public class ProveedorEdicionViewModelDto
     {
-        // Pestaña 1: Datos Generales
+        // Datos principales del proveedor (incluye ahora los campos bancarios)
         public ProveedorDto Proveedor { get; set; }
 
-        // --- ¡CAMPOS NUEVOS PARA EL NUEVO DISEÑO! ---
-
-        // Para el dropdown de "Categoría"
+        // Para el dropdown de especialidades/categorías
         public List<string> CategoriasMateriales { get; set; }
 
-        // Para la lista de checkboxes de "Materiales que Suministra"
+        // Lista completa de materiales para los checkboxes
         public List<MaterialDto> TodosLosMateriales { get; set; }
 
-        // Los IDs de los materiales que SÍ están asignados
+        // IDs de los materiales que el proveedor ya tiene asignados
         public List<int> MaterialesAsignadosIds { get; set; }
 
         public ProveedorEdicionViewModelDto()

@@ -27,6 +27,8 @@ namespace AROCONSTRUCCIONES.Controllers
         private readonly IProyectoService _proyectoService; // <-- 1. NUEVO (Para asignar OC a Proyecto)
         private readonly ITesoreriaService _tesoreriaService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IRequerimientoService _requerimientoService;
+        private readonly ILogger<OrdenCompraController> _logger; // <-- Agregar <OrdenCompraController>
         private readonly IMapper _mapper;
         private readonly UserManager<ApplicationUser> _userManager;
 
@@ -40,6 +42,8 @@ namespace AROCONSTRUCCIONES.Controllers
             IProyectoService proyectoService, // <-- INYECTAR
             IMapper mapper,
             IUnitOfWork unitOfWork,
+            IRequerimientoService requerimientoService,
+            ILogger<OrdenCompraController> logger, // <-- Agregar <OrdenCompraController>
             UserManager<ApplicationUser> userManager)
         {
             _ordenCompraService = ordenCompraService;
@@ -51,6 +55,8 @@ namespace AROCONSTRUCCIONES.Controllers
             _proyectoService = proyectoService; // <-- ASIGNAR
             _mapper = mapper;
             _unitOfWork = unitOfWork;
+            _requerimientoService = requerimientoService;
+            _logger = _logger;
             _userManager = userManager;
         }
 
@@ -76,23 +82,14 @@ namespace AROCONSTRUCCIONES.Controllers
         [HttpGet]
         public async Task<IActionResult> CargarFormularioOCDesdeRequerimiento(int id)
         {
-            // 1. Cargar Requerimiento con detalles y materiales
             var requerimiento = await _unitOfWork.Requerimientos.GetByIdWithDetailsAsync(id);
 
             if (requerimiento == null || requerimiento.Estado != "Aprobado")
-            {
                 return NotFound("Requerimiento no encontrado o no está aprobado.");
-            }
 
-            // 2. Identificar los materiales con saldo pendiente
-            var materialesNecesitadosIds = requerimiento.Detalles
-                .Where(d => (d.CantidadSolicitada - d.CantidadAtendida) > 0)
-                .Select(d => d.IdMaterial)
-                .ToList();
-
-            // 3. MAPEO MANUAL PARA TRAZABILIDAD
             var prefilledDto = new OrdenCompraCreateDto
             {
+                RequerimientoId = id, // <-- ¡VITAL! Aquí se mapea el ID para que viaje al POST
                 ProyectoId = requerimiento.IdProyecto,
                 Observaciones = $"Atención al Requerimiento {requerimiento.Codigo}",
                 FechaEmision = DateTime.Now,
@@ -117,12 +114,10 @@ namespace AROCONSTRUCCIONES.Controllers
             }
 
             if (!prefilledDto.Detalles.Any())
-            {
                 return Content("Este requerimiento ya fue atendido totalmente.");
-            }
 
-            // 4. FILTRADO DE PROVEEDORES (Solución a tu consulta)
-            // Buscamos proveedores que vendan AL MENOS UNO de los materiales requeridos
+            // Cargar proveedores aptos (filtrado por materiales del requerimiento)
+            var materialesNecesitadosIds = prefilledDto.Detalles.Select(d => d.IdMaterial).ToList();
             var proveedoresAptos = await _unitOfWork.Context.Set<ProveedorMaterial>()
                 .Where(pm => materialesNecesitadosIds.Contains(pm.MaterialId))
                 .Select(pm => pm.Proveedor)
@@ -130,14 +125,9 @@ namespace AROCONSTRUCCIONES.Controllers
                 .Where(p => p.Estado)
                 .ToListAsync();
 
-            // 5. CARGAR VIEW BAGS MANUALMENTE (Para no usar el helper que trae todos)
             ViewBag.Proveedores = new SelectList(proveedoresAptos, "Id", "RazonSocial");
-            ViewBag.FiltroCatalogoActivo = true;
-            ViewBag.Materiales = new SelectList(
-                await _materialService.GetAllActiveAsync(), "Id", "Nombre");
-
-            ViewBag.Proyectos = new SelectList(
-                await _proyectoService.GetAllProyectosAsync(), "Id", "NombreProyecto");
+            ViewBag.Materiales = new SelectList(await _materialService.GetAllActiveAsync(), "Id", "Nombre");
+            ViewBag.Proyectos = new SelectList(await _proyectoService.GetAllProyectosAsync(), "Id", "NombreProyecto");
 
             return PartialView("_OrdenCompraFormPartial", prefilledDto);
         }
@@ -190,32 +180,24 @@ namespace AROCONSTRUCCIONES.Controllers
                 await CargarViewBagsFormulario();
                 return PartialView("_OrdenCompraFormPartial", dto);
             }
+
             try
             {
+                // 1. Llamamos al servicio. 
+                // El servicio ya se encarga de: Crear OC, Generar PDF y Cambiar estado del REQ a "Con Orden"
                 await _ordenCompraService.CreateOrdenCompraAsync(dto);
-                
-                TempData["Exito"] = "¡Orden de Compra creada exitosamente!";
-                TempData["OpenTab"] = "#ordencompra-tab"; // Mantiene al usuario en la pestaña
-                
-                // Redirigir a Inventory/Index suele ser seguro, o al dashboard de compras
-                var redirectUrl = Url.Action("Index", "Inventario"); 
-                return Json(new { success = true, redirectUrl = redirectUrl, message = "¡Orden de Compra creada!" });
-            }
-            catch (DbUpdateException ex)
-            {
-                if (ex.InnerException is SqlException sqlEx && sqlEx.Number == 2601)
+
+                return Json(new
                 {
-                    return Json(new { success = false, message = $"Error: Código duplicado." });
-                }
-                return Json(new { success = false, message = "Error BD: " + (ex.InnerException?.Message ?? ex.Message) });
-            }
-            catch (ApplicationException appEx)
-            {
-                return Json(new { success = false, message = appEx.Message }); // Mensajes controlados por nuestro Servicio
+                    success = true,
+                    message = "¡Orden de Compra procesada exitosamente!",
+                    redirectUrl = Url.Action("Index", "Inventario")
+                });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error inesperado: " + ex.Message });
+                _logger.LogError(ex, "Error al procesar la Orden de Compra.");
+                return Json(new { success = false, message = "Error: " + ex.Message });
             }
         }
 
@@ -271,18 +253,9 @@ namespace AROCONSTRUCCIONES.Controllers
         // --- HELPER ACTUALIZADO ---
         private async Task CargarViewBagsFormulario()
         {
-            // 1. Proveedores
-            ViewBag.Proveedores = new SelectList(
-                await _proveedorService.GetAllActiveAsync(), "Id", "RazonSocial");
-
-            // 2. Materiales
-            ViewBag.Materiales = new SelectList(
-                await _materialService.GetAllActiveAsync(), "Id", "Nombre");
-
-            // 3. Proyectos (¡IMPORTANTE! Agregado)
-            // Necesitamos saber para qué obra es la compra
-            ViewBag.Proyectos = new SelectList(
-                await _proyectoService.GetAllProyectosAsync(), "Id", "NombreProyecto");
+            ViewBag.Proveedores = new SelectList(await _proveedorService.GetAllActiveAsync(), "Id", "RazonSocial");
+            ViewBag.Materiales = new SelectList(await _materialService.GetAllActiveAsync(), "Id", "Nombre");
+            ViewBag.Proyectos = new SelectList(await _proyectoService.GetAllProyectosAsync(), "Id", "NombreProyecto");
         }
     }
 }

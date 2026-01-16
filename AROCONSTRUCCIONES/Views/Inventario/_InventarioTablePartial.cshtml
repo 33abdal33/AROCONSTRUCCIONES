@@ -1,19 +1,15 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.InventarioDto>
 
 @{
-    var proyectos = ViewBag.Proyectos as SelectList;
+    var almacenes = ViewBag.Almacenes as SelectList;
 }
 
 <style>
-
-    table.dataTable,
-    table.dataTable.no-footer,
-    .dataTables_wrapper .dataTables_scroll div.dataTables_scrollBody {
+    table.dataTable, table.dataTable.no-footer, .dataTables_wrapper .dataTables_scroll div.dataTables_scrollBody {
         border-bottom: none !important;
     }
 
-    #mainInventoryTable,
-    #mainInventoryTable.no-footer {
+    #mainInventoryTable, #mainInventoryTable.no-footer {
         border-bottom: none !important;
         border-top: none !important;
     }
@@ -23,7 +19,6 @@
             letter-spacing: normal !important;
         }
 
-        /* Quitamos el borde que DataTables pone a la última fila */
         #mainInventoryTable tbody tr:last-child td {
             border-bottom: none !important;
         }
@@ -68,10 +63,13 @@
             </div>
 
             <div class="md:col-span-4">
-                <select id="filterProyecto" onchange="filtrarPorProyecto(this.value)"
-                        class="w-full px-4 py-2.5 rounded-xl border-transparent bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-600 shadow-sm cursor-pointer"
-                        asp-items="proyectos">
+                <select id="filterAlmacen"
+                        class="w-full px-4 py-2.5 rounded-xl border-transparent bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-600 shadow-sm cursor-pointer">
                     <option value="">🏢 Todos los Almacenes</option>
+                    @foreach (var p in almacenes)
+                    {
+                        <option value="@p.Text">@p.Text</option>
+                    }
                 </select>
             </div>
 
@@ -101,7 +99,7 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-50">
-                @if (Model != null && Model.Any())
+                @if (Model != null)
                 {
                     @foreach (var item in Model)
                     {
@@ -147,10 +145,8 @@
     </div>
 
     <div class="mt-6 flex flex-col md:flex-row justify-between items-center px-4 gap-4">
-        <div id="tableInfoContainer" class="text-xs font-bold text-slate-400 uppercase tracking-wider">
-        </div>
-        <div id="paginationContainer" class="flex gap-1.5">
-        </div>
+        <div id="tableInfoContainer" class="text-xs font-bold text-slate-400 uppercase tracking-wider"></div>
+        <div id="paginationContainer" class="flex gap-1.5"></div>
     </div>
 </div>
 
@@ -165,19 +161,26 @@
             "drawCallback": function(settings) {
                 const api = this.api();
                 const info = api.page.info();
-
                 $('#tableInfoContainer').html(
                     `PÁGINA <span class="text-slate-800">${info.page + 1}</span> DE <span class="text-slate-800">${info.pages}</span> — TOTAL: <span class="text-slate-800">${info.recordsTotal}</span>`
                 );
-
                 renderCustomPagination(api);
             }
         });
 
+        // Filtro de búsqueda general
         $('#customSearchInput').on('keyup', function() {
             table.search(this.value).draw();
         });
 
+        // Filtro de Almacén (CORREGIDO: Filtra por texto en la columna 6)
+        $('#filterAlmacen').on('change', function() {
+            const val = $(this).val();
+            // Filtro exacto para evitar que "Almacén 1" muestre también "Almacén 10"
+            table.column(6).search(val ? '^' + val + '$' : '', true, false).draw();
+        });
+
+        // Filtro de Estado
         $('#filterStatus').on('change', function() {
             table.column(5).search(this.value).draw();
         });
@@ -208,9 +211,4 @@
             else table.page('next').draw('page');
         };
     });
-
-    function filtrarPorProyecto(id) {
-        const url = '@Url.Action("InventarioPartial", "Inventario")';
-        loadTabContent(`${url}?proyectoId=${id}`, '#tab-content-container');
-    }
 </script>

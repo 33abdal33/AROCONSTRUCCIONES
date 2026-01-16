@@ -25,6 +25,6 @@ namespace AROCONSTRUCCIONES.Models
         public string? UsuarioAprobador { get; set; }
         public DateTime? FechaAprobacion { get; set; }
         public ICollection<DetalleRequerimiento>? Detalles { get; set; }
-
+        public ICollection<OrdenCompra>? OrdenesCompra { get; set; } // <--- AGREGAR ESTO
     }
 }

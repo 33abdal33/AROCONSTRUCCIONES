@@ -1,54 +1,97 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.RequerimientoListDto>
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
-<div class="bg-white rounded-lg shadow-md">
-    <div class="p-4 md:p-6">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-4">
-            <h3 class="text-xl font-semibold text-slate-700">
-                <i class="fas fa-dolly mr-2 text-amber-600"></i>
-                Atención de Pedidos (Salidas a Obra)
-            </h3>
-            <span class="text-xs text-slate-500">Muestra requerimientos aprobados con saldo pendiente en almacén</span>
+<style>
+    #dataTableReqPendientesDespacho {
+        border-bottom: none !important;
+    }
+
+        #dataTableReqPendientesDespacho thead th {
+            border-bottom: none !important;
+        }
+
+        #dataTableReqPendientesDespacho tbody tr:last-child td {
+            border-bottom: none !important;
+        }
+</style>
+
+<div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div class="p-8 md:p-10">
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-100">
+                    <i class="fas fa-shipping-fast text-white text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight">Atención de Pedidos</h3>
+                    <p class="text-sm font-medium text-slate-500">Cola de despacho: Salida de insumos hacia frentes de obra.</p>
+                </div>
+            </div>
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="px-4 py-1.5 bg-amber-50 text-amber-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100 animate-pulse">
+                    @Model.Count() Guías por Procesar
+                </div>
+            }
         </div>
 
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200" id="dataTableReqPendientesDespacho">
-                <thead class="bg-slate-50">
+            <table class="min-w-full divide-y divide-slate-100" id="dataTableReqPendientesDespacho">
+                <thead class="bg-slate-50/50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Código</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Proyecto / Obra</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Fecha Solicitud</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Prioridad</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Acciones</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Código / Fecha</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Proyecto / Destino</th>
+                        <th class="px-6 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">Prioridad</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Solicitante</th>
+                        <th class="px-6 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">Acción</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-slate-50 bg-white">
                     @if (Model != null && Model.Any())
                     {
                         @foreach (var req in Model)
                         {
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">@req.Codigo</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
-                                    <div class="font-medium">@req.ProyectoNombre</div>
-                                    <div class="text-xs text-slate-400">Solicitante: @req.Solicitante</div>
+                            <tr class="hover:bg-slate-50 transition-all group">
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="text-sm font-mono font-black text-indigo-600 tracking-tight">@req.Codigo</div>
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Emitido: @req.Fecha.ToString("dd/MM/yyyy")</div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@req.Fecha.ToString("dd/MM/yyyy")</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <td class="px-6 py-5">
+                                    <div class="text-sm font-black text-slate-800 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">@req.ProyectoNombre</div>
+                                    <div class="flex items-center gap-1.5 mt-0.5">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Despacho Autorizado</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-center">
                                     @if (req.Prioridad == "Urgente")
                                     {
-                                        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-bold">URGENTE</span>
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase bg-rose-100 text-rose-600 border border-rose-200">
+                                            <i class="fas fa-exclamation-triangle mr-1.5"></i> CRÍTICO
+                                        </span>
                                     }
                                     else
                                     {
-                                        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">Normal</span>
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase bg-slate-100 text-slate-500 border border-slate-200">
+                                            NORMAL
+                                        </span>
                                     }
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-                                    <button type="button" class="inline-flex items-center px-3 py-1.5 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors btn-despachar"
-                                            title="Atender Pedido de Almacén"
+                                <td class="px-6 py-5">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center text-[10px] font-bold text-indigo-500 border border-indigo-100">
+                                            @(string.IsNullOrEmpty(req.Solicitante) ? "?" : req.Solicitante.Substring(0, 1).ToUpper())
+                                        </div>
+                                        <span class="text-sm font-bold text-slate-600">@req.Solicitante</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    <button type="button"
+                                            class="inline-flex items-center px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-amber-200 transition-all hover:scale-105 active:scale-95"
                                             onclick="cargarModalDespacho(@req.Id)">
-                                        <i class="fas fa-boxes mr-2"></i>
+                                        <i class="fas fa-truck-loading mr-2 text-sm"></i>
                                         Despachar
                                     </button>
                                 </td>
@@ -58,8 +101,11 @@
                     else
                     {
                         <tr>
-                            <td colspan="5" class="px-6 py-10 text-center text-slate-400 italic">
-                                No hay pedidos pendientes de despacho para las obras.
+                            <td colspan="5" class="px-6 py-20 text-center">
+                                <div class="flex flex-col items-center opacity-20">
+                                    <i class="fas fa-clipboard-check text-6xl mb-4"></i>
+                                    <p class="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Sin órdenes de salida pendientes</p>
+                                </div>
                             </td>
                         </tr>
                     }

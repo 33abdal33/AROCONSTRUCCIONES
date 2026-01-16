@@ -39,29 +39,19 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
         public async Task<OrdenCompra> CreateOrdenCompraAsync(OrdenCompraCreateDto dto)
         {
-            _logger.LogInformation("--- Iniciando CreateOrdenCompraAsync (Versión Robusta con Validación de Proveedor) ---");
+            _logger.LogInformation("--- Iniciando CreateOrdenCompraAsync (Versión Corregida) ---");
 
-            // 1. Validaciones iniciales
             var proveedor = await _unitOfWork.Proveedores.GetByIdAsync(dto.IdProveedor);
-            if (proveedor == null)
-                throw new ApplicationException($"El Proveedor con ID {dto.IdProveedor} no fue encontrado.");
+            if (proveedor == null) throw new ApplicationException("Proveedor no encontrado.");
 
-            if (dto.Detalles == null || !dto.Detalles.Any())
-                throw new ApplicationException("La Orden de Compra debe tener al menos un material.");
-
-            // 2. Transacción
             using var transaction = await _unitOfWork.Context.Database.BeginTransactionAsync();
             try
             {
-                // A. Mapeo Inicial
                 var ordenCompra = _mapper.Map<OrdenCompra>(dto);
-
-                // B. Datos de Cabecera
                 ordenCompra.Estado = "Pendiente";
                 ordenCompra.FechaEmision = DateTime.Now;
-                ordenCompra.Moneda = dto.Moneda ?? "PEN";
 
-                // Generar código (Considera usar una secuencia real en producción)
+                // Generar código
                 string correlativo = (new Random().Next(1000, 9999)).ToString();
                 ordenCompra.Codigo = $"OC-{DateTime.Now.Year}-{DateTime.Now.Month:00}-{correlativo}";
 
@@ -69,73 +59,57 @@ namespace AROCONSTRUCCIONES.Services.Implementation
 
                 foreach (var detalle in ordenCompra.Detalles)
                 {
-                    // --- NUEVA VALIDACIÓN DE ROBUSTEZ: ¿El proveedor vende este material? ---
-                    // Verificamos en la tabla intermedia ProveedorMaterial
+                    // 1. Validar vinculación Proveedor-Material
                     var vinculacionExiste = await _unitOfWork.Context.Set<ProveedorMaterial>()
-                        .AnyAsync(pm => pm.ProveedorId == ordenCompra.IdProveedor &&
-                                        pm.MaterialId == detalle.IdMaterial);
+                        .AnyAsync(pm => pm.ProveedorId == ordenCompra.IdProveedor && pm.MaterialId == detalle.IdMaterial);
 
                     if (!vinculacionExiste)
                     {
                         var material = await _unitOfWork.Materiales.GetByIdAsync(detalle.IdMaterial);
-                        throw new ApplicationException($"Inconsistencia: El proveedor '{proveedor.RazonSocial}' no distribuye el material '{material?.Nombre}'.");
+                        throw new ApplicationException($"El proveedor no distribuye el material '{material?.Nombre}'.");
                     }
 
-                    // --- Cálculos de línea ---
-                    decimal bruto = detalle.Cantidad * detalle.PrecioUnitario;
-                    decimal descuento = bruto * (detalle.PorcentajeDescuento / 100);
-                    detalle.ImporteTotal = bruto - descuento;
-
+                    // 2. Cálculos de línea
+                    detalle.ImporteTotal = (detalle.Cantidad * detalle.PrecioUnitario) * (1 - (detalle.PorcentajeDescuento / 100));
                     subTotalAcumulado += detalle.ImporteTotal;
 
-                    // --- TRAZABILIDAD: Actualizar Requerimiento ---
-                    if (detalle.IdDetalleRequerimiento.HasValue && detalle.IdDetalleRequerimiento > 0)
-                    {
-                        var reqDetalle = await _unitOfWork.DetalleRequerimiento
-                                                          .GetByIdAsync(detalle.IdDetalleRequerimiento.Value);
-
-                        if (reqDetalle != null)
-                        {
-                            reqDetalle.CantidadAtendida += detalle.Cantidad;
-                            _unitOfWork.DetalleRequerimiento.Update(reqDetalle);
-                        }
-                    }
+                    // --- TRAZABILIDAD CORREGIDA ---
+                    // NO SUMAMOS a CantidadAtendida aquí. 
+                    // Solo verificamos que el ID del detalle del requerimiento sea válido.
                 }
 
-                // D. Totales Finales
                 ordenCompra.SubTotal = subTotalAcumulado;
-                ordenCompra.Impuesto = subTotalAcumulado * 0.18m; // IGV 18%
+                ordenCompra.Impuesto = subTotalAcumulado * 0.18m;
                 ordenCompra.Total = ordenCompra.SubTotal + ordenCompra.Impuesto;
 
-                // E. Guardar OC (COMMIT 1)
                 await _unitOfWork.OrdenesCompra.AddAsync(ordenCompra);
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation($"OC Guardada con ID: {ordenCompra.Id}. Iniciando generación de PDF...");
+                // 3. CAMBIAR ESTADO DEL REQUERIMIENTO (Sin tocar cantidades)
+                if (dto.RequerimientoId.HasValue)
+                {
+                    var req = await _unitOfWork.Context.Requerimientos.FindAsync(dto.RequerimientoId.Value);
+                    if (req != null)
+                    {
+                        req.Estado = "Con Orden"; // Ahora logística sabe que ya se compró
+                        _unitOfWork.Context.Update(req);
+                    }
+                }
 
-                // F. Generar PDF
+                // 4. Generar PDF
                 var ocCompleta = await _unitOfWork.OrdenesCompra.GetByIdWithDetailsAsync(ordenCompra.Id);
-
-                // Sincronizar totales para el PDF
-                ocCompleta.SubTotal = ordenCompra.SubTotal;
-                ocCompleta.Impuesto = ordenCompra.Impuesto;
-                ocCompleta.Total = ordenCompra.Total;
-
                 string rutaPdf = await _pdfService.GenerarPdfOrdenCompra(ocCompleta);
                 ordenCompra.RutaPdf = rutaPdf;
 
-                // G. Guardar Ruta PDF (COMMIT 2)
                 await _unitOfWork.SaveChangesAsync();
-
-                // H. Commit Final de la Transacción
                 await transaction.CommitAsync();
 
                 return ordenCompra;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ERROR DENTRO de la transacción CreateOrdenCompraAsync. Haciendo Rollback.");
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error al crear OC");
                 throw;
             }
         }

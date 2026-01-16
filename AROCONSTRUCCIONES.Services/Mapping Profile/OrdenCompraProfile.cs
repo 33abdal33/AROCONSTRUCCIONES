@@ -35,11 +35,12 @@ namespace AROCONSTRUCCIONES.Services.Mapping_Profile
 
             // 3. Mapeo para la Creación (DTO -> Entidad Padre)
             CreateMap<OrdenCompraCreateDto, OrdenCompra>()
-                .ForMember(dest => dest.Detalles, opt => opt.MapFrom(src => src.Detalles)) // Ahora sí funcionará porque existe el mapeo del punto 2
+                .ForMember(dest => dest.RequerimientoId, opt => opt.MapFrom(src => src.RequerimientoId)) // ¡AÑADIR ESTO!
+                .ForMember(dest => dest.Detalles, opt => opt.MapFrom(src => src.Detalles))
                 .ForMember(dest => dest.ProyectoId, opt => opt.MapFrom(src => src.ProyectoId))
-                .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => "Pendiente")) // Default
-                .ForMember(dest => dest.SubTotal, opt => opt.Ignore()) // Calculado en Servicio
-                .ForMember(dest => dest.Impuesto, opt => opt.Ignore()) // Calculado en Servicio
+                .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => "Pendiente"))
+                .ForMember(dest => dest.SubTotal, opt => opt.Ignore())
+                .ForMember(dest => dest.Impuesto, opt => opt.Ignore())
                 .ForMember(dest => dest.Total, opt => opt.Ignore());
 
             // 4. Mapeos para Recepción (Modal)

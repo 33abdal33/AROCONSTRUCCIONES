@@ -1,72 +1,113 @@
 ﻿@model AROCONSTRUCCIONES.Dtos.ProyectoDashboardDto
 
-<div class="mb-6">
+@* Nota: Este componente asume que vive dentro de un contenedor con:
+   x-data="{ activeTab: 'proyectos', statusFilter: 'todos' }" 
+*@
+
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 px-2">
     <div>
-        <h2 class="text-2xl font-semibold text-slate-800">Gestión de Proyectos</h2>
-        <p class="text-slate-500">Control integral de obras y cronogramas</p>
+        <span class="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1 block">Panel Ejecutivo</span>
+        <h2 class="text-3xl font-black text-slate-800 tracking-tight">Gestión de Proyectos</h2>
+        <p class="text-sm font-medium text-slate-500">Monitoreo de hitos físico-financieros y control operativo de obras.</p>
     </div>
+
+    @* Botón de Refresco Manual (Opcional) *@
+    <button onclick="location.reload()" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-2xl shadow-sm hover:bg-slate-50 transition-all group">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Actualizado en tiempo real</span>
+        <i class="fas fa-sync-alt text-[10px] text-slate-300 group-hover:rotate-180 transition-transform duration-500"></i>
+    </button>
 </div>
 
-<!-- Contenedor de las 5 Tarjetas (KPIs) -->
-<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10">
 
-    <!-- Tarjeta 1: Proyectos Activos -->
-    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-slate-500">Proyectos Activos</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.ProyectosActivos</p>
-            <p class="text-xs text-green-500">+2 este mes</p> <!-- Dato estático de la plantilla -->
+    <div @@click="statusFilter = 'En Ejecución'; activeTab = 'proyectos'; scrollToTable()"
+         class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 transition-all hover:scale-[1.02] cursor-pointer group">
+        <div class="flex justify-between items-start mb-4">
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <i class="fas fa-briefcase text-lg"></i>
+            </div>
+            <span class="px-2 py-1 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-black uppercase">+2 este mes</span>
         </div>
-        <div class="text-4xl text-blue-500 opacity-70">
-            <i class="fas fa-briefcase"></i>
+        <div>
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Proyectos Activos</p>
+            <p class="text-4xl font-black text-slate-800 tracking-tighter">@Model.ProyectosActivos</p>
         </div>
     </div>
 
-    <!-- Tarjeta 2: Avance Promedio -->
-    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-slate-500">Avance Promedio</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.AvancePromedio%</p>
-            <p class="text-xs text-green-500">+5% vs mes anterior</p> <!-- Dato estático -->
+    <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 transition-all hover:scale-[1.02]">
+        <div class="flex justify-between items-start mb-4">
+            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-sm">
+                <i class="fas fa-chart-line text-lg"></i>
+            </div>
+            <span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase">Eficiencia física</span>
         </div>
-        <div class="text-4xl text-teal-500 opacity-70">
-            <i class="fas fa-chart-pie"></i>
+        <div>
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Avance Promedio</p>
+            <p class="text-4xl font-black text-slate-800 tracking-tighter">@Model.AvancePromedio<span class="text-xl">%</span></p>
         </div>
     </div>
 
-    <!-- Tarjeta 3: En Cronograma -->
-    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-slate-500">En Cronograma</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.EnCronograma</p>
-            <p class="text-xs text-slate-400">75% del total</p> <!-- Dato estático -->
+    <div @@click="statusFilter = 'Cronograma'; activeTab = 'proyectos'; scrollToTable()"
+         class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 transition-all hover:scale-[1.02] cursor-pointer group">
+        <div class="flex justify-between items-start mb-4">
+            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                <i class="fas fa-calendar-check text-lg"></i>
+            </div>
         </div>
-        <div class="text-4xl text-green-500 opacity-70">
-            <i class="fas fa-calendar-check"></i>
+        <div>
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">En Cronograma</p>
+            <p class="text-4xl font-black text-slate-800 tracking-tighter">@Model.EnCronograma</p>
+            <div class="mt-2 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-indigo-500 h-full rounded-full transition-all duration-1000" style="width: @(Model.ProyectosActivos > 0 ? (Model.EnCronograma * 100 / Model.ProyectosActivos) : 0)%"></div>
+            </div>
         </div>
     </div>
 
-    <!-- Tarjeta 4: Presupuesto Total -->
-    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-slate-500">Presupuesto Total</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.PresupuestoTotal.ToString("C0")</p>
-            <p class="text-xs text-slate-400">Ejecutado @Model.EjecutadoTotal.ToString("C0")</p>
+    <a 
+       class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-[2rem] shadow-2xl shadow-slate-300 transition-all hover:scale-[1.02] block group">
+        <div class="flex justify-between items-start mb-4">
+            <div class="w-12 h-12 bg-white/10 text-white rounded-2xl flex items-center justify-center backdrop-blur-md group-hover:bg-white group-hover:text-slate-900 transition-all">
+                <i class="fas fa-coins text-lg"></i>
+            </div>
         </div>
-        <div class="text-4xl text-yellow-500 opacity-70">
-            <i class="fas fa-dollar-sign"></i>
+        <div>
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Presupuesto Total</p>
+            <p class="text-2xl font-black text-white tracking-tighter">S/ @Model.PresupuestoTotal.ToString("N2")</p>
+            <p class="text-[10px] font-bold text-indigo-400 mt-2 uppercase tracking-tighter">Ver Reporte Global →</p>
+        </div>
+    </a>
+
+    <div class="bg-white p-6 rounded-[2rem] border-2 border-rose-50 shadow-xl shadow-rose-200/20 transition-all hover:scale-[1.02]">
+        <div class="flex justify-between items-start mb-4">
+            @{
+                var ratio = (Model.PresupuestoTotal > 0) ? (Model.EjecutadoTotal / Model.PresupuestoTotal) * 100 : 0;
+                bool esCritico = ratio > 80;
+            }
+            <div class="w-12 h-12 @(esCritico ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600") rounded-2xl flex items-center justify-center shadow-sm">
+                <i class="fas fa-file-invoice-dollar text-lg"></i>
+            </div>
+
+            @if (esCritico)
+            {
+                <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg animate-bounce">CRÍTICO</span>
+            }
+            else
+            {
+                <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">SALUDABLE</span>
+            }
+        </div>
+        <div>
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Gasto Ejecutado</p>
+            <p class="text-2xl font-black text-slate-800 tracking-tighter">S/ @Model.EjecutadoTotal.ToString("N2")</p>
+            <p class="text-[10px] font-bold @(esCritico ? "text-rose-500" : "text-emerald-500") mt-2 italic">@ratio.ToString("F1")% del presupuesto</p>
         </div>
     </div>
 
-    <!-- Tarjeta 5: Costo Ejecutado (Dato no provisto en DTO, usamos el de la tarjeta anterior) -->
-    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-slate-500">Ejecutado</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.EjecutadoTotal.ToString("C0")</p>
-            <p class="text-xs text-red-500">68% del presupuesto</p> <!-- Dato estático -->
-        </div>
-        <div class="text-4xl text-red-500 opacity-70">
-            <i class="fas fa-file-invoice-dollar"></i>
-        </div>
-    </div>
 </div>
+
+<script>
+    function scrollToTable() {
+        document.getElementById('tab-content-container')?.scrollIntoView({ behavior: 'smooth' });
+    }
+</script>

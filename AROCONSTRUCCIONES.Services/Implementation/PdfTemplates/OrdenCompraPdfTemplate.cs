@@ -158,37 +158,45 @@ namespace AROCONSTRUCCIONES.Services.Implementation.PdfTemplates
                         c.RelativeColumn();   // Valor
                     });
 
-                    // Variables seguras
-                    var contacto = _oc.Proveedor?.NombreContacto ?? "---";
-                    var telefono = _oc.Proveedor?.Telefono ?? "---";
-
-                    // Fila 1
+                    // --- FILA 1: PROVEEDOR | FORMA PAGO ---
                     table.Cell().Text("PROVEEDOR:").Style(LabelStyle);
-                    table.Cell().Text(_oc.Proveedor?.RazonSocial).Style(ValueStyle);
+                    table.Cell().Text(_oc.Proveedor?.RazonSocial ?? "---").Style(ValueStyle);
 
                     table.Cell().Text("FORMA PAGO:").Style(LabelStyle);
-                    table.Cell().Text(_oc.FormaPago ?? "No especificado").Style(ValueStyle); // DATO REAL
+                    table.Cell().Text(_oc.FormaPago ?? "---").Style(ValueStyle);
 
-                    // Fila 2
+                    // --- FILA 2: RUC | MONEDA ---
                     table.Cell().Text("RUC:").Style(LabelStyle);
-                    table.Cell().Text(_oc.Proveedor?.RUC).Style(ValueStyle);
-
-                    table.Cell().Text("ENTREGA EN:").Style(LabelStyle);
-                    table.Cell().Text("ALMACEN OBRA").Style(ValueStyle);
-
-                    // Fila 3
-                    table.Cell().Text("DIRECCIÓN:").Style(LabelStyle);
-                    table.Cell().Text(_oc.Proveedor?.Direccion).Style(ValueStyle);
+                    table.Cell().Text(_oc.Proveedor?.RUC ?? "---").Style(ValueStyle);
 
                     table.Cell().Text("MONEDA:").Style(LabelStyle);
                     table.Cell().Text(_oc.Moneda == "USD" ? "DÓLARES (USD)" : "SOLES (PEN)").Style(ValueStyle);
 
-                    // Fila 4 (NUEVOS CAMPOS SOLICITADOS)
+                    // --- FILA 3: DIRECCIÓN | ENTREGA EN ---
+                    table.Cell().Text("DIRECCIÓN:").Style(LabelStyle);
+                    table.Cell().Text(_oc.Proveedor?.Direccion ?? "---").Style(ValueStyle);
+
+                    table.Cell().Text("ENTREGA EN:").Style(LabelStyle);
+                    // Jalamos la ubicación del proyecto vinculado
+                    table.Cell().Text(_oc.Proyecto?.Ubicacion ?? "ALMACÉN DE OBRA").Style(ValueStyle);
+
+                    // --- FILA 4: CONTACTO | TELÉFONO ---
                     table.Cell().Text("CONTACTO:").Style(LabelStyle);
-                    table.Cell().Text(contacto).Style(ValueStyle); // <-- DATO REAL
+                    table.Cell().Text(_oc.Proveedor?.NombreContacto ?? "---").Style(ValueStyle);
 
                     table.Cell().Text("TELÉFONO:").Style(LabelStyle);
-                    table.Cell().Text(telefono).Style(ValueStyle); // <-- DATO REAL
+                    table.Cell().Text(_oc.Proveedor?.Telefono ?? "---").Style(ValueStyle);
+
+                    // --- FILA 5: CUENTAS BANCARIAS (BASADO EN TU MODELO) ---
+                    table.Cell().Text("CUENTA 1:").Style(LabelStyle);
+                    // Mostramos el Banco + Número de Cuenta
+                    var cuenta1 = string.IsNullOrEmpty(_oc.Proveedor?.NumeroCuenta)
+                        ? "---"
+                        : $"{_oc.Proveedor.Banco}: {_oc.Proveedor.NumeroCuenta}";
+                    table.Cell().Text(cuenta1).Style(ValueStyle);
+
+                    table.Cell().Text("CUENTA 2 (CCI):").Style(LabelStyle);
+                    table.Cell().Text(_oc.Proveedor?.CCI ?? "---").Style(ValueStyle);
                 });
             });
         }

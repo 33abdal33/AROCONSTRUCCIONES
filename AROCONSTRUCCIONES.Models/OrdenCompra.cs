@@ -28,15 +28,16 @@ namespace AROCONSTRUCCIONES.Models
         public decimal Total { get; set; }
 
         public string Estado { get; set; } = "Emitida"; // Emitida, Aprobada, Anulada, Recepcionada
-
-        // MEJORA 6: Condiciones de pago
         public string FormaPago { get; set; } // "Contado", "Crédito 30 días", etc.
-
         public string? Observaciones { get; set; }
         public string? RutaPdf { get; set; }
 
         public int? ProyectoId { get; set; }
         public Proyecto? Proyecto { get; set; }
+        // --- VÍNCULO CON EL REQUERIMIENTO (Trazabilidad) ---
+        [ForeignKey("Requerimiento")]
+        public int? RequerimientoId { get; set; } // Nullable porque no toda OC nace de un REQ
+        public Requerimiento? Requerimiento { get; set; }
 
         public ICollection<DetalleOrdenCompra>? Detalles { get; set; }
     }

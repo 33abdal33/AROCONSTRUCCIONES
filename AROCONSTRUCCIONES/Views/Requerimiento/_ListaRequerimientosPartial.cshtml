@@ -5,76 +5,116 @@
     var proyectoId = ViewData["ProyectoId"] ?? 0;
 }
 
-@* Token de seguridad necesario para peticiones POST *@
+@* 1. CSS PARA CONSISTENCIA VISUAL *@
+<style>
+    #dataTableRequerimientos {
+        border-bottom: none !important;
+    }
+
+        #dataTableRequerimientos thead th {
+            border-bottom: none !important;
+            letter-spacing: normal !important;
+        }
+
+        #dataTableRequerimientos.no-footer {
+            border-bottom: none !important;
+        }
+
+        #dataTableRequerimientos tbody tr:last-child td {
+            border-bottom: none !important;
+        }
+</style>
+
 @Html.AntiForgeryToken()
 
-<div class="bg-white rounded-lg shadow-md">
-    <div class="p-4 md:p-6">
+<div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div class="p-8 md:p-10">
 
-        <div class="flex flex-col md:flex-row justify-between items-center mb-4">
-            <h3 class="text-xl font-semibold text-slate-700">
-                <i class="fas fa-clipboard-list mr-2 text-blue-600"></i>
-                Requerimientos de Material
-            </h3>
-            <div class="flex items-center space-x-2 mt-4 md:mt-0">
-                <button type="button"
-                        class="flex-shrink-0 flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none"
-                        data-modal-trigger="true"
-                        data-url="@Url.Action("Create", "Requerimiento", new { proyectoId = proyectoId })">
-                    <i class="fas fa-plus mr-2"></i> Nuevo Requerimiento
-                </button>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h3 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                    <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
+                        <i class="fas fa-clipboard-list text-sm"></i>
+                    </div>
+                    Requerimientos de Material
+                </h3>
+                <p class="text-sm font-medium text-slate-500 mt-1 ml-13">Gestión de solicitudes y flujo de aprobación de insumos.</p>
             </div>
+
+            <button type="button"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xs font-black shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 uppercase tracking-widest"
+                    data-modal-trigger="true"
+                    data-url="@Url.Action("Create", "Requerimiento", new { proyectoId = proyectoId })">
+                <i class="fas fa-plus"></i> Nuevo Requerimiento
+            </button>
         </div>
 
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200" id="dataTableRequerimientos">
-                <thead class="bg-slate-50">
+            <table class="min-w-full divide-y divide-slate-100" id="dataTableRequerimientos">
+                <thead class="bg-slate-50/50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Código Req.</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Fecha</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Solicitante</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Estado</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Acciones</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Código de Solicitud</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Fecha Emisión</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Personal Solicitante</th>
+                        <th class="px-6 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 w-28"></th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-slate-50 bg-white">
                     @if (Model != null && Model.Any())
                     {
                         @foreach (var req in Model)
                         {
-                            string estadoClass = req.Estado switch
+                            var color = req.Estado switch
                             {
-                                "Pendiente" => "bg-yellow-100 text-yellow-800",
-                                "Aprobado" => "bg-blue-100 text-blue-800",
-                                "Despachado" => "bg-green-100 text-green-800",
-                                "Cancelado" => "bg-red-100 text-red-800",
-                                _ => "bg-gray-100 text-gray-800"
+                                "Pendiente" => "amber",
+                                "Aprobado" => "blue",
+                                "Despachado" => "emerald",
+                                "Cancelado" => "rose",
+                                _ => "slate"
                             };
 
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@req.Codigo</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@req.Fecha.ToString("dd/MM/yyyy")</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@req.Solicitante</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @estadoClass">
+                            <tr class="hover:bg-slate-50/80 transition-all group">
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="text-sm font-mono font-bold text-indigo-600 uppercase tracking-tight">@req.Codigo</div>
+                                </td>
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="text-sm font-semibold text-slate-600">@req.Fecha.ToString("dd/MM/yyyy")</div>
+                                </td>
+                                <td class="px-6 py-5">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-200">
+                                            @(string.IsNullOrEmpty(req.Solicitante) ? "?" : req.Solicitante.Substring(0, 1).ToUpper())
+                                        </div>
+                                        <span class="text-sm font-bold text-slate-700">@req.Solicitante</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase bg-@color-100 text-@color-700 border border-@color-200/50">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-@color-500 mr-2"></span>
                                         @req.Estado
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-                                    <button type="button" class="p-1 text-slate-500 hover:text-blue-700" title="Ver Detalles"
-                                            data-modal-trigger="true"
-                                            data-url="@Url.Action("Details", "Requerimiento", new { id = req.Id })">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-
-                                    @if (req.Estado == "Pendiente")
-                                    {
-                                        <button type="button" class="p-1 text-slate-500 hover:text-red-700 btn-cancelar-req"
-                                                title="Cancelar Requerimiento"
-                                                data-id="@req.Id">
-                                            <i class="fas fa-trash-alt"></i>
+                                <td class="px-6 py-5 text-right">
+                                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button type="button"
+                                                class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all"
+                                                title="Ver Detalles"
+                                                data-modal-trigger="true"
+                                                data-url="@Url.Action("Details", "Requerimiento", new { id = req.Id })">
+                                            <i class="fas fa-eye text-xs"></i>
                                         </button>
-                                    }
+
+                                        @if (req.Estado == "Pendiente")
+                                        {
+                                            <button type="button"
+                                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all btn-cancelar-req"
+                                                    title="Anular Solicitud"
+                                                    data-id="@req.Id">
+                                                <i class="fas fa-trash-alt text-xs"></i>
+                                            </button>
+                                        }
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -82,8 +122,11 @@
                     else
                     {
                         <tr>
-                            <td colspan="5" class="px-6 py-4 text-center text-slate-500">
-                                Este proyecto aún no tiene requerimientos de material.
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center opacity-30">
+                                    <i class="fas fa-folder-open text-4xl mb-3"></i>
+                                    <p class="text-sm font-bold uppercase tracking-widest text-slate-400">Sin requerimientos registrados</p>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -94,7 +137,6 @@
 </div>
 
 <div id="modalContainer"></div>
-
 <script>
     $(document).ready(function () {
         // 1. ABRIR MODALES

@@ -1,29 +1,26 @@
 ﻿@model AROCONSTRUCCIONES.Models.Requerimiento
 
-<div x-data="{ open: true }"
-     x-show="open"
-     x-cloak
-     class="fixed inset-0 z-50 overflow-y-auto"
-     id="modal-despacho-container">
+<div x-data="{ open: true }" x-show="open" x-cloak
+     class="fixed inset-0 z-[70] overflow-y-auto" id="modal-despacho-container">
+    <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm transition-opacity"></div>
 
-    @* Fondo oscuro con desenfoque *@
-    <div class="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm transition-opacity"></div>
-
-    <div class="flex items-center justify-center min-h-screen p-4">
-
+    <div class="flex items-center justify-center min-h-screen p-4 text-center">
         <div @@click.away="open = false"
-             class="relative bg-white rounded-xl shadow-2xl max-w-5xl w-full overflow-hidden border border-slate-200 transform transition-all">
+             class="relative bg-white rounded-[2.5rem] shadow-2xl max-w-6xl w-full overflow-hidden border border-slate-200 transform transition-all text-left">
 
-            @* Cabecera *@
-            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800">
-                        <i class="fas fa-boxes mr-2 text-blue-600"></i>
-                        Despacho de Materiales: <span class="text-blue-700">@Model.Codigo</span>
-                    </h3>
-                    <p class="text-xs text-slate-500">Proyecto: <strong>@Model.Proyecto?.NombreProyecto</strong></p>
+            <div class="bg-slate-50 px-10 pt-8 pb-6 border-b border-slate-200 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
+                        <i class="fas fa-truck-loading text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 tracking-tight uppercase">Despacho de Materiales</h3>
+                        <p class="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+                            REQ: @Model.Codigo — <span class="text-slate-400">@(Model.Proyecto?.NombreProyecto ?? "Sin Proyecto Asignado")</span>
+                        </p>
+                    </div>
                 </div>
-                <button @@click="open = false" class="text-slate-400 hover:text-slate-600 btn-cerrar-modal p-2">
+                <button @@click="open = false" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-200 text-slate-400 transition-all btn-cerrar-modal">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -32,80 +29,92 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="RequerimientoId" value="@Model.Id" />
 
-                <div class="p-6">
-                    @* Datos de Cabecera del Despacho *@
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                        <div>
-                            <label class="block text-[10px] font-black text-blue-700 uppercase tracking-widest">Almacén de Salida *</label>
-                            <select name="AlmacenId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-blue-500 focus:border-blue-500" required>
+                <div class="p-10 space-y-8 max-h-[65vh] overflow-y-auto custom-scrollbar">
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-slate-50 rounded-3xl border border-slate-100 shadow-inner">
+                        <div class="space-y-2">
+                            <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Almacén de Salida *</label>
+                            <select id="selectAlmacenDespacho" name="AlmacenId" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all cursor-pointer" required>
                                 <option value="">Seleccione Almacén...</option>
                                 @if (ViewBag.Almacenes != null)
                                 {
-                                    @foreach (var item in (SelectList)ViewBag.Almacenes)
+                                    foreach (var item in (SelectList)ViewBag.Almacenes)
                                     {
                                         <option value="@item.Value">@item.Text</option>
                                     }
                                 }
                             </select>
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-[10px] font-black text-blue-700 uppercase tracking-widest">Referencia (Guía / Vale / Nro Documento) *</label>
-                            <input type="text" name="NroFacturaGuia" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm" placeholder="Ej: VALE-SALIDA-001" required />
+                        <div class="md:col-span-2 space-y-2">
+                            <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Referencia (Nro Guía / Vale) *</label>
+                            <input type="text" name="NroFacturaGuia" class="w-full px-4 py-3 rounded-xl border-none bg-white shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold text-slate-700 transition-all" placeholder="Ej: VALE-SALIDA-@DateTime.Now.Year" required />
                         </div>
                     </div>
 
-                    @* Tabla de Materiales *@
-                    <div class="overflow-x-auto border border-slate-200 rounded-lg shadow-sm">
-                        <table class="min-w-full divide-y divide-gray-200">
+                    <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="min-w-full divide-y divide-slate-100">
                             <thead class="bg-slate-800">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-white uppercase tracking-wider">Material</th>
-                                    <th class="px-4 py-3 text-right text-[10px] font-bold text-white uppercase tracking-wider">Total Solicitado</th>
-                                    <th class="px-4 py-3 text-right text-[10px] font-bold text-white uppercase tracking-wider">Ya Entregado</th>
-                                    <th class="px-4 py-3 text-right text-[10px] font-bold text-blue-300 uppercase tracking-wider">Pendiente</th>
-                                    <th class="px-4 py-3 text-center text-[10px] font-bold text-amber-400 uppercase tracking-wider w-40">Despachar Ahora</th>
+                                    <th class="px-6 py-4 text-left text-[10px] font-black text-slate-300 uppercase tracking-widest">Material</th>
+                                    <th class="px-4 py-4 text-right text-[10px] font-black text-slate-300 uppercase tracking-widest">Cant. Pedida</th>
+                                    <th class="px-4 py-4 text-right text-[10px] font-black text-slate-300 uppercase tracking-widest">Atendida</th>
+                                    <th class="px-4 py-4 text-right text-[10px] font-black text-indigo-400 uppercase tracking-widest">Pendiente</th>
+                                    <th class="px-4 py-4 text-right text-[10px] font-black text-amber-400 uppercase tracking-widest bg-slate-900/50">Stock Almacén</th>
+                                    <th class="px-6 py-4 text-center text-[10px] font-black text-emerald-400 uppercase tracking-widest w-40">Salida Real</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100 bg-white">
+                            <tbody class="divide-y divide-slate-50">
                                 @{
-                                    var detallesPendientes = Model.Detalles.Where(d => d.CantidadAtendida < d.CantidadSolicitada).ToList();
+                                    var itemsPendientes = Model.Detalles.Where(d => d.CantidadAtendida < d.CantidadSolicitada).ToList();
+                                    var i = 0;
                                 }
 
-                                @if (detallesPendientes.Any())
+                                @if (itemsPendientes.Any())
                                 {
-                                    @foreach (var det in detallesPendientes)
+                                    @foreach (var det in itemsPendientes)
                                     {
-                                        <tr class="hover:bg-slate-50 transition-colors">
-                                            <td class="px-4 py-3">
-                                                <div class="text-sm font-bold text-slate-800">@det.Material?.Nombre</div>
-                                                <div class="text-[10px] text-slate-400 font-mono">CÓD: @det.Material?.Codigo</div>
+                                        decimal saldoPendiente = det.CantidadSolicitada - det.CantidadAtendida;
+
+                                        <tr class="group hover:bg-slate-50 transition-all" data-material-id="@det.IdMaterial">
+                                            <td class="px-6 py-4">
+                                                <div class="text-sm font-bold text-slate-800 uppercase">@det.Material?.Nombre</div>
+                                                <div class="text-[10px] font-mono font-bold text-slate-400 uppercase">SKU: @det.Material?.Codigo</div>
                                             </td>
-                                            <td class="px-4 py-3 text-right text-sm text-slate-600 font-medium">@det.CantidadSolicitada.ToString("N2")</td>
-                                            <td class="px-4 py-3 text-right text-sm text-slate-500">@det.CantidadAtendida.ToString("N2")</td>
-                                            <td class="px-4 py-3 text-right text-sm font-black text-blue-600">
-                                                @((det.CantidadSolicitada - det.CantidadAtendida).ToString("N2"))
+
+                                            <td class="px-4 py-4 text-right text-sm font-bold text-slate-500">
+                                                @det.CantidadSolicitada.ToString("N2")
                                             </td>
-                                            <td class="px-4 py-3 bg-amber-50/30">
-                                                <input type="hidden" name="items.Index" value="@det.Id" />
-                                                <input type="hidden" name="items[@det.Id].MaterialId" value="@det.IdMaterial" />
-                                                <input type="hidden" name="items[@det.Id].DetalleRequerimientoId" value="@det.Id" />
-                                                <input type="number" name="items[@det.Id].CantidadADespachar"
-                                                       class="w-full text-right border-amber-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm font-black text-amber-700"
-                                                       max="@(det.CantidadSolicitada - det.CantidadAtendida)"
-                                                       min="0" step="any" value="0"
-                                                       onfocus="if(this.value=='0') this.value='';" onblur="if(this.value=='') this.value='0';" />
+
+                                            <td class="px-4 py-4 text-right text-sm font-bold text-slate-400">
+                                                @det.CantidadAtendida.ToString("N2")
+                                            </td>
+
+                                            <td class="px-4 py-4 text-right text-sm font-black text-indigo-600 bg-indigo-50/30">
+                                                @saldoPendiente.ToString("N2")
+                                            </td>
+
+                                            <td class="px-4 py-4 text-right bg-slate-50/50">
+                                                <span class="text-sm font-black text-slate-400 stock-disponible" id="stock-@det.IdMaterial">--</span>
+                                            </td>
+
+                                            <td class="px-6 py-4 bg-emerald-50/10">
+                                                <input type="hidden" name="items[@i].MaterialId" value="@det.IdMaterial" />
+                                                <input type="hidden" name="items[@i].DetalleRequerimientoId" value="@det.Id" />
+                                                <input type="number" name="items[@i].CantidadADespachar"
+                                                       class="w-full text-right border-none bg-white rounded-xl shadow-sm focus:ring-4 focus:ring-emerald-500/10 text-sm font-black text-emerald-700 input-despacho"
+                                                       max="@saldoPendiente" min="0" step="any" value="0" />
                                             </td>
                                         </tr>
+                                        i++;
                                     }
                                 }
                                 else
                                 {
                                     <tr>
-                                        <td colspan="5" class="px-4 py-12 text-center bg-gray-50">
-                                            <div class="flex flex-col items-center">
-                                                <i class="fas fa-check-circle text-green-500 text-5xl mb-4"></i>
-                                                <p class="text-slate-700 font-bold text-lg">¡Requerimiento Completado!</p>
-                                                <p class="text-slate-500 text-sm">No existen materiales pendientes por despachar en este pedido.</p>
+                                        <td colspan="6" class="px-6 py-20 text-center">
+                                            <div class="flex flex-col items-center opacity-30">
+                                                <i class="fas fa-check-double text-5xl mb-4 text-emerald-500"></i>
+                                                <p class="text-sm font-black uppercase tracking-widest text-slate-600">Todo el material ha sido despachado</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -115,20 +124,73 @@
                     </div>
                 </div>
 
-                @* Pie del Modal *@
-                <div class="bg-slate-50 px-8 py-4 border-t border-slate-200 flex justify-end gap-3">
-                    <button type="button" @@click="open = false" class="px-6 py-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors btn-cerrar-modal">
-                        CANCELAR
-                    </button>
-                    @if (detallesPendientes.Any())
+                <div class="px-10 py-8 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row-reverse gap-3">
+                    @if (Model.Detalles != null && Model.Detalles.Any(d => d.CantidadAtendida < d.CantidadSolicitada))
                     {
-                        <button type="submit" class="px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-black shadow-lg transition-all flex items-center transform hover:scale-105">
-                            <i class="fas fa-truck-loading mr-2"></i>
-                            CONFIRMAR SALIDA
+                        <button type="submit" id="btnConfirmarDespacho" class="w-full sm:w-auto px-12 py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-2xl shadow-xl shadow-emerald-100 transition-all uppercase tracking-widest flex items-center justify-center">
+                            <i class="fas fa-check-circle mr-2"></i> Confirmar Despacho
                         </button>
                     }
+                    <button type="button" @@click="open = false" class="w-full sm:w-auto px-10 py-4 bg-white border-2 border-slate-200 text-slate-500 hover:bg-slate-50 text-xs font-black rounded-2xl transition-all uppercase tracking-widest">
+                        Cerrar Ventana
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    // Usamos delegación de eventos vinculando al document
+    // Esto asegura que funcione aunque el modal se cargue después que la página
+    $(document).off('change', '#selectAlmacenDespacho'); // Limpiamos preventivamente
+    $(document).on('change', '#selectAlmacenDespacho', function () {
+
+        const alId = $(this).val();
+        const $labels = $('.stock-disponible');
+
+        console.log("Evento change detectado. Almacén ID seleccionado:", alId);
+
+        if (!alId) {
+            $labels.text('--').addClass('text-slate-400');
+            return;
+        }
+
+        $labels.text('...');
+
+        // Llamada AJAX
+        $.ajax({
+            url: '@Url.Action("GetStockPorAlmacenJson", "Inventario")',
+            type: 'GET',
+            data: { almacenId: alId },
+            success: function (data) {
+                console.log("DATOS RECIBIDOS DEL SERVIDOR:", data);
+
+                $('tr[data-material-id]').each(function () {
+                    const rowMatId = parseInt($(this).data('material-id'));
+
+                    // Buscamos el stock en el JSON (manejando mayúsculas/minúsculas)
+                    const infoStock = data.find(x => (x.materialId || x.MaterialId || 0) === rowMatId);
+                    const stockVal = infoStock ? (infoStock.stock ?? infoStock.Stock ?? 0) : 0;
+
+                    const $span = $(`#stock-${rowMatId}`);
+                    $span.text(parseFloat(stockVal).toFixed(2));
+
+                    // Cambiamos colores
+                    if (stockVal > 0) {
+                        $span.removeClass('text-rose-500 text-slate-400').addClass('text-emerald-600');
+                    } else {
+                        $span.removeClass('text-emerald-600 text-slate-400').addClass('text-rose-500');
+                    }
+                });
+            },
+            error: function (xhr) {
+                console.error("ERROR EN LA PETICIÓN:", xhr.status, xhr.statusText);
+                $labels.text('Error');
+            }
+        });
+    });
+
+    // Verificación inmediata al cargar el script
+    console.log("¡Script de Despacho vinculado correctamente al documento!");
+</script>

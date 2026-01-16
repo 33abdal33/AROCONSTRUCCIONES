@@ -1,108 +1,138 @@
 ﻿@model IEnumerable<AROCONSTRUCCIONES.Dtos.ProyectoDto>
 
-<div class="bg-white rounded-lg shadow-md">
-    <div class="p-4 md:p-6">
+<style>
+    #dataTableProyectos {
+        border-bottom: none !important;
+    }
 
-        <!-- Controles de la Tabla -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-4">
-            <!-- Filtros (Pestañas) -->
-            <div class="flex space-x-1 rounded-lg bg-slate-100 p-1">
-                <button class="px-3 py-1 text-sm font-medium text-slate-700 rounded-md bg-white shadow-sm">Todos</button>
-                <button class="px-3 py-1 text-sm font-medium text-slate-500 hover:text-slate-700">En Ejecución</button>
-                <button class="px-3 py-1 text-sm font-medium text-slate-500 hover:text-slate-700">Planificación</button>
-                <button class="px-3 py-1 text-sm font-medium text-slate-500 hover:text-slate-700">Finalizados</button>
-                <button class="px-3 py-1 text-sm font-medium text-slate-500 hover:text-slate-700">Pausados</button>
+        #dataTableProyectos thead th {
+            border-bottom: none !important;
+            letter-spacing: normal !important;
+        }
+
+        #dataTableProyectos tbody tr:last-child td {
+            border-bottom: none !important;
+        }
+
+    /* Animación para la barra de progreso */
+    @@keyframes progressLoad {
+        from {
+            width: 0;
+        }
+    }
+
+    .progress-bar-fill {
+        animation: progressLoad 1s ease-out;
+    }
+</style>
+
+<div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div class="p-8 md:p-10">
+
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
+
+            <div class="flex p-1 bg-slate-100 rounded-2xl w-full lg:w-auto border border-slate-200/50">
+                <button class="px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl bg-white text-indigo-600 shadow-sm transition-all">Todos</button>
+                <button class="px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl text-slate-500 hover:text-slate-700 transition-all">En Ejecución</button>
+                <button class="px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl text-slate-500 hover:text-slate-700 transition-all hidden md:block">Planificación</button>
+                <button class="px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl text-slate-500 hover:text-slate-700 transition-all">Finalizados</button>
             </div>
 
-            <!-- Botón y Búsqueda -->
-            <div class="flex items-center space-x-2 mt-4 md:mt-0">
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                        <i class="fas fa-search h-4 w-4 text-gray-400"></i>
+            <div class="flex items-center gap-3 w-full lg:w-auto">
+                <div class="relative flex-1 lg:w-64">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                        <i class="fas fa-search text-xs"></i>
                     </span>
-                    <input type="text" id="proyectoSearchInput" class="form-control w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 bg-white focus:border-blue-500 focus:ring-0" placeholder="Buscar proyectos...">
+                    <input type="text" id="proyectoSearchInput"
+                           class="w-full pl-11 pr-4 py-2.5 rounded-xl border-none bg-slate-50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-semibold transition-all shadow-sm placeholder:text-slate-400"
+                           placeholder="Buscar obras...">
                 </div>
+
                 <button type="button"
-                        class="flex-shrink-0 flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xs font-black shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 uppercase tracking-widest whitespace-nowrap"
                         data-modal-url="@Url.Action("GetProyectoParaEditar", "Proyecto", new { id = 0 })">
-                    <i class="fas fa-plus mr-2"></i> Nuevo Proyecto
+                    <i class="fas fa-plus"></i> Nuevo Proyecto
                 </button>
             </div>
         </div>
 
-        <!-- Tabla de Proyectos -->
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200" id="dataTableProyectos">
-                <thead class="bg-slate-50">
+            <table class="min-w-full divide-y divide-slate-100" id="dataTableProyectos">
+                <thead class="bg-slate-50/50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase">Proyecto</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase">Cliente</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase">Ubicación</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase">Avance</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-1000 uppercase">Presupuesto</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-1000 uppercase">Ejecutado</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase">Estado</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-1000 uppercase">Responsable</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-1000 uppercase">Acciones</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Proyecto / Código</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ubicación</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider w-40">Avance Físico</th>
+                        <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Presupuesto (S/)</th>
+                        <th class="px-6 py-4 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ejecutado (S/)</th>
+                        <th class="px-6 py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Responsable</th>
+
+                        <th class="px-6 py-4 w-10"></th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-slate-50 bg-white">
                     @if (Model != null && Model.Any())
                     {
                         @foreach (var p in Model)
                         {
-                            decimal porcentajeEjecutado = (p.Presupuesto > 0) ? (p.CostoEjecutado / p.Presupuesto) * 100 : 0;
-
-                            string estadoClass = "bg-gray-100 text-gray-800";
-                            switch (p.Estado)
+                            decimal porcentajeGasto = (p.Presupuesto > 0) ? (p.CostoEjecutado / p.Presupuesto) * 100 : 0;
+                            var colorEstado = p.Estado switch
                             {
-                                case "En Ejecución": estadoClass = "bg-blue-100 text-blue-800"; break;
-                                case "Planificación": estadoClass = "bg-yellow-100 text-yellow-800"; break;
-                                case "Finalizado": estadoClass = "bg-green-100 text-green-800"; break;
-                                case "Pausado": estadoClass = "bg-red-100 text-red-800"; break;
-                            }
+                                "En Ejecución" => "blue",
+                                "Planificación" => "amber",
+                                "Finalizado" => "emerald",
+                                "Pausado" => "rose",
+                                _ => "slate"
+                            };
 
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-slate-900">@p.NombreProyecto</div>
-                                    <div class="text-sm text-slate-500">@p.CodigoProyecto</div>
+                            <tr class="hover:bg-slate-50 transition-all group">
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="text-sm font-bold text-slate-800 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">@p.NombreProyecto</div>
+                                    <div class="text-[10px] font-mono font-bold text-slate-400">ID: @p.CodigoProyecto</div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@p.NombreCliente</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@p.Ubicacion</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: @p.AvancePorcentaje%"></div>
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <div class="flex items-center gap-2 text-slate-600">
+                                        <i class="fas fa-map-marker-alt text-[10px] text-slate-300"></i>
+                                        <span class="text-xs font-semibold">@p.Ubicacion</span>
+                                    </div>
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase mt-0.5">CLIENTE: @p.NombreCliente</div>
+                                </td>
+                                <td class="px-6 py-5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200/50">
+                                            <div class="bg-indigo-500 h-full rounded-full progress-bar-fill" style="width: @p.AvancePorcentaje%"></div>
                                         </div>
-                                        <span class="text-sm text-slate-600 ml-2">@p.AvancePorcentaje%</span>
+                                        <span class="text-[11px] font-black text-slate-700 w-10">@p.AvancePorcentaje%</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 text-right">@p.Presupuesto.ToString("C0")</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right">
-                                    <div class="text-sm text-slate-900">@p.CostoEjecutado.ToString("C0")</div>
-                                    <div class="text-sm text-slate-500">@porcentajeEjecutado.ToString("N0")%</div>
+                                <td class="px-6 py-5 text-right whitespace-nowrap">
+                                    <span class="text-sm font-bold text-slate-600">S/ @p.Presupuesto.ToString("N2")</span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @estadoClass">
+                                <td class="px-6 py-5 text-right whitespace-nowrap">
+                                    <div class="text-sm font-black text-slate-900 tracking-tight">S/ @p.CostoEjecutado.ToString("N2")</div>
+                                    <div class="text-[10px] font-bold @(porcentajeGasto > 90 ? "text-rose-500" : "text-slate-400")">
+                                        @porcentajeGasto.ToString("N1")% consumido
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-center">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase bg-@colorEstado-100 text-@colorEstado-700 border border-@colorEstado-200/50">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-@colorEstado-500 mr-2"></span>
                                         @p.Estado
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@p.Responsable</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                    <button type="button" class="text-slate-500 hover:text-blue-700"
-                                            data-modal-url="@Url.Action("GetProyectoParaEditar", "Proyecto", new { id = p.Id })"
-                                            title="Editar Proyecto">
-                                        <i class="fas fa-ellipsis-v"></i>
+                                <td class="px-6 py-5 text-left whitespace-nowrap">
+                                    <span class="text-sm font-bold text-slate-600">@p.Responsable</span>
+                                </td>
+                                <td class="px-6 py-5 text-right">
+                                    <button type="button"
+                                            class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-800 transition-all"
+                                            data-modal-url="@Url.Action("GetProyectoParaEditar", "Proyecto", new { id = p.Id })">
+                                        <i class="fas fa-ellipsis-v text-xs"></i>
                                     </button>
                                 </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="9" class="px-6 py-4 text-center text-slate-500">No hay proyectos registrados.</td>
-                        </tr>
                     }
                 </tbody>
             </table>
